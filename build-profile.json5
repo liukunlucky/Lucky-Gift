@@ -1,0 +1,83 @@
+{
+  "app": {
+    "signingConfigs": [
+      {
+        "name": "default",
+        "type": "HarmonyOS",
+        "material": {
+          "certpath": "/Users/monkey/.ohos/config/default_Lucky_Gift_JyscEJAZo4DTWfatwkPPaLkG0qaEzZGhpoBFhsbc5xM=.cer",
+          "keyAlias": "debugKey",
+          "keyPassword": "0000001BB7CEC5E0B1FE7F4F44C3B25F0A99C8E9ECD5284FD5CCBC94F2842FACF5511837F9840C91CC750F",
+          "profile": "/Users/monkey/.ohos/config/default_Lucky_Gift_JyscEJAZo4DTWfatwkPPaLkG0qaEzZGhpoBFhsbc5xM=.p7b",
+          "signAlg": "SHA256withECDSA",
+          "storeFile": "/Users/monkey/.ohos/config/default_Lucky_Gift_JyscEJAZo4DTWfatwkPPaLkG0qaEzZGhpoBFhsbc5xM=.p12",
+          "storePassword": "0000001B7878680AC098E11B7918865FCA70B2729BD8ED9D33C3A704B0FA67FA85441929196C474E6709CC"
+        }
+      },
+      {
+        "name": "release",
+        "type": "HarmonyOS",
+        "material": {
+          "storeFile": "/Users/monkey/Documents/Harmony/发布相关/数码回忆/digital_camera.p12",
+          "storePassword": "0000001E9E8F13CEDF637763775AF1503ABC2392B2D64DA440286AAB657AC7DA7FA717DC8283378BC32722D941F6",
+          "keyAlias": "digital_camera",
+          "keyPassword": "0000001EBC74AF094ACF01C23591DDBF750990E97620516745A4292413D1B7DC6C8651F2CA2357681C42F521B47B",
+          "signAlg": "SHA256withECDSA",
+          "profile": "/Users/monkey/Documents/Harmony/发布相关/数码回忆/digital_camera_profileRelease.p7b",
+          "certpath": "/Users/monkey/Documents/Harmony/发布相关/数码回忆/digital_camera_release.cer"
+        }
+      }
+    ],
+    "products": [
+      {
+        "name": "default",
+        "signingConfig": "default",
+        "targetSdkVersion": "5.0.5(17)",
+        "compatibleSdkVersion": "5.0.5(17)",
+        "runtimeOS": "HarmonyOS",
+        "buildOption": {
+          "strictMode": {
+            "caseSensitiveCheck": true,
+            "useNormalizedOHMUrl": true
+          }
+        }
+      },
+      {
+        "name": "release",
+        "signingConfig": "release",
+        "targetSdkVersion": "5.0.5(17)",
+        "compatibleSdkVersion": "5.0.5(17)",
+        "runtimeOS": "HarmonyOS",
+        "buildOption": {
+          "strictMode": {
+            "caseSensitiveCheck": true,
+            "useNormalizedOHMUrl": true
+          }
+        }
+      }
+    ],
+    "buildModeSet": [
+      {
+        "name": "debug",
+      },
+      {
+        "name": "release"
+      }
+    ]
+  },
+  "modules": [
+    {
+      "name": "entry",
+      "srcPath": "./entry",
+      "targets": [
+        {
+          "name": "default",
+          "applyToProducts": [
+            "default",
+            "release"
+          ]
+        }
+      ]
+    }
+  ]
+}

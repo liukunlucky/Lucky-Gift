@@ -1,0 +1,60 @@
+{
+  "color": [
+    {
+      "name": "start_window_background",
+      "value": "#000000"
+    },
+    {
+      "name": "background_color",
+      "value": "#121212"
+    },
+    {
+      "name": "surface_color",
+      "value": "#1E1E1E"
+    },
+    {
+      "name": "card_background_color",
+      "value": "#2D2D2D"
+    },
+    {
+      "name": "primary_text_color",
+      "value": "#FFFFFF"
+    },
+    {
+      "name": "secondary_text_color",
+      "value": "#B3B3B3"
+    },
+    {
+      "name": "tertiary_text_color",
+      "value": "#666666"
+    },
+    {
+      "name": "border_color",
+      "value": "#404040"
+    },
+    {
+      "name": "divider_color",
+      "value": "#333333"
+    },
+    {
+      "name": "shadow_color",
+      "value": "#00000030"
+    },
+    {
+      "name": "brand_color",
+      "value": "#F34F40"
+    },
+    {
+      "name": "brand_color_light",
+      "value": "#F34F4040"
+    },
+    {
+      "name": "tab_bar_bg",
+      "value": "#1E1E1E"
+    },
+    {
+      "name": "input_background_color",
+      "value": "#2D2D2D"
+    }
+  ]
+}
