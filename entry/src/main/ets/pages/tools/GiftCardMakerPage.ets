@@ -1,0 +1,493 @@
+import router from '@ohos.router';
+import { BusinessError } from '@ohos.base';
+import { photoAccessHelper } from '@kit.MediaLibraryKit';
+import image from '@ohos.multimedia.image';
+
+interface CardTemplate {
+  id: string;
+  name: string;
+  preview: string;
+  backgroundColor: string;
+  textColor: string;
+  accentColor: string;
+  style: 'classic' | 'modern' | 'cute' | 'elegant';
+}
+
+@Entry
+@Component
+struct GiftCardMakerPage {
+  @State selectedTemplate: CardTemplate | null = null;
+  @State customMessage: string = '';
+  @State senderName: string = '';
+  @State receiverName: string = '';
+  @State isPreviewMode: boolean = false;
+  @State isSaving: boolean = false;
+  
+  // 预置模板
+  private templates: CardTemplate[] = [
+    {
+      id: 'classic_1',
+      name: '经典祝福',
+      preview: '/common/images/card_classic_1.png',
+      backgroundColor: '#FFFFFF',
+      textColor: '#333333',
+      accentColor: '#FF6B35',
+      style: 'classic'
+    },
+    {
+      id: 'modern_1',
+      name: '现代简约',
+      preview: '/common/images/card_modern_1.png',
+      backgroundColor: '#F8F9FA',
+      textColor: '#2C3E50',
+      accentColor: '#3498DB',
+      style: 'modern'
+    },
+    {
+      id: 'cute_1',
+      name: '可爱风格',
+      preview: '/common/images/card_cute_1.png',
+      backgroundColor: '#FFE5E5',
+      textColor: '#E91E63',
+      accentColor: '#FF69B4',
+      style: 'cute'
+    },
+    {
+      id: 'elegant_1',
+      name: '优雅金色',
+      preview: '/common/images/card_elegant_1.png',
+      backgroundColor: '#1A1A1A',
+      textColor: '#FFFFFF',
+      accentColor: '#FFD700',
+      style: 'elegant'
+    },
+    {
+      id: 'classic_2',
+      name: '温馨粉色',
+      preview: '/common/images/card_classic_2.png',
+      backgroundColor: '#FFF0F5',
+      textColor: '#8B4B8B',
+      accentColor: '#DDA0DD',
+      style: 'classic'
+    },
+    {
+      id: 'modern_2',
+      name: '清新绿色',
+      preview: '/common/images/card_modern_2.png',
+      backgroundColor: '#F0FFF0',
+      textColor: '#2E8B57',
+      accentColor: '#32CD32',
+      style: 'modern'
+    },
+    {
+      id: 'cute_2',
+      name: '梦幻紫色',
+      preview: '/common/images/card_cute_2.png',
+      backgroundColor: '#F5F0FF',
+      textColor: '#6A5ACD',
+      accentColor: '#9370DB',
+      style: 'cute'
+    },
+    {
+      id: 'elegant_2',
+      name: '深蓝商务',
+      preview: '/common/images/card_elegant_2.png',
+      backgroundColor: '#191970',
+      textColor: '#FFFFFF',
+      accentColor: '#87CEEB',
+      style: 'elegant'
+    }
+  ];
+  
+  aboutToAppear() {
+    // 设置默认模板
+    this.selectedTemplate = this.templates[0];
+  }
+  
+  selectTemplate(template: CardTemplate) {
+    this.selectedTemplate = template;
+  }
+  
+  togglePreview() {
+    this.isPreviewMode = !this.isPreviewMode;
+  }
+  
+  async saveCard() {
+    if (!this.selectedTemplate || !this.customMessage.trim()) {
+      return;
+    }
+    
+    try {
+      this.isSaving = true;
+      
+      // 这里应该生成卡片图片并保存到相册
+      // 由于HarmonyOS的限制，这里只是模拟保存过程
+      await this.generateAndSaveCard();
+      
+      // 显示成功提示
+      this.showSuccessMessage();
+      
+    } catch (error) {
+      console.error('保存卡片失败:', error);
+    } finally {
+      this.isSaving = false;
+    }
+  }
+  
+  async generateAndSaveCard() {
+    // 模拟生成卡片的过程
+    return new Promise<void>((resolve) => {
+      setTimeout(() => {
+        resolve();
+      }, 2000);
+    });
+  }
+  
+  showSuccessMessage() {
+    // 显示保存成功的提示
+    console.log('卡片已保存到相册');
+  }
+  
+  goBack() {
+    router.back();
+  }
+  
+  build() {
+    Column() {
+      // 顶部导航栏
+      Row() {
+        Button() {
+          Text('←')
+              .fontSize(20)
+              .fontColor('#FFFFFF')
+            .width(24)
+            .height(24)
+            .fontColor('#333333')
+        }
+        .width(40)
+        .height(40)
+        .backgroundColor(Color.Transparent)
+        .onClick(() => this.goBack())
+        
+        Text('礼物卡制作器')
+          .fontSize(18)
+          .fontWeight(FontWeight.Medium)
+          .fontColor('#333333')
+          .layoutWeight(1)
+          .textAlign(TextAlign.Center)
+        
+        Button() {
+          Text(this.isPreviewMode ? '编辑' : '预览')
+            .fontSize(16)
+            .fontColor('#FF6B35')
+        }
+        .width(60)
+        .height(40)
+        .backgroundColor(Color.Transparent)
+        .onClick(() => this.togglePreview())
+      }
+      .width('100%')
+      .height(56)
+      .padding({ left: 16, right: 16 })
+      .backgroundColor('#FFFFFF')
+      
+      if (this.isPreviewMode) {
+        // 预览模式
+        Column() {
+          // 卡片预览
+          Column() {
+            this.CardPreview()
+          }
+          .margin({ top: 32, bottom: 32 })
+          
+          // 保存按钮
+          Button() {
+            if (this.isSaving) {
+              Row() {
+                LoadingProgress()
+                  .width(20)
+                  .height(20)
+                  .color('#FFFFFF')
+                  .margin({ right: 8 })
+                
+                Text('保存中...')
+                  .fontSize(16)
+                  .fontColor('#FFFFFF')
+              }
+            } else {
+              Text('保存到相册')
+                .fontSize(16)
+                .fontColor('#FFFFFF')
+            }
+          }
+          .width('80%')
+          .height(48)
+          .backgroundColor('#FF6B35')
+          .borderRadius(24)
+          .enabled(!this.isSaving && this.customMessage.trim().length > 0)
+          .onClick(() => this.saveCard())
+        }
+        .width('100%')
+        .layoutWeight(1)
+        .justifyContent(FlexAlign.Center)
+        .alignItems(HorizontalAlign.Center)
+        .backgroundColor('#F8F9FA')
+      } else {
+        // 编辑模式
+        Scroll() {
+          Column() {
+            // 模板选择
+            Column() {
+              Text('选择模板')
+                .fontSize(18)
+                .fontWeight(FontWeight.Medium)
+                .fontColor('#333333')
+                .alignSelf(ItemAlign.Start)
+                .margin({ bottom: 16 })
+              
+              Grid() {
+                ForEach(this.templates, (template: CardTemplate) => {
+                  GridItem() {
+                    Column() {
+                      // 模板预览
+                      Stack() {
+                        Rect()
+                          .width('100%')
+                          .height(80)
+                          .fill(template.backgroundColor)
+                          .borderRadius(8)
+                          .border({
+                            width: this.selectedTemplate?.id === template.id ? 2 : 1,
+                            color: this.selectedTemplate?.id === template.id ? '#FF6B35' : '#E0E0E0'
+                          })
+                        
+                        Column() {
+                          Text('礼物卡')
+                            .fontSize(12)
+                            .fontColor(template.textColor)
+                            .fontWeight(FontWeight.Bold)
+                          
+                          Text('❤️')
+                            .fontSize(16)
+                            .margin({ top: 4 })
+                          
+                          Text('祝福语')
+                            .fontSize(10)
+                            .fontColor(template.accentColor)
+                            .margin({ top: 4 })
+                        }
+                        .justifyContent(FlexAlign.Center)
+                      }
+                      
+                      Text(template.name)
+                        .fontSize(12)
+                        .fontColor('#666666')
+                        .margin({ top: 8 })
+                        .textAlign(TextAlign.Center)
+                    }
+                    .onClick(() => this.selectTemplate(template))
+                  }
+                })
+              }
+              .columnsTemplate('1fr 1fr 1fr 1fr')
+              .columnsGap(12)
+              .rowsGap(16)
+              .width('100%')
+            }
+            .width('100%')
+            .backgroundColor('#FFFFFF')
+            .borderRadius(12)
+            .padding(16)
+            .margin({ bottom: 16 })
+            
+            // 文字编辑
+            Column() {
+              Text('编辑内容')
+                .fontSize(18)
+                .fontWeight(FontWeight.Medium)
+                .fontColor('#333333')
+                .alignSelf(ItemAlign.Start)
+                .margin({ bottom: 16 })
+              
+              // 收件人
+              Column() {
+                Text('收件人')
+                  .fontSize(14)
+                  .fontColor('#666666')
+                  .alignSelf(ItemAlign.Start)
+                  .margin({ bottom: 8 })
+                
+                TextInput({ placeholder: '输入收件人姓名' })
+                  .fontSize(16)
+                  .backgroundColor('#F8F9FA')
+                  .borderRadius(8)
+                  .padding({ left: 16, right: 16 })
+                  .onChange((value: string) => {
+                    this.receiverName = value;
+                  })
+              }
+              .width('100%')
+              .alignItems(HorizontalAlign.Start)
+              .margin({ bottom: 16 })
+              
+              // 祝福语
+              Column() {
+                Text('祝福语')
+                  .fontSize(14)
+                  .fontColor('#666666')
+                  .alignSelf(ItemAlign.Start)
+                  .margin({ bottom: 8 })
+                
+                TextArea({ placeholder: '写下你的祝福语...' })
+                  .fontSize(16)
+                  .backgroundColor('#F8F9FA')
+                  .borderRadius(8)
+                  .padding(16)
+                  .height(120)
+                  .onChange((value: string) => {
+                    this.customMessage = value;
+                  })
+              }
+              .width('100%')
+              .alignItems(HorizontalAlign.Start)
+              .margin({ bottom: 16 })
+              
+              // 发件人
+              Column() {
+                Text('发件人')
+                  .fontSize(14)
+                  .fontColor('#666666')
+                  .alignSelf(ItemAlign.Start)
+                  .margin({ bottom: 8 })
+                
+                TextInput({ placeholder: '输入你的姓名' })
+                  .fontSize(16)
+                  .backgroundColor('#F8F9FA')
+                  .borderRadius(8)
+                  .padding({ left: 16, right: 16 })
+                  .onChange((value: string) => {
+                    this.senderName = value;
+                  })
+              }
+              .width('100%')
+              .alignItems(HorizontalAlign.Start)
+            }
+            .width('100%')
+            .backgroundColor('#FFFFFF')
+            .borderRadius(12)
+            .padding(16)
+            .margin({ bottom: 16 })
+            
+            // 快速模板文字
+            Column() {
+              Text('快速模板')
+                .fontSize(18)
+                .fontWeight(FontWeight.Medium)
+                .fontColor('#333333')
+                .alignSelf(ItemAlign.Start)
+                .margin({ bottom: 16 })
+              
+              Flex({ wrap: FlexWrap.Wrap }) {
+                ForEach(this.getQuickTemplates(), (template: string) => {
+                  Button(template)
+                    .fontSize(12)
+                    .fontColor('#666666')
+                    .backgroundColor('#F5F5F5')
+                    .borderRadius(16)
+                    .padding({ left: 12, right: 12, top: 6, bottom: 6 })
+                    .margin({ right: 8, bottom: 8 })
+                    .onClick(() => {
+                      this.customMessage = template;
+                    })
+                })
+              }
+            }
+            .width('100%')
+            .backgroundColor('#FFFFFF')
+            .borderRadius(12)
+            .padding(16)
+          }
+          .padding(16)
+        }
+        .layoutWeight(1)
+        .scrollBar(BarState.Off)
+      }
+    }
+    .width('100%')
+    .height('100%')
+    .backgroundColor('#F8F9FA')
+  }
+  
+  @Builder
+  CardPreview() {
+    if (this.selectedTemplate) {
+      Stack() {
+        // 卡片背景
+        Rect()
+          .width(300)
+          .height(200)
+          .fill(this.selectedTemplate.backgroundColor)
+          .borderRadius(16)
+          .shadow({
+            radius: 20,
+            color: '#00000020',
+            offsetX: 0,
+            offsetY: 8
+          })
+        
+        // 卡片内容
+        Column() {
+          // 装饰元素
+          Text('🎁')
+            .fontSize(24)
+            .margin({ bottom: 8 })
+          
+          // 收件人
+          if (this.receiverName) {
+            Text(`亲爱的 ${this.receiverName}`)
+              .fontSize(14)
+              .fontColor(this.selectedTemplate.textColor)
+              .margin({ bottom: 12 })
+          }
+          
+          // 祝福语
+          Text(this.customMessage || '在这里写下你的祝福语...')
+            .fontSize(16)
+            .fontColor(this.selectedTemplate.textColor)
+            .textAlign(TextAlign.Center)
+            .maxLines(4)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
+            .lineHeight(24)
+            .margin({ bottom: 16 })
+          
+          // 发件人
+          if (this.senderName) {
+            Text(`—— ${this.senderName}`)
+              .fontSize(12)
+              .fontColor(this.selectedTemplate.accentColor)
+              .alignSelf(ItemAlign.End)
+          }
+        }
+        .width(260)
+        .padding(20)
+        .justifyContent(FlexAlign.Center)
+        .alignItems(HorizontalAlign.Center)
+      }
+    }
+  }
+  
+  getQuickTemplates(): string[] {
+    return [
+      '生日快乐！愿你的每一天都充满阳光和快乐！',
+      '感谢你一直以来的陪伴，这份小礼物代表我的心意。',
+      '愿这份礼物能带给你温暖和惊喜！',
+      '虽然礼物不贵重，但承载着我满满的祝福。',
+      '希望你会喜欢这份精心挑选的礼物！',
+      '愿我们的友谊如这份礼物一样珍贵！',
+      '新年快乐！愿新的一年里一切顺利！',
+      '恭喜你！这份礼物是对你成就的小小庆祝。',
+      '谢谢你的帮助，这是我的一点心意。',
+      '愿这份礼物能让你感受到我的关爱。'
+    ];
+  }
+}

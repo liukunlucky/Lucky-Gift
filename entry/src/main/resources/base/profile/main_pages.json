@@ -1,6 +1,19 @@
 {
   "src": [
-    "pages/Index",
-    "pages/HomePage"
+    "pages/MainTabsPage",
+    "pages/tabs/CreateGiftEventPage",
+    "pages/browse/FilterPage",
+    "pages/tools/GiftCardMakerPage",
+    "pages/tools/BudgetCalculatorPage",
+    "pages/tools/HolidayCountdownPage",
+    "pages/profile/ContactDetailPage",
+    "pages/profile/FavoritesPage",
+    "pages/GiftRecommendationPage",
+    "pages/ScenarioPage",
+    "pages/TargetAnalysisPage",
+    "pages/GiftMeaningPage",
+    "pages/UserCenterPage",
+    "pages/SearchFilterPage",
+    "pages/GiftDetailPage"
   ]
 }
