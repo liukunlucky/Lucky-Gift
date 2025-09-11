@@ -14,7 +14,7 @@ interface QuickFilter {
 // 分类导航接口
 interface Category {
   title: string;
-  icon: string;
+  icon: Resource;
   items: string[];
 }
 
@@ -30,43 +30,48 @@ export struct BrowsePage {
   private inspirationDAO: InspirationDAO = new InspirationDAO(this.dbManager);
   private dataInitializer: InspirationDataInitializer = new InspirationDataInitializer();
   
-  // 快速筛选器配置
-  private quickFilters: QuickFilter[] = [
-    { label: '生日', type: 'occasion', value: '生日' },
-    { label: '父母', type: 'audience', value: '父母' },
-    { label: '500元内', type: 'budget', value: '500' },
-    { label: '恋人', type: 'audience', value: '恋人' },
-    { label: '纪念日', type: 'occasion', value: '纪念日' },
-    { label: 'DIY', type: 'type', value: 'DIY手作' }
+  // 热门标签配置（替代原快速筛选器）
+  private hotTags: QuickFilter[] = [
+    { label: '💝 生日必备', type: 'occasion', value: '生日' },
+    { label: '❤️ 情侣专属', type: 'audience', value: '恋人' },
+    { label: '🎨 DIY手作', type: 'type', value: 'DIY手作' },
+    { label: '💰 百元好礼', type: 'budget', value: '200' },
+    { label: '🎉 节日庆祝', type: 'occasion', value: '节日' },
+    { label: '👨‍👩‍👧‍👦 孝敬父母', type: 'audience', value: '父母' }
   ];
   
-  // 分类导航配置
+  // 分类导航配置（丰富数据）
   private categories: Category[] = [
     { 
       title: '按对象送', 
-      icon: '👥', 
-      items: ['父母', '恋人', '朋友', '同事', '孩子', '长辈', '老师', '客户']
+      icon: $r('app.media.icon_rq'),
+      items: ['父母长辈', '恋人爱人', '闺蜜好友', '同事领导', '小朋友', '老师导师', '客户合作伙伴', '兄弟姐妹', '祖父母', '岳父岳母', '新朋友', '网友']
     },
     { 
       title: '按场合送', 
-      icon: '🎉', 
-      items: ['生日', '纪念日', '婚礼', '节日', '毕业', '道歉', '感谢', '庆祝']
+      icon: $r('app.media.icon_ch'),
+      items: ['生日庆祝', '结婚纪念', '恋爱纪念日', '毕业典礼', '升职加薪', '乔迁新居', '新生儿诞生', '康复出院', '道歉和解', '感谢答谢', '节日祝福', '开业庆典']
     },
     { 
       title: '按兴趣送', 
-      icon: '🎯', 
-      items: ['美食家', '读书人', '科技迷', '旅行家', '健身达人', '艺术爱好者', '音乐迷', '游戏玩家']
+      icon: $r('app.media.icon_xq'),
+      items: ['美食烹饪', '阅读写作', '科技数码', '旅行摄影', '健身运动', '艺术绘画', '音乐舞蹈', '游戏电竞', '手工制作', '园艺种植', '收藏古玩', '时尚美妆']
     },
     { 
       title: '按预算送', 
-      icon: '💰', 
-      items: ['50元以下', '50-200元', '200-500元', '500-1000元', '1000元以上']
+      icon:  $r('app.media.icon_money'),
+      items: ['50元以下', '50-100元', '100-200元', '200-500元', '500-1000元', '1000-2000元', '2000-5000元', '5000元以上']
     },
     { 
       title: '按类型送', 
-      icon: '🎁', 
-      items: ['DIY手作', '体验之旅', '贴心日用', '搞怪惊喜', '科技数码', '美妆护肤', '书籍文具', '运动户外']
-    }
+      icon: $r('app.media.icon_lx'),
+      items: ['DIY手作', '体验服务', '日用实物', '创意新奇', '科技数码', '美妆护肤', '书籍文具', '运动户外', '家居装饰', '珠宝首饰', '服装配饰', '美食特产']
+    },
+    {
+       title: '按季节送',
+       icon: $r('app.media.icon_rl'),
+       items: ['春季踏青', '夏日清凉', '秋季温馨', '冬日暖心', '情人节', '母亲节', '父亲节', '儿童节', '教师节', '中秋节', '国庆节', '圣诞节']
+     }
   ];
 
   aboutToAppear() {
@@ -175,9 +180,9 @@ export struct BrowsePage {
       );
     }
     
-    // 快速筛选器
+    // 热门标签筛选
     this.selectedFilters.forEach(filter => {
-      const filterConfig = this.quickFilters.find(f => f.label === filter);
+      const filterConfig = this.hotTags.find(f => f.label === filter);
       if (filterConfig) {
         switch (filterConfig.type) {
           case 'occasion':
@@ -213,13 +218,49 @@ export struct BrowsePage {
 
   // 导航到分类页面
   navigateToCategory(category: Category) {
-    router.pushUrl({
-      url: 'pages/CategoryPage',
-      params: {
-        category: category.title,
-        items: category.items
+    try {
+      // 跳转到筛选页面，传递分类信息
+      router.pushUrl({
+        url: 'pages/tabs/InspirationFilterPage',
+        params: {
+          filterType: 'category',
+          filterValue: category.title,
+          title: category.title,
+          categoryItems: category.items
+        }
+      });
+      
+      console.log('导航到分类页面:', category.title);
+    } catch (error) {
+      console.error('导航失败:', error);
+      
+      // 如果导航失败，则在当前页面应用筛选
+      this.selectedFilters = [];
+      this.searchKeyword = '';
+      
+      // 根据分类设置相应的筛选条件
+      switch (category.title) {
+        case '按对象送':
+          this.selectedFilters = ['👨‍👩‍👧‍👦 孝敬父母', '❤️ 情侣专属'];
+          break;
+        case '按场合送':
+          this.selectedFilters = ['💝 生日必备', '🎉 节日庆祝'];
+          break;
+        case '按预算送':
+          this.selectedFilters = ['💰 百元好礼'];
+          break;
+        case '按类型送':
+          this.selectedFilters = ['🎨 DIY手作'];
+          break;
+        case '按兴趣送':
+        case '按季节送':
+          this.selectedFilters = ['🎉 节日庆祝'];
+          break;
       }
-    });
+      
+      this.applyFilters();
+      console.log('在当前页面应用筛选:', category.title, this.selectedFilters);
+    }
   }
 
   // 导航到灵感详情页
@@ -258,15 +299,6 @@ export struct BrowsePage {
             this.searchKeyword = value;
             this.applyFilters();
           })
-        
-        Button('搜索')
-          .height(40)
-          .margin({ left: 12 })
-          .backgroundColor('#FF6B35')
-          .borderRadius(20)
-          .onClick(() => {
-            this.applyFilters();
-          })
       }
       .width('100%')
       .padding({ left: 16, right: 16, top: 12, bottom: 12 })
@@ -292,26 +324,26 @@ export struct BrowsePage {
       } else {
         Scroll() {
           Column() {
-            // 快速筛选器
+            // 热门标签
             Column() {
-              Text('快速筛选')
+              Text('🔥 热门推荐')
                 .fontSize(16)
                 .fontWeight(FontWeight.Medium)
                 .margin({ bottom: 12 })
                 .alignSelf(ItemAlign.Start)
               
               Flex({ wrap: FlexWrap.Wrap, justifyContent: FlexAlign.Start }) {
-                ForEach(this.quickFilters, (filter: QuickFilter) => {
-                  Button(filter.label)
+                ForEach(this.hotTags, (tag: QuickFilter) => {
+                  Button(tag.label)
                     .fontSize(12)
                     .height(32)
                     .padding({ left: 12, right: 12 })
                     .margin({ right: 8, bottom: 8 })
-                    .backgroundColor(this.selectedFilters.includes(filter.label) ? '#FF6B35' : '#F0F0F0')
-                    .fontColor(this.selectedFilters.includes(filter.label) ? Color.White : '#333333')
+                    .backgroundColor(this.selectedFilters.includes(tag.label) ? '#FF6B35' : '#F0F0F0')
+                    .fontColor(this.selectedFilters.includes(tag.label) ? Color.White : '#333333')
                     .borderRadius(16)
                     .onClick(() => {
-                      this.navigateToFilter('quickFilter', filter.label);
+                      this.toggleFilter(tag.label);
                     })
                 })
               }
@@ -323,7 +355,7 @@ export struct BrowsePage {
 
             // 分类导航
             Column() {
-              Text('分类浏览')
+              Text('🎯 精准分类')
                 .fontSize(16)
                 .fontWeight(FontWeight.Medium)
                 .margin({ bottom: 12 })
@@ -333,9 +365,10 @@ export struct BrowsePage {
                 ForEach(this.categories, (category: Category) => {
                   GridItem() {
                     Column() {
-                      Text(category.icon)
-                        .fontSize(24)
-                        .margin({ bottom: 8 })
+                      Image(category.icon)
+                        .width(24)
+                        .height(24)
+                        .margin({ bottom: 4 })
                       
                       Text(category.title)
                         .fontSize(14)
@@ -349,15 +382,16 @@ export struct BrowsePage {
                     .backgroundColor('#F8F9FA')
                     .borderRadius(12)
                     .onClick(() => {
-                      this.navigateToFilter('category', category.title);
+                      this.navigateToCategory(category);
                     })
                   }
                 })
               }
               .columnsTemplate('1fr 1fr')
+              .rowsTemplate('1fr 1fr 1fr')
               .rowsGap(12)
               .columnsGap(12)
-              .height(180)
+              .height(288)
             }
             .width('100%')
             .padding(16)
@@ -382,14 +416,16 @@ export struct BrowsePage {
               
               if (this.filteredInspirations.length === 0) {
                 Column() {
-                  Text('🔍')
-                    .fontSize(48)
-                    .margin({ bottom: 12 })
+                  Image($r('app.media.icon_search'))
+              .width(64)
+              .height(64)
+              .fillColor('#CCCCCC')
+              .margin({ bottom: 16 }) // 增加底部间距
                   
                   Text('暂无匹配的灵感')
                     .fontSize(16)
                     .fontColor('#666666')
-                    .margin({ bottom: 8 })
+                    .margin({ bottom: 12 }) // 增加底部间距
                   
                   Text('试试调整筛选条件或搜索关键词')
                     .fontSize(14)
@@ -399,6 +435,7 @@ export struct BrowsePage {
                 .height(200)
                 .justifyContent(FlexAlign.Center)
                 .alignItems(HorizontalAlign.Center)
+                .padding({ left: 24, right: 24 }) // 添加水平内边距
               } else {
                 ForEach(this.filteredInspirations, (inspiration: Inspiration) => {
                   this.buildInspirationCard(inspiration)
@@ -475,8 +512,9 @@ export struct BrowsePage {
         
         // 缩略图占位
         Column() {
-          Text('🎁')
-            .fontSize(32)
+          Image($r('app.media.ic_gift_placeholder'))
+                 .width(60)
+                 .height(60)
         }
         .width(80)
         .height(80)
@@ -484,7 +522,7 @@ export struct BrowsePage {
         .borderRadius(8)
         .justifyContent(FlexAlign.Center)
         .alignItems(HorizontalAlign.Center)
-        .margin({ left: 12 })
+        .margin({ left: 16 }) // 增加左边距
       }
       .width('100%')
       .alignItems(VerticalAlign.Top)
@@ -493,7 +531,8 @@ export struct BrowsePage {
     .padding(16)
     .backgroundColor(Color.White)
     .borderRadius(12)
-    .margin({ bottom: 12 })
+    .margin({ bottom: 16 }) // 增加底部间距
+    .shadow({ radius: 4, color: '#1A000000', offsetX: 0, offsetY: 2 }) // 添加阴影效果
     .onClick(() => {
       this.navigateToInspirationDetail(inspiration);
     })

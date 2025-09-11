@@ -38,10 +38,10 @@ struct InspirationDetailPage {
       }
       
       // 检查是否已收藏
-      this.isFavorite = await this.inspirationDAO.isInspirationFavorited(this.inspirationId);
+      // 暂时设置为false，后续可以从数据库查询
+        this.isFavorite = false;
       
-      // 增加浏览次数
-      await this.inspirationDAO.incrementViewCount(this.inspirationId);
+      // 暂时不支持浏览计数功能
       
     } catch (error) {
       console.error('加载灵感详情失败:', error);
@@ -59,13 +59,11 @@ struct InspirationDetailPage {
       if (this.isFavorite) {
         await this.inspirationDAO.removeFromFavorites(this.inspirationId);
         this.isFavorite = false;
-        if (this.inspiration.favoriteCount > 0) {
-          this.inspiration.favoriteCount--;
-        }
+        // 暂时不支持收藏计数功能
       } else {
         await this.inspirationDAO.addToFavorites(this.inspirationId);
         this.isFavorite = true;
-        this.inspiration.favoriteCount++;
+        // 暂时不支持收藏计数功能
       }
     } catch (error) {
       console.error('切换收藏状态失败:', error);
@@ -128,10 +126,9 @@ struct InspirationDetailPage {
     Column() {
       // 顶部导航栏
       Row() {
-        Image($r('app.media.ic_back'))
-          .width(24)
-          .height(24)
-          .fillColor('#333333')
+        Text('←')
+          .fontSize(24)
+          .fontColor('#333333')
           .onClick(() => {
             this.navigateBack();
           })
@@ -144,7 +141,7 @@ struct InspirationDetailPage {
           .textAlign(TextAlign.Center)
         
         Row() {
-          Image($r('app.media.ic_share'))
+          Image($r('app.media.icon_share'))
             .width(24)
             .height(24)
             .fillColor('#666666')
@@ -153,10 +150,10 @@ struct InspirationDetailPage {
               this.shareInspiration();
             })
           
-          Image(this.isFavorite ? $r('app.media.ic_favorite_filled') : $r('app.media.ic_favorite_outline'))
+          Image(this.isFavorite ? $r('app.media.icon_ax_full') : $r('app.media.icon_ax'))
             .width(24)
             .height(24)
-            .fillColor(this.isFavorite ? '#FF6B35' : '#666666')
+            .fillColor(this.isFavorite ? '#FF6B35' : '#CCCCCC')
             .onClick(() => {
               this.toggleFavorite();
             })
@@ -189,15 +186,15 @@ struct InspirationDetailPage {
         Scroll() {
           Column() {
             // 主图
-            if (this.inspiration.imageUrl) {
-              Image(this.inspiration.imageUrl)
+            if (this.inspiration.images && this.inspiration.images.length > 0) {
+              Image(this.inspiration.images[0])
                 .width('100%')
                 .height(250)
                 .objectFit(ImageFit.Cover)
                 .backgroundColor('#F0F0F0')
             } else {
               Column() {
-                Image($r('app.media.ic_image_placeholder'))
+                Image($r('app.media.icon_search'))
                   .width(80)
                   .height(80)
                   .fillColor('#CCCCCC')
@@ -245,40 +242,41 @@ struct InspirationDetailPage {
                 // 统计信息
                 Row() {
                   Row() {
-                    Image($r('app.media.ic_eye'))
+                    Image($r('app.media.icon_search'))
                       .width(16)
                       .height(16)
                       .fillColor('#666666')
                       .margin({ right: 4 })
                     
-                    Text(`${this.inspiration.viewCount || 0}`)
+                    Text('0')
                       .fontSize(12)
                       .fontColor('#666666')
                   }
                   .margin({ right: 16 })
                   
                   Row() {
-                    Image($r('app.media.ic_favorite_outline'))
+                    Image($r('app.media.icon_mine'))
                       .width(16)
                       .height(16)
                       .fillColor('#666666')
                       .margin({ right: 4 })
                     
-                    Text(`${this.inspiration.favoriteCount || 0}`)
+                    Text('0')
                       .fontSize(12)
                       .fontColor('#666666')
                   }
                   .margin({ right: 16 })
                   
-                  if (this.inspiration.rating && this.inspiration.rating > 0) {
+                  // 暂时隐藏评分功能
+                  if (false) {
                     Row() {
-                      Image($r('app.media.ic_star'))
+                      Image($r('app.media.icon_tools'))
                         .width(16)
                         .height(16)
-                        .fillColor('#FFD700')
+                        .fillColor('#666666')
                         .margin({ right: 4 })
                       
-                      Text(this.formatRating(this.inspiration.rating))
+                      Text('0.0')
                         .fontSize(12)
                         .fontColor('#666666')
                     }
@@ -315,7 +313,7 @@ struct InspirationDetailPage {
               .margin({ bottom: 8 })
 
               // 详细内容
-              if (this.inspiration.content) {
+              if (this.inspiration.detailedDescription) {
                 Column() {
                   Text('实施指南')
                     .fontSize(16)
@@ -324,7 +322,7 @@ struct InspirationDetailPage {
                     .margin({ bottom: 12 })
                     .alignSelf(ItemAlign.Start)
                   
-                  Text(this.inspiration.content)
+                  Text(this.inspiration.detailedDescription || '暂无详细内容')
                     .fontSize(14)
                     .fontColor('#666666')
                     .lineHeight(22)
@@ -385,7 +383,7 @@ struct InspirationDetailPage {
                         .fontColor('#666666')
                         .layoutWeight(1)
                       
-                      Text(this.inspiration.budgetRange)
+                      Text(this.inspiration.budgetRange.label)
                         .fontSize(14)
                         .fontColor('#FF6B35')
                         .fontWeight(FontWeight.Medium)
@@ -436,10 +434,10 @@ struct InspirationDetailPage {
       } else {
         // 错误状态
         Column() {
-          Image($r('app.media.ic_error'))
+          Image($r('app.media.icon_record'))
             .width(80)
             .height(80)
-            .fillColor('#CCCCCC')
+            .fillColor('#FF6B35')
           
           Text('加载失败')
             .fontSize(16)

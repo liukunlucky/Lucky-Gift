@@ -13,7 +13,7 @@ interface MenuItem {
   id: string;
   title: string;
   description: string;
-  icon: string;
+  icon: Resource;
   color: string;
   count?: number;
 }
@@ -22,7 +22,7 @@ interface DataMenuItem {
   id: string;
   title: string;
   description: string;
-  icon: string;
+  icon: Resource;
   color: string;
 }
 
@@ -64,7 +64,7 @@ export struct ProfilePage {
       id: 'relationships',
       title: '我的关系网络',
       description: '管理联系人和重要关系',
-      icon: '👥',
+      icon: $r('app.media.icon_rq'),
       color: '#4CAF50',
       count: 0
     },
@@ -72,7 +72,7 @@ export struct ProfilePage {
       id: 'favorites',
       title: '我的收藏',
       description: '收藏的灵感和创意',
-      icon: '❤️',
+      icon: $r('app.media.icon_ax'),
       color: '#E91E63',
       count: 0
     },
@@ -80,7 +80,7 @@ export struct ProfilePage {
       id: 'reminders',
       title: '礼物提醒',
       description: '重要日期提醒设置',
-      icon: '🔔',
+      icon: $r('app.media.icon_ld'),
       color: '#FF9800',
       count: 0
     },
@@ -88,7 +88,7 @@ export struct ProfilePage {
       id: 'statistics',
       title: '送礼统计',
       description: '查看送礼数据分析',
-      icon: '📊',
+      icon: $r('app.media.icon_tj'),
       color: '#2196F3',
       count: 0
     }
@@ -100,21 +100,21 @@ export struct ProfilePage {
       id: 'export',
       title: '导出数据',
       description: '备份所有送礼记录',
-      icon: '📤',
+      icon: $r('app.media.icon_dc'),
       color: '#9C27B0'
     },
     {
       id: 'import',
       title: '导入数据',
       description: '恢复之前的备份',
-      icon: '📥',
+      icon: $r('app.media.icon_dr'),
       color: '#607D8B'
     },
     {
       id: 'clear',
       title: '清空数据',
       description: '删除所有本地数据',
-      icon: '🗑️',
+      icon: $r('app.media.icon_delete'),
       color: '#F44336'
     }
   ];
@@ -172,24 +172,22 @@ export struct ProfilePage {
   navigateToFeature(featureId: string) {
     switch (featureId) {
       case 'relationships':
-        router.pushUrl({
-          url: 'pages/ContactListPage'
-        });
+        // 暂时显示联系人数量信息，后续可添加联系人管理页面
+        console.log('关系网络功能：当前有', this.contacts.length, '个联系人');
         break;
       case 'favorites':
         router.pushUrl({
-          url: 'pages/FavoriteInspirationPage'
+          url: 'pages/profile/FavoritesPage'
         });
         break;
       case 'reminders':
-        router.pushUrl({
-          url: 'pages/ReminderSettingsPage'
-        });
+        // 暂时显示提醒统计信息，后续可添加提醒设置页面
+        const remindersCount = this.contacts.filter(c => c.importantDates && c.importantDates.length > 0).length;
+        console.log('礼物提醒功能：当前有', remindersCount, '个联系人设置了重要日期提醒');
         break;
       case 'statistics':
-        router.pushUrl({
-          url: 'pages/StatisticsPage'
-        });
+        // 暂时显示统计信息，后续可添加详细统计页面
+        console.log('送礼统计：总共', this.totalGiftEvents, '次送礼，花费', this.totalSpent, '元');
         break;
     }
   }
@@ -490,9 +488,10 @@ export struct ProfilePage {
               ForEach(this.menuItems, (item: MenuItem) => {
                 Row() {
                   Row() {
-                    Text(item.icon)
-                      .fontSize(24)
-                      .margin({ right: 12 })
+                    Image(item.icon)
+                      .width(60)
+                      .height(60)
+                      .fillColor('#CCCCCC')
                     
                     Column() {
                       Text(item.title)
@@ -549,9 +548,10 @@ export struct ProfilePage {
               ForEach(this.dataMenuItems, (item: DataMenuItem) => {
                 Row() {
                   Row() {
-                    Text(item.icon)
-                      .fontSize(24)
-                      .margin({ right: 12 })
+                    Image(item.icon)
+                      .width(60)
+                      .height(60)
+                      .fillColor('#CCCCCC')
                     
                     Column() {
                       Text(item.title)
@@ -610,24 +610,32 @@ export struct ProfilePage {
                 Row() {
                   ForEach(this.contacts.slice(0, 4), (contact: Contact) => {
                     Column() {
-                      Text(contact.avatar || '👤')
-                        .fontSize(30)
-                        .width(50)
-                        .height(50)
-                        .borderRadius(25)
-                        .backgroundColor('#F0F0F0')
-                        .textAlign(TextAlign.Center)
-                        .backgroundColor('#F0F0F0')
+                      if (contact.avatar) {
+                         Text(contact.avatar)
+                           .fontSize(30)
+                           .width(50)
+                           .height(50)
+                           .borderRadius(25)
+                           .backgroundColor('#F0F0F0')
+                           .textAlign(TextAlign.Center)
+                       } else {
+                         Image($r('app.media.icon_mine'))
+                           .width(40)
+                           .height(40)
+                           .fillColor('#FFFFFF')
+                           .borderRadius(25)
+                           .backgroundColor('#F0F0F0')
+                       }
                       
                       Text(contact.name)
                         .fontSize(12)
                         .fontColor('#333333')
-                        .margin({ top: 6 })
+                        .margin({ top: 8 }) // 增加顶部间距
                         .maxLines(1)
                         .textOverflow({ overflow: TextOverflow.Ellipsis })
                     }
                     .width(60)
-                    .margin({ right: 12 })
+                    .margin({ right: 16 }) // 增加右边距
                     .onClick(() => {
                       router.pushUrl({
                         url: 'pages/profile/ContactDetailPage',

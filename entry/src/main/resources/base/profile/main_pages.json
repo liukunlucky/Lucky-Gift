@@ -14,6 +14,9 @@
     "pages/GiftMeaningPage",
     "pages/UserCenterPage",
     "pages/SearchFilterPage",
-    "pages/GiftDetailPage"
+    "pages/GiftDetailPage",
+    "pages/InspirationDetailPage",
+    "pages/SettingPage",
+    "pages/tabs/InspirationFilterPage"
   ]
 }

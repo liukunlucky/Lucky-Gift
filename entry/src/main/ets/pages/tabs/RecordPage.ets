@@ -181,15 +181,15 @@ export struct RecordPage {
   }
 
   // 获取心情图标
-  getMoodIcon(mood: string | undefined): string {
+  getMoodIcon(mood: string | undefined): Resource {
     switch (mood) {
-      case 'joyful': return '😊';
-      case 'romantic': return '💕';
-      case 'excited': return '🎉';
-      case 'grateful': return '🙏';
-      case 'surprised': return '😲';
-      case 'touched': return '🥺';
-      default: return '😊';
+      case 'joyful': return $r('app.media.icon_happy')
+      case 'romantic': return $r('app.media.icon_lm')
+      case 'excited': return $r('app.media.icon_xf')
+      case 'grateful': return $r('app.media.icon_gj')
+      case 'surprised': return $r('app.media.icon_jx')
+      case 'touched': return $r('app.media.icon_gd')
+      default: return $r('app.media.icon_happy')
     }
   }
 
@@ -212,20 +212,30 @@ export struct RecordPage {
           .fontSize(20)
           .fontWeight(FontWeight.Bold)
           .fontColor('#333333')
-        
-        Blank()
+          .layoutWeight(1)
         
         // 筛选按钮
-        Button('筛选')
-          .fontSize(14)
-          .height(32)
-          .backgroundColor('#F0F0F0')
-          .fontColor('#333333')
-          .borderRadius(16)
-          .margin({ right: 8 })
-          .onClick(() => {
-            this.showFilterDialog = true;
-          })
+        Row() {
+           Image($r('app.media.icon_search'))
+             .width(16)
+             .height(16)
+             .fillColor('#666666')
+             .margin({ right: 4 })
+           
+           Text('筛选')
+            .fontSize(14)
+            .fontColor('#333333')
+        }
+        .height(32)
+        .backgroundColor('#F0F0F0')
+        .borderRadius(16)
+        .margin({ right: 8 })
+        .padding({ left: 12, right: 12 })
+        .justifyContent(FlexAlign.Center)
+        .alignItems(VerticalAlign.Center)
+        .onClick(() => {
+          this.showFilterDialog = true;
+        })
         
         // 添加按钮
         Button('+')
@@ -242,6 +252,8 @@ export struct RecordPage {
       .width('100%')
       .padding({ left: 16, right: 16, top: 12, bottom: 12 })
       .backgroundColor(Color.White)
+      .justifyContent(FlexAlign.SpaceBetween)
+      .alignItems(VerticalAlign.Center)
 
       if (this.isLoading) {
         // 加载状态
@@ -264,20 +276,23 @@ export struct RecordPage {
         if (this.filteredEvents.length === 0) {
           // 空状态
           Column() {
-            Text('📝')
-              .fontSize(64)
-              .margin({ bottom: 16 })
+            Image($r('app.media.icon_record'))
+              .width(64)
+              .height(64)
+              .fillColor('#CCCCCC')
+              .margin({ bottom: 20 })
             
             Text('还没有记录哦')
               .fontSize(18)
               .fontColor('#666666')
-              .margin({ bottom: 8 })
+              .margin({ bottom: 12 })
             
             Text('点击右上角的 + 号开始记录你的送礼故事吧')
               .fontSize(14)
               .fontColor('#999999')
               .textAlign(TextAlign.Center)
-              .margin({ bottom: 24 })
+              .margin({ bottom: 32 })
+              .padding({ left: 16, right: 16 })
             
             Button('开始记录')
               .backgroundColor('#FF6B35')
@@ -371,9 +386,10 @@ export struct RecordPage {
           .alignItems(HorizontalAlign.Start)
           
           Blank()
-          
-          Text(this.getMoodIcon(event.mood))
-            .fontSize(20)
+          Image(this.getMoodIcon(event.mood))
+            .width(20)
+            .height(20)
+            .fillColor('#CCCCCC')
         }
         .width('100%')
         .margin({ bottom: 12 })

@@ -200,8 +200,10 @@ struct GiftDetailPage {
       
       // 收藏按钮
       Row() {
-        Text(this.isFavorite ? '❤️' : '🤍')
-          .fontSize(24)
+        Image(this.isFavorite ? $r('app.media.icon_ax_full') : $r('app.media.icon_ax'))
+           .width(24)
+           .height(24)
+           .fillColor(this.isFavorite ? '#FF6B35' : '#CCCCCC')
       }
       .width('100%')
       .justifyContent(FlexAlign.End)
@@ -236,9 +238,11 @@ struct GiftDetailPage {
         
         Row() {
           ForEach([0, 1, 2, 3, 4], (index: number) => {
-            Text(index < Math.floor(this.gift!.rating) ? '⭐' : '☆')
-              .fontSize(16)
-              .fontColor(index < Math.floor(this.gift!.rating) ? '#FFD700' : '#E0E0E0')
+            Image(index < Math.floor(this.gift!.rating) ? $r('app.media.icon_xx_full') : $r('app.media.icon_xx'))
+               .width(16)
+               .height(16)
+               .margin({ right: 2 })
+               .fillColor(index < Math.floor(this.gift!.rating) ? '#FFD700' : '#E0E0E0')
           })
           
           Text(`${this.gift!.rating}`)

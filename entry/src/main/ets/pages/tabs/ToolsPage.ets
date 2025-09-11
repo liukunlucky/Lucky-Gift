@@ -22,7 +22,7 @@ interface ToolMenu {
   id: string;
   title: string;
   description: string;
-  icon: string;
+  icon: Resource;
   color: string;
 }
 
@@ -33,6 +33,7 @@ export struct ToolsPage {
   @State upcomingHolidays: HolidayCountdown[] = [];
   @State isLoading: boolean = true;
   @State showBudgetCalculator: boolean = false;
+  @State showChecklistDetail: boolean = false;
   @State totalBudget: string = '';
   @State numberOfPeople: string = '';
   @State calculatedResult: number = 0;
@@ -48,28 +49,28 @@ export struct ToolsPage {
       id: 'checklist',
       title: '礼物清单检查',
       description: '确保送礼万无一失',
-      icon: '✅',
+      icon: $r('app.media.icon_check'),
       color: '#4CAF50'
     },
     {
       id: 'giftcard',
       title: '礼物卡制作器',
       description: '制作精美的礼物卡片',
-      icon: '💌',
+      icon: $r('app.media.icon_hk'),
       color: '#E91E63'
     },
     {
       id: 'budget',
       title: '预算计算器',
       description: '合理分配送礼预算',
-      icon: '💰',
+      icon: $r('app.media.icon_jsq'),
       color: '#FF9800'
     },
     {
       id: 'countdown',
       title: '节日倒计时',
       description: '不错过重要节日',
-      icon: '📅',
+      icon: $r('app.media.icon_rl'),
       color: '#2196F3'
     }
   ];
@@ -250,7 +251,7 @@ export struct ToolsPage {
   navigateToTool(toolId: string) {
     switch (toolId) {
       case 'checklist':
-        // 显示检查清单详情
+        this.showChecklistDetail = true;
         break;
       case 'giftcard':
         router.pushUrl({
@@ -347,9 +348,10 @@ export struct ToolsPage {
                 ForEach(this.toolMenus, (tool: ToolMenu) => {
                   GridItem() {
                     Column() {
-                      Text(tool.icon)
-                        .fontSize(32)
-                        .margin({ bottom: 8 })
+                      Image(tool.icon)
+                        .width(24)
+                        .height(24)
+                        .fillColor('#CCCCCC')
                       
                       Text(tool.title)
                         .fontSize(14)
@@ -471,9 +473,7 @@ export struct ToolsPage {
                   .borderRadius(16)
                   .margin({ top: 8 })
                   .onClick(() => {
-                    router.pushUrl({
-                      url: 'pages/ChecklistDetailPage'
-                    });
+                    this.showChecklistDetail = true;
                   })
               }
             }
@@ -599,6 +599,10 @@ export struct ToolsPage {
       height: 400,
       dragBar: true
     })
+    .bindSheet($$this.showChecklistDetail, this.buildChecklistDetailDialog(), {
+      height: 600,
+      dragBar: true
+    })
   }
 
   @Builder
@@ -700,6 +704,109 @@ export struct ToolsPage {
           })
       }
       .width('100%')
+    }
+    .width('100%')
+    .padding(24)
+  }
+
+  @Builder
+  buildChecklistDetailDialog() {
+    Column() {
+      Text('送礼检查清单')
+        .fontSize(18)
+        .fontWeight(FontWeight.Bold)
+        .fontColor('#333333')
+        .margin({ bottom: 16 })
+      
+      // 进度显示
+      Row() {
+        Progress({ 
+          value: this.completedCount, 
+          total: this.totalCount, 
+          type: ProgressType.Linear 
+        })
+          .layoutWeight(1)
+          .color('#FF6B35')
+          .backgroundColor('#F0F0F0')
+          .height(6)
+        
+        Text(`${this.completedCount}/${this.totalCount}`)
+          .fontSize(12)
+          .fontColor('#666666')
+          .margin({ left: 12 })
+      }
+      .width('100%')
+      .margin({ bottom: 20 })
+      
+      // 完整检查清单
+      Scroll() {
+        Column() {
+          ForEach(this.checklistItems, (item: ChecklistItem) => {
+            Row() {
+              Checkbox({ name: item.id, group: 'checklist' })
+                .select(item.isChecked)
+                .selectedColor('#FF6B35')
+                .onChange((value: boolean) => {
+                  this.toggleChecklistItem(item);
+                })
+              
+              Column() {
+                Text(item.title)
+                  .fontSize(14)
+                  .fontColor(item.isChecked ? '#999999' : '#333333')
+                  .decoration({ type: item.isChecked ? TextDecorationType.LineThrough : TextDecorationType.None })
+                
+                if (item.description) {
+                  Text(item.description)
+                    .fontSize(12)
+                    .fontColor('#666666')
+                    .margin({ top: 2 })
+                    .maxLines(2)
+                    .textOverflow({ overflow: TextOverflow.Ellipsis })
+                }
+              }
+              .layoutWeight(1)
+              .alignItems(HorizontalAlign.Start)
+              .margin({ left: 12 })
+            }
+            .width('100%')
+            .padding({ top: 12, bottom: 12 })
+            .alignItems(VerticalAlign.Top)
+            .onClick(() => {
+              this.toggleChecklistItem(item);
+            })
+          })
+        }
+      }
+      .layoutWeight(1)
+      .scrollBar(BarState.Auto)
+      
+      // 操作按钮
+      Row() {
+        Button('重置清单')
+          .layoutWeight(1)
+          .height(44)
+          .backgroundColor('#F0F0F0')
+          .fontColor('#333333')
+          .borderRadius(22)
+          .margin({ right: 8 })
+          .onClick(() => {
+            this.resetChecklist();
+          })
+        
+        Button('完成')
+          .layoutWeight(1)
+          .height(44)
+          .backgroundColor('#FF6B35')
+          .fontColor(Color.White)
+          .borderRadius(22)
+          .margin({ left: 8 })
+          .onClick(() => {
+            this.showChecklistDetail = false;
+          })
+      }
+      .width('100%')
+      .margin({ top: 16 })
     }
     .width('100%')
     .padding(24)

@@ -5,8 +5,9 @@ import { common } from '@kit.AbilityKit';
 import { faceDetector } from '@kit.CoreVisionKit';
 import promptAction from '@ohos.promptAction';
 
+@Entry
 @Component
-export struct SettingPage {
+struct SettingPage {
   @State isDarkMode: boolean = false;
   @State showAboutSheet: boolean = false;
   @State showFeedbackSheet: boolean = false;

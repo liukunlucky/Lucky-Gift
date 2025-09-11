@@ -1,7 +1,18 @@
-import { Inspiration, InspirationCategory, InspirationTag } from '../../model/NewDataModels';
+import { Inspiration, InspirationTag } from '../../model/NewDataModels';
 import { InspirationDAO } from '../../database/InspirationDAO';
 import { NewDatabaseManager } from '../../database/NewDatabaseManager';
 import router from '@ohos.router';
+
+interface RouterParams {
+  filterType: string;
+  filterValue: string;
+  title?: string;
+}
+
+interface BudgetRange {
+  min: number;
+  max: number;
+}
 
 @Entry
 @Component
@@ -12,18 +23,14 @@ struct InspirationFilterPage {
   @State filteredInspirations: Inspiration[] = [];
   @State isLoading: boolean = true;
   @State selectedTags: string[] = [];
-  @State availableTags: InspirationTag[] = [];
+  @State availableTags: string[] = [];
   @State sortBy: string = 'default'; // default, price_low, price_high, popular
   
   private dbManager = new NewDatabaseManager();
   private inspirationDAO: InspirationDAO = new InspirationDAO(this.dbManager);
   
   aboutToAppear() {
-    const params = router.getParams() as {
-      filterType: string,
-      filterValue: string,
-      title?: string
-    };
+    const params = router.getParams() as RouterParams;
     
     this.filterType = params.filterType || '';
     this.filterValue = params.filterValue || '';
@@ -38,22 +45,23 @@ struct InspirationFilterPage {
       // 根据筛选类型加载数据
       switch (this.filterType) {
         case 'category':
-          this.inspirations = await this.inspirationDAO.getInspirationsByCategory(this.filterValue);
+          this.inspirations = await this.inspirationDAO.getInspirationsByFilters({ tags: [this.filterValue] });
           break;
         case 'tag':
-          this.inspirations = await this.inspirationDAO.getInspirationsByTag(this.filterValue);
+          this.inspirations = await this.inspirationDAO.getInspirationsByFilters({ tags: [this.filterValue] });
           break;
         case 'budget':
+          const budgetRange = this.getBudgetRange(this.filterValue);
           this.inspirations = await this.inspirationDAO.getInspirationsByBudgetRange(
-            this.getBudgetRange(this.filterValue)
+            budgetRange.min, budgetRange.max
           );
           break;
         default:
           this.inspirations = await this.inspirationDAO.getAllInspirations();
       }
       
-      // 加载可用标签
-      this.availableTags = await this.inspirationDAO.getTagsForInspirations(this.inspirations.map(i => i.id));
+      // 暂时使用空数组，后续可以从数据库获取标签
+      this.availableTags = [];
       
       this.applyFilters();
     } catch (error) {
@@ -63,7 +71,7 @@ struct InspirationFilterPage {
     }
   }
   
-  getBudgetRange(budgetType: string): { min: number, max: number } {
+  getBudgetRange(budgetType: string): BudgetRange {
     switch (budgetType) {
       case '50元以下':
         return { min: 0, max: 50 };
@@ -97,7 +105,7 @@ struct InspirationFilterPage {
         filtered.sort((a, b) => (b.budgetRange.min || 0) - (a.budgetRange.min || 0));
         break;
       case 'popular':
-        filtered.sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+        filtered.sort(() => 0); // 暂时不支持按热度排序
         break;
     }
     
@@ -137,10 +145,9 @@ struct InspirationFilterPage {
       // 顶部导航栏
       Row() {
         Button() {
-          Image($r('app.media.ic_back'))
-            .width(24)
-            .height(24)
-            .fillColor('#333333')
+          Text('←')
+          .fontSize(24)
+          .fontColor('#333333')
         }
         .width(40)
         .height(40)
@@ -209,10 +216,9 @@ struct InspirationFilterPage {
                 Text('排序')
                   .fontSize(12)
                   .fontColor('#666666')
-                Image($r('app.media.ic_sort'))
-                  .width(16)
-                  .height(16)
-                  .fillColor('#666666')
+                Text('⇅')
+                  .fontSize(16)
+                  .fontColor('#666666')
                   .margin({ left: 4 })
               }
             }
@@ -240,10 +246,10 @@ struct InspirationFilterPage {
           // 灵感列表
           if (this.filteredInspirations.length === 0) {
             Column() {
-              Image($r('app.media.ic_empty'))
+              Text('📭')
+                .fontSize(80)
                 .width(80)
                 .height(80)
-                .fillColor('#CCCCCC')
               
               Text('暂无相关创意')
                 .fontSize(16)
@@ -300,11 +306,21 @@ struct InspirationFilterPage {
     Column() {
       Row() {
         // 左侧图片
-        Image(inspiration.imageUrl || $r('app.media.ic_placeholder'))
-          .width(80)
-          .height(80)
-          .borderRadius(8)
-          .objectFit(ImageFit.Cover)
+        if (inspiration.images && inspiration.images.length > 0) {
+           Image(inspiration.images[0])
+             .width(80)
+             .height(80)
+             .borderRadius(8)
+             .objectFit(ImageFit.Cover)
+         } else {
+           Text('🎁')
+             .fontSize(40)
+             .width(80)
+             .height(80)
+             .borderRadius(8)
+             .backgroundColor('#F0F0F0')
+             .textAlign(TextAlign.Center)
+         }
         
         // 右侧内容
         Column() {
