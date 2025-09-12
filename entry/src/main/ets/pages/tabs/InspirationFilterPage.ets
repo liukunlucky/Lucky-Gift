@@ -1,6 +1,7 @@
 import { Inspiration, InspirationTag } from '../../model/NewDataModels';
 import { InspirationDAO } from '../../database/InspirationDAO';
 import { NewDatabaseManager } from '../../database/NewDatabaseManager';
+import { MockData } from '../../data/MockData';
 import router from '@ohos.router';
 
 interface RouterParams {
@@ -60,6 +61,11 @@ struct InspirationFilterPage {
           this.inspirations = await this.inspirationDAO.getAllInspirations();
       }
       
+      // 如果数据库没有数据，使用mock数据
+      if (this.inspirations.length === 0) {
+        this.inspirations = this.getMockInspirations();
+      }
+      
       // 暂时使用空数组，后续可以从数据库获取标签
       this.availableTags = [];
       
@@ -69,6 +75,10 @@ struct InspirationFilterPage {
     } finally {
       this.isLoading = false;
     }
+  }
+
+  getMockInspirations(): Inspiration[] {
+    return MockData.getMockInspirations();
   }
   
   getBudgetRange(budgetType: string): BudgetRange {

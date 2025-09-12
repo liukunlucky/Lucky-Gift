@@ -3,9 +3,11 @@ import { GiftEvent, Contact } from '../../model/NewDataModels';
 import { GiftEventDAO } from '../../database/GiftEventDAO';
 import { ContactDAO } from '../../database/ContactDAO';
 import { NewDatabaseManager } from '../../database/NewDatabaseManager';
+import { MockData } from '../../data/MockData';
 
 @Component
 export struct RecordPage {
+  @Prop @Watch('onRefreshKeyChanged') refreshKey: number = 0;
   @State giftEvents: GiftEvent[] = [];
   @State filteredEvents: GiftEvent[] = [];
   @State selectedYear: number = new Date().getFullYear();
@@ -19,16 +21,31 @@ export struct RecordPage {
   private availableYears: number[] = [];
   private contacts: Contact[] = [];
 
-  aboutToAppear() {
+  async aboutToAppear() {
+    // 确保数据库已初始化
+    try {
+      await this.dbManager.initDatabase(getContext(this));
+      console.log('记录页面：数据库初始化成功');
+    } catch (error) {
+      console.error('记录页面：数据库初始化失败:', error);
+    }
+    
+    this.loadData();
+  }
+
+  onRefreshKeyChanged() {
+    console.log('记录页面：检测到刷新信号，重新加载数据...');
     this.loadData();
   }
 
   async loadData() {
     try {
       this.isLoading = true;
+      console.log('记录页面：开始加载数据...');
       
       // 加载礼物事件
       this.giftEvents = await this.giftEventDAO.getAllGiftEvents();
+      console.log('记录页面：加载到的事件数量:', this.giftEvents.length);
       
       // 如果没有数据，显示示例数据
       if (this.giftEvents.length === 0) {
@@ -55,67 +72,7 @@ export struct RecordPage {
 
   // 获取示例数据
   getMockGiftEvents(): GiftEvent[] {
-    return [
-      {
-        id: '1',
-        contactId: 'mom',
-        contactName: '妈妈',
-        occasion: '生日',
-        giftIdea: '手工编织围巾',
-        actualGift: '羊绒围巾 + 手写贺卡',
-        budget: 300,
-        actualCost: 280,
-        date: '2024-03-15',
-        story: '妈妈收到围巾时眼中含泪，说这是她收到过最温暖的礼物。她立刻就戴上了，说颜色正好配她的外套。',
-        reaction: '非常感动，当场就哭了',
-        mood: 'joyful',
-        images: ['/common/images/scarf_gift.jpg'],
-        tags: ['温暖', '手工', '实用'],
-        reminderSet: true,
-        reminderDate: '2025-03-15',
-        createdAt: '2024-03-15T10:30:00Z',
-        updatedAt: '2024-03-15T10:30:00Z'
-      },
-      {
-        id: '2',
-        contactId: 'boyfriend',
-        contactName: '男朋友',
-        occasion: '纪念日',
-        giftIdea: '定制相册',
-        actualGift: '我们的回忆相册 + 情侣手表',
-        budget: 500,
-        actualCost: 480,
-        date: '2024-02-14',
-        story: '翻看相册时我们一起回忆了很多美好时光，他说要把相册放在床头，每天都能看到我们的回忆。手表也很合适，我们约定要一起戴。',
-        reaction: '很惊喜，抱了我很久',
-        mood: 'romantic',
-        images: ['/common/images/album_gift.jpg'],
-        tags: ['浪漫', '回忆', '定制'],
-        reminderSet: true,
-        reminderDate: '2025-02-14',
-        createdAt: '2024-02-14T20:00:00Z',
-        updatedAt: '2024-02-14T20:00:00Z'
-      },
-      {
-        id: '3',
-        contactId: 'bestfriend',
-        contactName: '闺蜜小雨',
-        occasion: '毕业',
-        giftIdea: '护肤套装',
-        actualGift: '高端护肤套装 + 毕业祝福卡',
-        budget: 800,
-        actualCost: 750,
-        date: '2024-06-20',
-        story: '她一直想试这个牌子的护肤品但舍不得买。收到礼物时她说我太了解她了，我们约定要一起变美变优秀。',
-        reaction: '开心到跳起来',
-        mood: 'excited',
-        images: ['/common/images/skincare_gift.jpg'],
-        tags: ['美容', '友谊', '毕业'],
-        reminderSet: false,
-        createdAt: '2024-06-20T15:00:00Z',
-        updatedAt: '2024-06-20T15:00:00Z'
-      }
-    ];
+    return MockData.getMockGiftEvents();
   }
 
   // 生成可用年份
@@ -167,7 +124,8 @@ export struct RecordPage {
     router.pushUrl({
       url: 'pages/tabs/CreateGiftEventPage',
       params: {
-        eventId: event.id
+        eventId: event.id,
+        isEdit: true
       }
     });
   }
@@ -180,17 +138,29 @@ export struct RecordPage {
     return `${month}月${day}日`;
   }
 
-  // 获取心情图标
-  getMoodIcon(mood: string | undefined): Resource {
-    switch (mood) {
-      case 'joyful': return $r('app.media.icon_happy')
-      case 'romantic': return $r('app.media.icon_lm')
-      case 'excited': return $r('app.media.icon_xf')
-      case 'grateful': return $r('app.media.icon_gj')
-      case 'surprised': return $r('app.media.icon_jx')
-      case 'touched': return $r('app.media.icon_gd')
-      default: return $r('app.media.icon_happy')
+  private getIconByMood(mood: string | undefined): Resource {
+    if (mood==='开心') {
+      return $r('app.media.icon_happy');
     }
+    if (mood==='兴奋') {
+      return $r('app.media.icon_xf');
+    }
+    if (mood==='感动') {
+      return $r('app.media.icon_gd');
+    }
+    if (mood==='紧张') {
+      return $r('app.media.icon_jz');
+    }
+    if (mood==='期待') {
+      return $r('app.media.icon_qd');
+    }
+    if (mood==='满足') {
+      return $r('app.media.icon_mz');
+    }
+    if (mood==='温暖') {
+      return $r('app.media.icon_wn');
+    }
+    return $r('app.media.icon_other');
   }
 
   // 获取预算状态颜色
@@ -233,18 +203,16 @@ export struct RecordPage {
         .padding({ left: 12, right: 12 })
         .justifyContent(FlexAlign.Center)
         .alignItems(VerticalAlign.Center)
+        .visibility(this.giftEvents.length > 0 ? Visibility.Visible : Visibility.Hidden)
         .onClick(() => {
           this.showFilterDialog = true;
         })
         
         // 添加按钮
-        Button('+')
-          .fontSize(20)
-          .width(40)
-          .height(40)
-          .backgroundColor('#FF6B35')
-          .fontColor(Color.White)
-          .borderRadius(20)
+        Image($r('app.media.ic_add'))
+          .width(36)
+          .height(36)
+          .fillColor('#FF6B35')
           .onClick(() => {
             this.navigateToCreateRecord();
           })
@@ -262,6 +230,7 @@ export struct RecordPage {
             .width(50)
             .height(50)
             .color('#FF6B35')
+            .margin({ top: 100 })
           
           Text('加载中...')
             .fontSize(14)
@@ -270,7 +239,7 @@ export struct RecordPage {
         }
         .width('100%')
         .height('60%')
-        .justifyContent(FlexAlign.Center)
+        .justifyContent(FlexAlign.Start)
         .alignItems(HorizontalAlign.Center)
       } else {
         if (this.filteredEvents.length === 0) {
@@ -280,7 +249,7 @@ export struct RecordPage {
               .width(64)
               .height(64)
               .fillColor('#CCCCCC')
-              .margin({ bottom: 20 })
+              .margin({ bottom: 20, top: 100 })
             
             Text('还没有记录哦')
               .fontSize(18)
@@ -303,7 +272,7 @@ export struct RecordPage {
           }
           .width('100%')
           .height('60%')
-          .justifyContent(FlexAlign.Center)
+          .justifyContent(FlexAlign.Start)
           .alignItems(HorizontalAlign.Center)
           .padding(32)
         } else {
@@ -386,7 +355,7 @@ export struct RecordPage {
           .alignItems(HorizontalAlign.Start)
           
           Blank()
-          Image(this.getMoodIcon(event.mood))
+          Image(this.getIconByMood(event.mood))
             .width(20)
             .height(20)
             .fillColor('#CCCCCC')
@@ -401,6 +370,16 @@ export struct RecordPage {
             .fontColor('#333333')
             .fontWeight(FontWeight.Medium)
             .margin({ bottom: 8 })
+          
+          // 图片展示
+          if (event.images && event.images.length > 0) {
+            Image(event.images[0])
+              .width('100%')
+              .height(120)
+              .objectFit(ImageFit.Cover)
+              .borderRadius(8)
+              .margin({ bottom: 8 })
+          }
           
           if (event.story) {
             Text(event.story)

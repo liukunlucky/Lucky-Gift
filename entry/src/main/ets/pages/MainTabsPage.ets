@@ -2,15 +2,36 @@ import { BrowsePage } from './tabs/BrowsePage';
 import { RecordPage } from './tabs/RecordPage';
 import { ToolsPage } from './tabs/ToolsPage';
 import { ProfilePage } from './tabs/ProfilePage';
+import router from '@ohos.router';
+import app from '@system.app';
+import { promptAction } from '@kit.ArkUI';
+
+interface RouteParams {
+  targetTab?: number;
+}
 
 @Entry
 @Component
 struct MainTabsPage {
   @State currentTabIndex: number = 0;
+  @State recordPageRefreshKey: number = 0;
   private tabsController: TabsController = new TabsController();
+  private lastExitTime: number = -1;
+
+  aboutToAppear() {
+    // 检查是否有指定的目标tab
+    const params = router.getParams() as RouteParams;
+    if (params && params.targetTab !== undefined) {
+      this.currentTabIndex = params.targetTab;
+      // 如果目标是记录页面，触发刷新
+      if (params.targetTab === 1) {
+        this.recordPageRefreshKey++;
+      }
+    }
+  }
 
   build() {
-    Tabs({ barPosition: BarPosition.End, controller: this.tabsController }) {
+    Tabs({ barPosition: BarPosition.End, controller: this.tabsController, index: this.currentTabIndex }) {
       // 浏览Tab
       TabContent() {
         BrowsePage()
@@ -19,7 +40,7 @@ struct MainTabsPage {
 
       // 记录Tab
       TabContent() {
-        RecordPage()
+        RecordPage({ refreshKey: this.recordPageRefreshKey })
       }
       .tabBar(this.buildTabBarItem(1, '记录', $r('app.media.icon_record')))
 
@@ -37,8 +58,13 @@ struct MainTabsPage {
     }
     .onChange((index: number) => {
       this.currentTabIndex = index;
+      // 当切换到记录页面时，触发数据刷新
+      if (index === 1) {
+        this.recordPageRefreshKey++;
+      }
     })
     .animationDuration(300)
+    .scrollable(false)
     .backgroundColor('#F8F9FA')
     .barMode(BarMode.Fixed)
   }
@@ -49,12 +75,12 @@ struct MainTabsPage {
       Image(icon)
         .width(24)
         .height(24)
-        .fillColor(this.currentTabIndex === index ? '#007AFF' : '#007AFF')
+        .fillColor(this.currentTabIndex === index ? '#F34F40' : '#7F8C8D')
         .margin({ bottom: 4 })
 
       Text(title)
         .fontSize(10)
-        .fontColor(this.currentTabIndex === index ? '#FF6B35' : '#8E8E93')
+        .fontColor(this.currentTabIndex === index ? '#F34F40' : '#7F8C8D')
         .margin({ bottom: 2 }) // 添加底部间距
         .fontWeight(this.currentTabIndex === index ? FontWeight.Medium : FontWeight.Normal)
     }
@@ -67,5 +93,29 @@ struct MainTabsPage {
       this.currentTabIndex = index;
       this.tabsController.changeIndex(index);
     })
+  }
+
+  onBackPress(): boolean | void {
+    if (-1 == this.lastExitTime) {
+      this.lastExitTime = new Date().getTime();
+      promptAction.showToast({
+        message: "再按一次退出",
+        alignment: Alignment.Center
+      })
+      return true;
+    } else {
+      let currentTime = new Date().getTime();
+      if(currentTime - this.lastExitTime > 2000) {
+        promptAction.showToast({
+          message: "再按一次退出",
+          alignment: Alignment.Center
+        })
+        this.lastExitTime = currentTime;
+        return true;
+      } else {
+        app.terminate();
+      }
+    }
+    return false;
   }
 }

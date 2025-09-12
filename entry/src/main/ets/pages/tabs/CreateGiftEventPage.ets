@@ -5,7 +5,6 @@ import { InspirationDAO } from '../../database/InspirationDAO';
 import { NewDatabaseManager } from '../../database/NewDatabaseManager';
 import router from '@ohos.router';
 import picker from '@ohos.file.picker';
-import { BusinessError } from '@ohos.base';
 
 // 页面参数接口
 interface PageParams {
@@ -25,6 +24,7 @@ struct CreateGiftEventPage {
   
   // 表单数据
   @State selectedContact: Contact | null = null;
+  @State recipientName: string = '';
   @State eventTitle: string = '';
   @State eventDate: string = new Date().toISOString().split('T')[0];
   @State occasion: string = '';
@@ -47,18 +47,56 @@ struct CreateGiftEventPage {
   @State moods: string[] = [
     '开心', '兴奋', '感动', '紧张', '期待', '满足', '温暖', '其他'
   ];
+  @State showOccasionDialog: boolean = false;
+  @State customOccasion: string = '';
   
   private dbManager = new NewDatabaseManager();
   private giftEventDAO: GiftEventDAO = new GiftEventDAO(this.dbManager);
   private contactDAO: ContactDAO = new ContactDAO(this.dbManager);
   private inspirationDAO: InspirationDAO = new InspirationDAO(this.dbManager);
-  
-  aboutToAppear() {
+
+  private getIconByMood(mood: string): Resource {
+    if (mood==='开心') {
+      return $r('app.media.icon_happy');
+    }
+    if (mood==='兴奋') {
+      return $r('app.media.icon_xf');
+    }
+    if (mood==='感动') {
+      return $r('app.media.icon_gd');
+    }
+    if (mood==='紧张') {
+      return $r('app.media.icon_jz');
+    }
+    if (mood==='期待') {
+      return $r('app.media.icon_qd');
+    }
+    if (mood==='满足') {
+      return $r('app.media.icon_mz');
+    }
+    if (mood==='温暖') {
+      return $r('app.media.icon_wn');
+    }
+    return $r('app.media.icon_other');
+  }
+  async aboutToAppear() {
     const params: PageParams = router.getParams() as PageParams || {}
     
     if (params.eventId) {
       this.eventId = params.eventId;
       this.isEditMode = true;
+    }
+    
+    if (params.isEdit !== undefined) {
+      this.isEditMode = params.isEdit;
+    }
+    
+    // 确保数据库已初始化
+    try {
+      await this.dbManager.initDatabase(getContext(this));
+      console.log('数据库初始化成功');
+    } catch (error) {
+      console.error('数据库初始化失败:', error);
     }
     
     this.loadData(params);
@@ -103,7 +141,8 @@ struct CreateGiftEventPage {
   }
   
   loadEventData(event: GiftEvent) {
-    this.eventTitle = event.giftIdea;
+    this.recipientName = event.contactName || '';
+    this.eventTitle = event.occasion + ' - ' + event.contactName; // 组合事件标题
     this.eventDate = event.date.split('T')[0];
     this.occasion = event.occasion;
     this.giftIdea = event.giftIdea;
@@ -126,7 +165,7 @@ struct CreateGiftEventPage {
     try {
       const photoSelectOptions = new picker.PhotoSelectOptions();
       photoSelectOptions.MIMEType = picker.PhotoViewMIMETypes.IMAGE_TYPE;
-      photoSelectOptions.maxSelectNumber = 5 - this.selectedImages.length;
+      photoSelectOptions.maxSelectNumber = 3 - this.selectedImages.length;
       
       const photoViewPicker = new picker.PhotoViewPicker();
       const photoSelectResult = await photoViewPicker.select(photoSelectOptions);
@@ -143,17 +182,47 @@ struct CreateGiftEventPage {
     this.selectedImages.splice(index, 1);
   }
   
+  showDatePicker() {
+    DatePickerDialog.show({
+      start: new Date('1900-1-1'),
+      end: new Date('2100-12-31'),
+      selected: new Date(this.eventDate),
+      onAccept: (value: DatePickerResult) => {
+        const selectedDate = new Date(value.year!, value.month! + 1, value.day!);
+        this.eventDate = selectedDate.toISOString().split('T')[0];
+      }
+    });
+  }
+  
+  showOccasionPicker() {
+    this.showOccasionDialog = true;
+  }
+  
+  showReminderDatePicker() {
+    DatePickerDialog.show({
+      start: new Date(),
+      end: new Date('2100-12-31'),
+      selected: this.reminderDate ? new Date(this.reminderDate) : new Date(),
+      onAccept: (value: DatePickerResult) => {
+        const selectedDate = new Date(value.year!, value.month! + 1, value.day!);
+        this.reminderDate = selectedDate.toISOString().split('T')[0];
+      }
+    });
+  }
+  
   async saveEvent() {
     if (!this.validateForm()) {
+      console.log('表单验证失败');
       return;
     }
     
     try {
       this.isSaving = true;
+      console.log('开始保存事件...');
       
       const eventData: GiftEvent = {
-        contactId: this.selectedContact!.id,
-        contactName: this.selectedContact!.name,
+        contactId: '', // 不再需要contactId
+        contactName: this.recipientName,
         date: new Date(this.eventDate).toISOString(),
         occasion: this.occasion,
         giftIdea: this.giftIdea,
@@ -169,42 +238,122 @@ struct CreateGiftEventPage {
           new Date(this.reminderDate).toISOString() : undefined
       };
       
+      console.log('事件数据:', JSON.stringify(eventData));
+      
       if (this.isEditMode) {
+        console.log('更新事件:', this.eventId);
         await this.giftEventDAO.updateGiftEvent(this.eventId, eventData);
       } else {
-        await this.giftEventDAO.createGiftEvent(eventData as GiftEvent);
+        console.log('创建新事件');
+        const newId = await this.giftEventDAO.createGiftEvent(eventData as GiftEvent);
+        console.log('创建成功，ID:', newId);
       }
       
-      // 返回记录页面
-      router.back();
+      console.log('保存成功，返回记录页面');
+      // 返回主页面并切换到记录tab，触发数据刷新
+      router.replaceUrl({
+        url: 'pages/MainTabsPage',
+        params: {
+          targetTab: 1 // 切换到记录tab
+        }
+      });
     } catch (error) {
       console.error('保存事件失败:', error);
+      // 显示错误提示给用户
+      AlertDialog.show({
+        title: '保存失败',
+        message: '保存记录时出现错误，请重试',
+        confirm: {
+          value: '确定',
+          action: () => {}
+        }
+      });
     } finally {
       this.isSaving = false;
     }
   }
   
   validateForm(): boolean {
-    if (!this.selectedContact) {
-      // 显示错误提示
-      return false;
-    }
-    
-    if (!this.eventTitle.trim()) {
-      // 显示错误提示
+    if (!this.recipientName.trim()) {
+      console.log('收礼人姓名不能为空');
+      AlertDialog.show({
+        title: '提示',
+        message: '请输入收礼人姓名',
+        confirm: {
+          value: '确定',
+          action: () => {}
+        }
+      });
       return false;
     }
     
     if (!this.occasion) {
-      // 显示错误提示
+      console.log('场合不能为空');
+      AlertDialog.show({
+        title: '提示',
+        message: '请选择送礼场合',
+        confirm: {
+          value: '确定',
+          action: () => {}
+        }
+      });
       return false;
     }
     
+    console.log('表单验证通过');
     return true;
   }
   
   goBack() {
     router.back();
+  }
+  
+  showDeleteConfirmDialog() {
+    AlertDialog.show({
+      title: '确认删除',
+      message: '确定要删除这条记录吗？删除后无法恢复。',
+      primaryButton: {
+        value: '取消',
+        action: () => {}
+      },
+      secondaryButton: {
+        value: '删除',
+        fontColor: '#FF4444',
+        action: () => {
+          this.deleteEvent();
+        }
+      }
+    });
+  }
+  
+  async deleteEvent() {
+    try {
+      this.isSaving = true;
+      console.log('删除事件:', this.eventId);
+      
+      await this.giftEventDAO.deleteGiftEvent(this.eventId);
+      
+      console.log('删除成功，返回记录页面');
+      // 返回主页面并切换到记录tab，触发数据刷新
+      router.replaceUrl({
+        url: 'pages/MainTabsPage',
+        params: {
+          targetTab: 1 // 切换到记录tab
+        }
+      });
+    } catch (error) {
+      console.error('删除事件失败:', error);
+      AlertDialog.show({
+        title: '删除失败',
+        message: '删除记录时出现错误，请重试',
+        confirm: {
+          value: '确定',
+          action: () => {}
+        }
+      });
+    } finally {
+      this.isSaving = false;
+    }
   }
   
   build() {
@@ -228,23 +377,43 @@ struct CreateGiftEventPage {
           .layoutWeight(1)
           .textAlign(TextAlign.Center)
         
-        Button() {
-          if (this.isSaving) {
-            LoadingProgress()
-              .width(20)
-              .height(20)
-              .color('#FF6B35')
-          } else {
-            Text('保存')
-              .fontSize(16)
-              .fontColor('#FF6B35')
+        Row() {
+          // 删除按钮（仅编辑模式显示）
+          if (this.isEditMode) {
+            Button() {
+              Text('删除')
+                .fontSize(14)
+                .fontColor('#FF4444')
+            }
+            .width(50)
+            .height(32)
+            .backgroundColor(Color.Transparent)
+            .border({ width: 1, color: '#FF4444' })
+            .borderRadius(16)
+            .margin({ right: 8 })
+            .onClick(() => this.showDeleteConfirmDialog())
           }
+          
+          // 保存按钮
+          Button() {
+            if (this.isSaving) {
+              LoadingProgress()
+                .width(20)
+                .height(20)
+                .color('#FF6B35')
+            } else {
+              Text('保存')
+                .fontSize(16)
+                .fontColor('#FF6B35')
+            }
+          }
+          .width(60)
+          .height(40)
+          .backgroundColor(Color.Transparent)
+          .enabled(!this.isSaving)
+          .onClick(() => this.saveEvent())
         }
-        .width(60)
-        .height(40)
-        .backgroundColor(Color.Transparent)
-        .enabled(!this.isSaving)
-        .onClick(() => this.saveEvent())
+        .justifyContent(FlexAlign.End)
       }
       .width('100%')
       .height(56)
@@ -293,26 +462,14 @@ struct CreateGiftEventPage {
                   }
                   .margin({ bottom: 8 })
                   
-                  Button() {
-                    Row() {
-                      Text(this.selectedContact ? this.selectedContact.name : '选择收礼人')
-                        .fontSize(16)
-                        .fontColor(this.selectedContact ? '#333333' : '#999999')
-                        .layoutWeight(1)
-                      
-                      Text('→')
-                        .fontSize(16)
-                        .fontColor('#CCCCCC')
-                    }
-                  }
-                  .width('100%')
-                  .height(48)
-                  .backgroundColor('#F8F9FA')
-                  .borderRadius(8)
-                  .padding({ left: 16, right: 16 })
-                  .onClick(() => {
-                    // 显示联系人选择弹窗
-                  })
+                  TextInput({ placeholder: '输入收礼人姓名', text: this.recipientName })
+                    .fontSize(16)
+                    .backgroundColor('#F8F9FA')
+                    .borderRadius(8)
+                    .padding({ left: 16, right: 16 })
+                    .onChange((value: string) => {
+                       this.recipientName = value;
+                     })
                 }
                 .width('100%')
                 .alignItems(HorizontalAlign.Start)
@@ -332,7 +489,7 @@ struct CreateGiftEventPage {
                   }
                   .margin({ bottom: 8 })
                   
-                  TextInput({ placeholder: '为这次送礼起个名字' })
+                  TextInput({ placeholder: '为这次送礼起个名字', text: this.eventTitle })
                     .fontSize(16)
                     .backgroundColor('#F8F9FA')
                     .borderRadius(8)
@@ -371,7 +528,7 @@ struct CreateGiftEventPage {
                       .backgroundColor('#F8F9FA')
                       .borderRadius(8)
                       .onClick(() => {
-                        // 显示日期选择器
+                        this.showDatePicker();
                       })
                     }
                     .width('100%')
@@ -413,7 +570,7 @@ struct CreateGiftEventPage {
                       .borderRadius(8)
                       .padding({ left: 16, right: 16 })
                       .onClick(() => {
-                        // 显示场合选择弹窗
+                        this.showOccasionPicker();
                       })
                     }
                     .width('100%')
@@ -505,7 +662,7 @@ struct CreateGiftEventPage {
                     .margin({ bottom: 16 })
                   }
                   
-                  TextArea({ placeholder: '描述你的礼物创意...' })
+                  TextArea({ placeholder: '描述你的礼物创意...', text: this.giftIdea })
                     .fontSize(16)
                     .backgroundColor('#F8F9FA')
                     .borderRadius(8)
@@ -528,7 +685,7 @@ struct CreateGiftEventPage {
                   }
                   .margin({ bottom: 8 })
                   
-                  TextInput({ placeholder: '输入实际花费金额' })
+                  TextInput({ placeholder: '输入实际花费金额（单位：元）', text: this.actualCost > 0 ? this.actualCost.toString() : '' })
                     .fontSize(16)
                     .backgroundColor('#F8F9FA')
                     .borderRadius(8)
@@ -587,7 +744,7 @@ struct CreateGiftEventPage {
                       }
                     })
                     
-                    if (this.selectedImages.length < 5) {
+                    if (this.selectedImages.length < 3) {
                       GridItem() {
                         Button() {
                           Column() {
@@ -605,7 +762,7 @@ struct CreateGiftEventPage {
                         .height(80)
                         .backgroundColor('#F8F9FA')
                         .borderRadius(8)
-                        .border({ width: 1, color: '#EEEEEE', style: BorderStyle.Dashed })
+                        .border({ width: 1, color: '#CCCCCC', style: BorderStyle.Dashed })
                         .onClick(() => this.selectImages())
                       }
                     }
@@ -614,15 +771,15 @@ struct CreateGiftEventPage {
                   .columnsGap(8)
                   .rowsGap(8)
                   .margin({ bottom: 16 })
+                } else {
+                  Button('最多添加3张照片')
+                    .fontSize(16)
+                    .fontColor('#FF6B35')
+                    .backgroundColor('#FFF5F0')
+                    .borderRadius(8)
+                    .border({ width: 1, color: '#FF6B35', style: BorderStyle.Dashed })
+                    .onClick(() => this.selectImages())
                 }
-                
-                Button('添加照片')
-                  .fontSize(16)
-                  .fontColor('#FF6B35')
-                  .backgroundColor('#FFF5F0')
-                  .borderRadius(8)
-                  .border({ width: 1, color: '#FF6B35', style: BorderStyle.Dashed })
-                  .onClick(() => this.selectImages())
               }
             }
             .width('100%')
@@ -649,7 +806,7 @@ struct CreateGiftEventPage {
                   }
                   .margin({ bottom: 8 })
                   
-                  TextArea({ placeholder: '记录送礼的过程和背景...' })
+                  TextArea({ placeholder: '记录送礼的过程和背景...', text: this.story })
                     .fontSize(16)
                     .backgroundColor('#F8F9FA')
                     .borderRadius(8)
@@ -672,15 +829,28 @@ struct CreateGiftEventPage {
                   }
                   .margin({ bottom: 8 })
                   
-                  TextArea({ placeholder: '记录对方收到礼物时的反应...' })
-                    .fontSize(16)
-                    .backgroundColor('#F8F9FA')
-                    .borderRadius(8)
-                    .padding(16)
-                    .height(80)
-                    .onChange((value: string) => {
-                      this.reaction = value;
+                  Flex({ wrap: FlexWrap.Wrap }) {
+                    ForEach(this.moods, (mood: string) => {
+                      Button() {
+                        Row() {
+                          Image(this.getIconByMood(mood))
+                            .width(14)
+                            .height(14)
+                            .margin({ right: 4 })
+                          Text(mood)
+                            .fontSize(14)
+                        }
+                      }
+                      .fontColor(this.reaction === mood ? '#FFFFFF' : '#666666')
+                      .backgroundColor(this.reaction === mood ? '#FF6B35' : '#F5F5F5')
+                      .borderRadius(16)
+                      .padding({ left: 16, right: 16, top: 8, bottom: 8 })
+                      .margin({ right: 8, bottom: 8 })
+                      .onClick(() => {
+                        this.reaction = this.reaction === mood ? '' : mood;
+                      })
                     })
+                  }
                 }
                 .width('100%')
                 .alignItems(HorizontalAlign.Start)
@@ -697,16 +867,24 @@ struct CreateGiftEventPage {
                   
                   Flex({ wrap: FlexWrap.Wrap }) {
                     ForEach(this.moods, (mood: string) => {
-                      Button(mood)
-                        .fontSize(14)
-                        .fontColor(this.mood === mood ? '#FFFFFF' : '#666666')
-                        .backgroundColor(this.mood === mood ? '#FF6B35' : '#F5F5F5')
-                        .borderRadius(16)
-                        .padding({ left: 16, right: 16, top: 8, bottom: 8 })
-                        .margin({ right: 8, bottom: 8 })
-                        .onClick(() => {
-                          this.mood = this.mood === mood ? '' : mood;
-                        })
+                      Button() {
+                        Row() {
+                          Image(this.getIconByMood(mood))
+                            .width(14)
+                            .height(14)
+                            .margin({ right: 4 })
+                          Text(mood)
+                            .fontSize(14)
+                        }
+                      }
+                      .fontColor(this.mood === mood ? '#FFFFFF' : '#666666')
+                      .backgroundColor(this.mood === mood ? '#FF6B35' : '#F5F5F5')
+                      .borderRadius(16)
+                      .padding({ left: 16, right: 16, top: 8, bottom: 8 })
+                      .margin({ right: 8, bottom: 8 })
+                      .onClick(() => {
+                        this.mood = this.mood === mood ? '' : mood;
+                      })
                     })
                   }
                 }
@@ -773,7 +951,7 @@ struct CreateGiftEventPage {
                       .backgroundColor('#F8F9FA')
                       .borderRadius(8)
                       .onClick(() => {
-                        // 显示日期选择器
+                        this.showReminderDatePicker();
                       })
                     }
                     .width('100%')
@@ -799,5 +977,93 @@ struct CreateGiftEventPage {
     .width('100%')
     .height('100%')
     .backgroundColor('#F8F9FA')
+    .bindSheet($$this.showOccasionDialog, this.occasionPickerSheet(), {
+      height: 400,
+      dragBar: true,
+      backgroundColor: '#FFFFFF'
+    })
+  }
+  
+  @Builder
+  occasionPickerSheet() {
+    Column() {
+      Text('选择场合')
+        .fontSize(18)
+        .fontWeight(FontWeight.Medium)
+        .margin({ top: 20, bottom: 20 })
+      
+      List() {
+        ForEach(this.occasions, (occasion: string) => {
+          ListItem() {
+            Row() {
+              Text(occasion)
+                .fontSize(16)
+                .fontColor('#333333')
+                .layoutWeight(1)
+              
+              if (this.occasion === occasion) {
+                Text('✓')
+                  .fontSize(16)
+                  .fontColor('#FF6B35')
+              }
+            }
+            .width('100%')
+            .height(48)
+            .padding({ left: 20, right: 20 })
+            .onClick(() => {
+              if (occasion === '其他') {
+                // 显示自定义输入
+                this.occasion = '';
+                this.showCustomOccasionInput();
+              } else {
+                this.occasion = occasion;
+                this.showOccasionDialog = false;
+              }
+            })
+          }
+        })
+      }
+      .divider({ strokeWidth: 1, color: '#F0F0F0' })
+      
+      if (this.occasion === '' && this.customOccasion !== '') {
+        Column() {
+          Text('自定义场合')
+            .fontSize(14)
+            .fontColor('#666666')
+            .margin({ top: 20, bottom: 10 })
+          
+          TextInput({ placeholder: '请输入自定义场合', text: this.customOccasion })
+            .fontSize(16)
+            .backgroundColor('#F8F9FA')
+            .borderRadius(8)
+            .padding({ left: 16, right: 16 })
+            .margin({ bottom: 20 })
+            .onChange((value: string) => {
+              this.customOccasion = value;
+            })
+          
+          Button('确定')
+            .fontSize(16)
+            .fontColor('#FFFFFF')
+            .backgroundColor('#FF6B35')
+            .borderRadius(8)
+            .width('100%')
+            .height(44)
+            .onClick(() => {
+              if (this.customOccasion.trim()) {
+                this.occasion = this.customOccasion.trim();
+                this.showOccasionDialog = false;
+                this.customOccasion = '';
+              }
+            })
+        }
+        .padding({ left: 20, right: 20 })
+      }
+    }
+    .width('100%')
+  }
+  
+  showCustomOccasionInput() {
+    this.customOccasion = '';
   }
 }

@@ -3,15 +3,32 @@ import { Inspiration } from '../../model/NewDataModels';
 import { InspirationDAO } from '../../database/InspirationDAO';
 import { NewDatabaseManager } from '../../database/NewDatabaseManager';
 import { InspirationDataInitializer } from '../../database/InspirationDataInitializer';
+import { MockData } from '../../data/MockData';
 
-// 快速筛选器接口
+// 搜索条件接口
+interface SearchCondition {
+  id: string;
+  label: string;
+  type: string;
+  options: SearchOption[];
+  selectedValue?: string;
+  selectedLabel?: string;
+}
+
+// 搜索选项接口
+interface SearchOption {
+  label: string;
+  value: string;
+}
+
+// 快速筛选器接口（保留兼容）
 interface QuickFilter {
   label: string;
   type: string;
   value: string;
 }
 
-// 分类导航接口
+// 分类导航接口（保留兼容）
 interface Category {
   title: string;
   icon: Resource;
@@ -25,6 +42,11 @@ export struct BrowsePage {
   @State selectedFilters: string[] = [];
   @State searchKeyword: string = '';
   @State isLoading: boolean = true;
+  
+  // 新增：多维度搜索状态
+  @State searchConditions: SearchCondition[] = [];
+  @State activeDropdownId: string = '';
+  @State showDropdown: boolean = false;
   
   private dbManager = new NewDatabaseManager();
   private inspirationDAO: InspirationDAO = new InspirationDAO(this.dbManager);
@@ -75,7 +97,70 @@ export struct BrowsePage {
   ];
 
   aboutToAppear() {
+    this.initializeSearchConditions();
     this.loadInspirations();
+  }
+  
+  // 初始化搜索条件
+  initializeSearchConditions() {
+    this.searchConditions = [
+      {
+        id: 'audience',
+        label: '送给谁',
+        type: 'audience',
+        options: [
+          { label: '不限', value: '' },
+          { label: '父母长辈', value: '父母' },
+          { label: '恋人爱人', value: '恋人' },
+          { label: '闺蜜好友', value: '朋友' },
+          { label: '同事领导', value: '同事' },
+          { label: '小朋友', value: '孩子' },
+          { label: '老师导师', value: '老师' }
+        ]
+      },
+      {
+        id: 'occasion',
+        label: '什么场合',
+        type: 'occasion',
+        options: [
+          { label: '不限', value: '' },
+          { label: '生日庆祝', value: '生日' },
+          { label: '恋爱纪念日', value: '纪念日' },
+          { label: '节日祝福', value: '节日' },
+          { label: '毕业典礼', value: '毕业' },
+          { label: '升职加薪', value: '升职' },
+          { label: '感谢答谢', value: '感谢' }
+        ]
+      },
+      {
+        id: 'budget',
+        label: '预算范围',
+        type: 'budget',
+        options: [
+          { label: '不限', value: '' },
+          { label: '50元以下', value: '50' },
+          { label: '50-100元', value: '100' },
+          { label: '100-200元', value: '200' },
+          { label: '200-500元', value: '500' },
+          { label: '500-1000元', value: '1000' },
+          { label: '1000元以上', value: '9999' }
+        ]
+      },
+      {
+        id: 'type',
+        label: '礼物类型',
+        type: 'type',
+        options: [
+          { label: '不限', value: '' },
+          { label: 'DIY手作', value: 'DIY手作' },
+          { label: '体验服务', value: '体验服务' },
+          { label: '日用实物', value: '日用实物' },
+          { label: '创意新奇', value: '创意新奇' },
+          { label: '科技数码', value: '科技数码' },
+          { label: '美妆护肤', value: '美妆护肤' }
+        ]
+      }
+    ];
   }
 
   async loadInspirations() {
@@ -105,68 +190,10 @@ export struct BrowsePage {
 
   // 获取示例灵感数据
   getMockInspirations(): Inspiration[] {
-    return [
-      {
-        id: '1',
-        title: '为她定制一本专属故事书',
-        description: '收集你们的美好回忆，制作成精美的故事书',
-        detailedDescription: '这是一份充满爱意的礼物，将你们的点点滴滴记录下来，制作成独一无二的故事书。可以包含照片、文字、手绘插画等元素。',
-        images: ['/common/images/story_book.jpg'],
-        tags: ['浪漫', '纪念', '定制', 'DIY'],
-        targetAudience: ['恋人'],
-        occasions: ['纪念日', '生日', '情人节'],
-        interests: ['阅读', '艺术'],
-        budgetRange: { min: 200, max: 500, label: '200-500元' },
-        giftType: 'DIY手作',
-        difficulty: 'medium',
-        timeRequired: '3-5天',
-        materials: ['相册', '打印照片', '彩笔', '装饰贴纸'],
-        steps: ['收集照片和回忆', '设计页面布局', '打印和装订', '添加装饰元素'],
-        tips: ['提前准备照片', '注意排版美观', '可以加入手写文字'],
-        isRecommended: true,
-        createdAt: '2024-01-01T00:00:00Z'
-      },
-      {
-        id: '2',
-        title: '亲手制作妈妈的养生茶包',
-        description: '根据妈妈的体质，调配专属的养生茶',
-        detailedDescription: '为妈妈精心调配的养生茶包，既实用又贴心。可以根据季节和妈妈的身体状况选择不同的茶材。',
-        images: ['/common/images/tea_package.jpg'],
-        tags: ['养生', '健康', '手作', '贴心'],
-        targetAudience: ['父母'],
-        occasions: ['生日', '母亲节', '日常关怀'],
-        interests: ['养生', '茶艺'],
-        budgetRange: { min: 50, max: 200, label: '50-200元' },
-        giftType: 'DIY手作',
-        difficulty: 'easy',
-        timeRequired: '1-2天',
-        materials: ['各种茶叶', '小布袋', '标签', '包装盒'],
-        steps: ['了解妈妈体质', '选择合适茶材', '按比例调配', '包装成小袋'],
-        tips: ['咨询中医建议', '注意茶材搭配', '制作精美标签'],
-        isRecommended: true,
-        createdAt: '2024-01-02T00:00:00Z'
-      },
-      {
-        id: '3',
-        title: '智能手环健康管家',
-        description: '送给爱运动的朋友，监测健康数据',
-        detailedDescription: '现代人越来越注重健康，一款好的智能手环可以帮助朋友更好地管理健康，记录运动数据。',
-        images: ['/common/images/smart_watch.jpg'],
-        tags: ['科技', '健康', '运动', '实用'],
-        targetAudience: ['朋友', '同事'],
-        occasions: ['生日', '毕业', '升职'],
-        interests: ['健身', '科技'],
-        budgetRange: { min: 500, max: 1000, label: '500-1000元' },
-        giftType: '科技数码',
-        difficulty: 'easy',
-        timeRequired: '即买即送',
-        isRecommended: false,
-        createdAt: '2024-01-03T00:00:00Z'
-      }
-    ];
+    return MockData.getAllInspirations();
   }
 
-  // 应用筛选
+  // 应用筛选（新版本）
   applyFilters() {
     let result = this.inspirations;
     
@@ -180,7 +207,32 @@ export struct BrowsePage {
       );
     }
     
-    // 热门标签筛选
+    // 多维度条件筛选
+    this.searchConditions.forEach(condition => {
+      if (condition.selectedValue && condition.selectedValue !== '') {
+        switch (condition.type) {
+          case 'audience':
+            result = result.filter(item => item.targetAudience.includes(condition.selectedValue!));
+            break;
+          case 'occasion':
+            result = result.filter(item => item.occasions.includes(condition.selectedValue!));
+            break;
+          case 'budget':
+            const budget = parseInt(condition.selectedValue!);
+            if (budget === 9999) {
+              result = result.filter(item => item.budgetRange.max >= 1000);
+            } else {
+              result = result.filter(item => item.budgetRange.max <= budget);
+            }
+            break;
+          case 'type':
+            result = result.filter(item => item.giftType === condition.selectedValue);
+            break;
+        }
+      }
+    });
+    
+    // 兼容原有热门标签筛选
     this.selectedFilters.forEach(filter => {
       const filterConfig = this.hotTags.find(f => f.label === filter);
       if (filterConfig) {
@@ -203,6 +255,42 @@ export struct BrowsePage {
     });
     
     this.filteredInspirations = result;
+  }
+  
+  // 显示/隐藏下拉框
+  toggleDropdown(conditionId: string) {
+    if (this.activeDropdownId === conditionId && this.showDropdown) {
+      this.showDropdown = false;
+      this.activeDropdownId = '';
+    } else {
+      this.activeDropdownId = conditionId;
+      this.showDropdown = true;
+    }
+  }
+  
+  // 选择搜索条件
+  selectSearchOption(conditionId: string, option: SearchOption) {
+    const conditionIndex = this.searchConditions.findIndex(c => c.id === conditionId);
+    if (conditionIndex !== -1) {
+      this.searchConditions[conditionIndex].selectedValue = option.value;
+      this.searchConditions[conditionIndex].selectedLabel = option.label;
+    }
+    this.showDropdown = false;
+    this.activeDropdownId = '';
+    this.applyFilters();
+  }
+  
+  // 重置所有筛选条件
+  resetAllFilters() {
+    this.searchConditions.forEach(condition => {
+      condition.selectedValue = '';
+      condition.selectedLabel = '';
+    });
+    this.selectedFilters = [];
+    this.searchKeyword = '';
+    this.showDropdown = false;
+    this.activeDropdownId = '';
+    this.applyFilters();
   }
 
   // 切换筛选器
@@ -286,177 +374,212 @@ export struct BrowsePage {
   }
 
   build() {
-    Column() {
-      // 顶部搜索栏
-      Row() {
-        TextInput({ placeholder: '搜索灵感创意...' })
-          .layoutWeight(1)
-          .height(40)
-          .borderRadius(20)
-          .backgroundColor('#F0F0F0')
-          .padding({ left: 16, right: 16 })
-          .onChange((value: string) => {
-            this.searchKeyword = value;
-            this.applyFilters();
-          })
-      }
-      .width('100%')
-      .padding({ left: 16, right: 16, top: 12, bottom: 12 })
-      .backgroundColor(Color.White)
-
-      if (this.isLoading) {
-        // 加载状态
-        Column() {
-          LoadingProgress()
-            .width(50)
-            .height(50)
-            .color('#FF6B35')
+    Stack() {
+      Column() {
+        // 顶部搜索栏
+        Row() {
+          TextInput({ placeholder: '搜索灵感创意...' })
+            .layoutWeight(1)
+            .height(40)
+            .borderRadius(20)
+            .backgroundColor('#F0F0F0')
+            .padding({ left: 16, right: 16 })
+            .onChange((value: string) => {
+              this.searchKeyword = value;
+              this.applyFilters();
+            })
           
-          Text('加载中...')
+          // 重置按钮
+          Button('重置')
             .fontSize(14)
-            .fontColor('#666666')
-            .margin({ top: 12 })
+            .height(40)
+            .padding({ left: 16, right: 16 })
+            .backgroundColor('#FF6B35')
+            .fontColor(Color.White)
+            .borderRadius(20)
+            .margin({ left: 12 })
+            .onClick(() => {
+              this.resetAllFilters();
+            })
         }
         .width('100%')
-        .height('60%')
-        .justifyContent(FlexAlign.Center)
-        .alignItems(HorizontalAlign.Center)
-      } else {
-        Scroll() {
-          Column() {
-            // 热门标签
-            Column() {
-              Text('🔥 热门推荐')
-                .fontSize(16)
-                .fontWeight(FontWeight.Medium)
-                .margin({ bottom: 12 })
-                .alignSelf(ItemAlign.Start)
-              
-              Flex({ wrap: FlexWrap.Wrap, justifyContent: FlexAlign.Start }) {
-                ForEach(this.hotTags, (tag: QuickFilter) => {
-                  Button(tag.label)
-                    .fontSize(12)
-                    .height(32)
-                    .padding({ left: 12, right: 12 })
-                    .margin({ right: 8, bottom: 8 })
-                    .backgroundColor(this.selectedFilters.includes(tag.label) ? '#FF6B35' : '#F0F0F0')
-                    .fontColor(this.selectedFilters.includes(tag.label) ? Color.White : '#333333')
-                    .borderRadius(16)
-                    .onClick(() => {
-                      this.toggleFilter(tag.label);
-                    })
-                })
-              }
-            }
-            .width('100%')
-            .padding(16)
-            .backgroundColor(Color.White)
-            .margin({ bottom: 8 })
-
-            // 分类导航
-            Column() {
-              Text('🎯 精准分类')
-                .fontSize(16)
-                .fontWeight(FontWeight.Medium)
-                .margin({ bottom: 12 })
-                .alignSelf(ItemAlign.Start)
-              
-              Grid() {
-                ForEach(this.categories, (category: Category) => {
-                  GridItem() {
-                    Column() {
-                      Image(category.icon)
-                        .width(24)
-                        .height(24)
-                        .margin({ bottom: 4 })
-                      
-                      Text(category.title)
-                        .fontSize(14)
-                        .fontColor('#333333')
-                        .textAlign(TextAlign.Center)
-                    }
-                    .width('100%')
-                    .height(80)
-                    .justifyContent(FlexAlign.Center)
-                    .alignItems(HorizontalAlign.Center)
-                    .backgroundColor('#F8F9FA')
-                    .borderRadius(12)
-                    .onClick(() => {
-                      this.navigateToCategory(category);
-                    })
-                  }
-                })
-              }
-              .columnsTemplate('1fr 1fr')
-              .rowsTemplate('1fr 1fr 1fr')
-              .rowsGap(12)
-              .columnsGap(12)
-              .height(288)
-            }
-            .width('100%')
-            .padding(16)
-            .backgroundColor(Color.White)
-            .margin({ bottom: 8 })
-
-            // 灵感推荐列表
-            Column() {
+        .padding({ left: 16, right: 16, top: 12, bottom: 12 })
+        .backgroundColor(Color.White)
+        
+        // 多维度搜索条件栏
+        Row() {
+          ForEach(this.searchConditions, (condition: SearchCondition) => {
+            Button() {
               Row() {
-                Text('灵感推荐')
-                  .fontSize(16)
-                  .fontWeight(FontWeight.Medium)
+                Text(condition.selectedLabel || condition.label)
+                  .fontSize(14)
+                  .fontColor(condition.selectedValue ? Color.White : '#333333')
+                  .maxLines(1)
+                  .textOverflow({ overflow: TextOverflow.Ellipsis })
                 
-                Blank()
-                
-                Text(`共${this.filteredInspirations.length}个创意`)
-                  .fontSize(12)
-                  .fontColor('#666666')
+                Text('▼')
+                   .fontSize(10)
+                   .fontColor(condition.selectedValue ? Color.White : '#666666')
+                   .margin({ left: 4 })
               }
-              .width('100%')
-              .margin({ bottom: 12 })
-              
-              if (this.filteredInspirations.length === 0) {
-                Column() {
-                  Image($r('app.media.icon_search'))
-              .width(64)
-              .height(64)
-              .fillColor('#CCCCCC')
-              .margin({ bottom: 16 }) // 增加底部间距
-                  
-                  Text('暂无匹配的灵感')
+            }
+            .layoutWeight(1)
+            .height(36)
+            .backgroundColor(condition.selectedValue ? '#FF6B35' : '#F8F9FA')
+            .borderRadius(18)
+            .margin({ right: condition.id === 'type' ? 0 : 8 })
+            .onClick(() => {
+              this.toggleDropdown(condition.id);
+            })
+          })
+        }
+        .width('100%')
+        .padding({ left: 16, right: 16, bottom: 12 })
+        .backgroundColor(Color.White)
+
+        if (this.isLoading) {
+          // 加载状态
+          Column() {
+            LoadingProgress()
+              .width(50)
+              .height(50)
+              .color('#FF6B35')
+            
+            Text('加载中...')
+              .fontSize(14)
+              .fontColor('#666666')
+              .margin({ top: 12 })
+          }
+          .width('100%')
+          .height('60%')
+          .justifyContent(FlexAlign.Center)
+          .alignItems(HorizontalAlign.Center)
+        } else {
+          Scroll() {
+            Column() {
+              // 灵感推荐列表
+              Column() {
+                Row() {
+                  Text('灵感推荐')
                     .fontSize(16)
-                    .fontColor('#666666')
-                    .margin({ bottom: 12 }) // 增加底部间距
+                    .fontWeight(FontWeight.Medium)
                   
-                  Text('试试调整筛选条件或搜索关键词')
-                    .fontSize(14)
-                    .fontColor('#999999')
+                  Blank()
+                  
+                  Text(`共${this.filteredInspirations.length}个创意`)
+                    .fontSize(12)
+                    .fontColor('#666666')
                 }
                 .width('100%')
-                .height(200)
-                .justifyContent(FlexAlign.Center)
-                .alignItems(HorizontalAlign.Center)
-                .padding({ left: 24, right: 24 }) // 添加水平内边距
-              } else {
-                ForEach(this.filteredInspirations, (inspiration: Inspiration) => {
-                  this.buildInspirationCard(inspiration)
-                })
+                .margin({ bottom: 12 })
+                
+                if (this.filteredInspirations.length === 0) {
+                  Column() {
+                    Image($r('app.media.icon_search'))
+                      .width(64)
+                      .height(64)
+                      .fillColor('#CCCCCC')
+                      .margin({ bottom: 16 })
+                    
+                    Text('暂无匹配的灵感')
+                      .fontSize(16)
+                      .fontColor('#666666')
+                      .margin({ bottom: 12 })
+                    
+                    Text('试试调整筛选条件或搜索关键词')
+                      .fontSize(14)
+                      .fontColor('#999999')
+                  }
+                  .width('100%')
+                  .height(200)
+                  .justifyContent(FlexAlign.Center)
+                  .alignItems(HorizontalAlign.Center)
+                  .padding({ left: 24, right: 24 })
+                } else {
+                  ForEach(this.filteredInspirations, (inspiration: Inspiration) => {
+                    this.buildInspirationCard(inspiration)
+                  })
+                }
               }
+              .width('100%')
+              .padding(16)
+              .backgroundColor(Color.White)
             }
-            .width('100%')
-            .padding(16)
-            .backgroundColor(Color.White)
           }
+          .layoutWeight(1)
+          .scrollBar(BarState.Off)
+}
+      }
+      .width('100%')
+      .height('100%')
+      .backgroundColor('#F8F9FA')
+      
+      // 下拉框 - 在搜索条件栏下方展开
+      if (this.showDropdown) {
+        Column() {
+          // 占位空间 - 搜索栏和条件栏的高度
+          Column()
+            .width('100%')
+            .height(104) // 搜索栏40+padding24 + 条件栏36+padding12 = 112，调整为104
+          
+          // 下拉选项列表
+          Column() {
+            ForEach(this.searchConditions.find(c => c.id === this.activeDropdownId)?.options || [], (option: SearchOption) => {
+              Row() {
+                Text(option.label)
+                  .fontSize(16)
+                  .fontColor('#333333')
+                  .layoutWeight(1)
+                
+                if (this.searchConditions.find(c => c.id === this.activeDropdownId)?.selectedValue === option.value) {
+                   Text('✓')
+                     .fontSize(16)
+                     .fontColor('#FF6B35')
+                     .fontWeight(FontWeight.Bold)
+                 }
+              }
+              .width('100%')
+              .height(50)
+              .padding({ left: 20, right: 20 })
+              .backgroundColor(Color.White)
+              .onClick(() => {
+                this.selectSearchOption(this.activeDropdownId, option);
+              })
+              
+              if (option !== (this.searchConditions.find(c => c.id === this.activeDropdownId)?.options || []).slice(-1)[0]) {
+                Divider()
+                  .height(1)
+                  .color('#F0F0F0')
+              }
+            })
+          }
+           .width('90%')
+           .height(250)
+           .backgroundColor(Color.White)
+           .borderRadius(8)
+           .shadow({ radius: 8, color: '#1A000000', offsetX: 0, offsetY: 2 })
+           .margin({ left: 16, right: 16 })
+          
+          // 剩余空间 - 点击关闭下拉框
+          Column()
+            .width('100%')
+            .layoutWeight(1)
+            .onClick(() => {
+              this.showDropdown = false;
+              this.activeDropdownId = '';
+            })
         }
-        .layoutWeight(1)
-        .scrollBar(BarState.Off)
+        .width('100%')
+        .height('100%')
+        .justifyContent(FlexAlign.Start)
+        .alignItems(HorizontalAlign.Start)
       }
     }
-    .width('100%')
-    .height('100%')
-    .backgroundColor('#F8F9FA')
-  }
-
-  @Builder
+     .width('100%')
+     .height('100%')
+   }
+   
+   @Builder
   buildInspirationCard(inspiration: Inspiration) {
     Column() {
       Row() {

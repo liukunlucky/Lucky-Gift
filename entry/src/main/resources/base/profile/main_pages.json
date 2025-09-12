@@ -17,6 +17,9 @@
     "pages/GiftDetailPage",
     "pages/InspirationDetailPage",
     "pages/SettingPage",
-    "pages/tabs/InspirationFilterPage"
+    "pages/tabs/InspirationFilterPage",
+    "pages/profile/RelationshipNetworkPage",
+    "pages/profile/GiftReminderPage",
+    "pages/profile/GiftStatisticsPage"
   ]
 }

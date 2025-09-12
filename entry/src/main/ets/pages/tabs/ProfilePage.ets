@@ -52,7 +52,8 @@ export struct ProfilePage {
   @State showImportDialog: boolean = false;
   @State exportProgress: number = 0;
   @State importProgress: number = 0;
-  
+  @State userLevel: string = 'LV1';
+
   private dbManager = new NewDatabaseManager();
   private contactDAO: ContactDAO = new ContactDAO(this.dbManager);
   private inspirationDAO: InspirationDAO = new InspirationDAO(this.dbManager);
@@ -172,8 +173,11 @@ export struct ProfilePage {
   navigateToFeature(featureId: string) {
     switch (featureId) {
       case 'relationships':
-        // 暂时显示联系人数量信息，后续可添加联系人管理页面
-        console.log('关系网络功能：当前有', this.contacts.length, '个联系人');
+        router.pushUrl({
+          url: 'pages/profile/RelationshipNetworkPage'
+        }).catch((error: Error) => {
+          console.error('导航到关系网络页面失败:', error);
+        });
         break;
       case 'favorites':
         router.pushUrl({
@@ -181,13 +185,18 @@ export struct ProfilePage {
         });
         break;
       case 'reminders':
-        // 暂时显示提醒统计信息，后续可添加提醒设置页面
-        const remindersCount = this.contacts.filter(c => c.importantDates && c.importantDates.length > 0).length;
-        console.log('礼物提醒功能：当前有', remindersCount, '个联系人设置了重要日期提醒');
+        router.pushUrl({
+          url: 'pages/profile/GiftReminderPage'
+        }).catch((error: Error) => {
+          console.error('导航到礼物提醒页面失败:', error);
+        });
         break;
       case 'statistics':
-        // 暂时显示统计信息，后续可添加详细统计页面
-        console.log('送礼统计：总共', this.totalGiftEvents, '次送礼，花费', this.totalSpent, '元');
+        router.pushUrl({
+          url: 'pages/profile/GiftStatisticsPage'
+        }).catch((error: Error) => {
+          console.error('导航到送礼统计页面失败:', error);
+        });
         break;
     }
   }
@@ -372,10 +381,18 @@ export struct ProfilePage {
         Row() {
           // 头像
           Image($r('app.media.ic_mine'))
-            .width(60)
-            .height(60)
-            .borderRadius(30)
-            .backgroundColor('#F0F0F0')
+            .width(50)
+            .height(50)
+            .borderRadius(25)
+            .margin({ right: 16 })
+            .backgroundColor('#FFFFFF')
+            .padding(10)
+            .shadow({
+              radius: 4,
+              color: 'rgba(0,0,0,0.1)',
+              offsetX: 0,
+              offsetY: 2
+            })
           
           Column() {
             Text('我的送礼智库')
@@ -392,6 +409,24 @@ export struct ProfilePage {
           .margin({ left: 16 })
           
           Blank()
+          Text(this.userLevel)
+            .fontSize(14)
+            .fontWeight(FontWeight.Bold)
+            .fontColor($r('app.color.brand_color'))
+            .backgroundColor('#FFFFFF')
+            .padding({
+              left: 12,
+              right: 12,
+              top: 6,
+              bottom: 6
+            })
+            .borderRadius(12)
+            .shadow({
+              radius: 2,
+              color: 'rgba(0,0,0,0.1)',
+              offsetX: 0,
+              offsetY: 1
+            })
         }
         .width('100%')
         .margin({ bottom: 20 })
@@ -452,10 +487,10 @@ export struct ProfilePage {
         }
         .width('100%')
       }
-      .width('100%')
+      .width('90%')
       .padding(20)
       .backgroundColor('#FF6B35')
-      .borderRadius({ bottomLeft: 20, bottomRight: 20 })
+      .borderRadius(20).margin({top: 50})
 
       if (this.isLoading) {
         // 加载状态
@@ -487,12 +522,12 @@ export struct ProfilePage {
               
               ForEach(this.menuItems, (item: MenuItem) => {
                 Row() {
-                  Row() {
+                  Row({space : 10}) {
                     Image(item.icon)
-                      .width(60)
-                      .height(60)
-                      .fillColor('#CCCCCC')
-                    
+                      .width(24)
+                      .height(24)
+                      .fillColor('#2C3E50')
+
                     Column() {
                       Text(item.title)
                         .fontSize(15)
@@ -547,11 +582,11 @@ export struct ProfilePage {
               
               ForEach(this.dataMenuItems, (item: DataMenuItem) => {
                 Row() {
-                  Row() {
+                  Row({space : 10}) {
                     Image(item.icon)
-                      .width(60)
-                      .height(60)
-                      .fillColor('#CCCCCC')
+                      .width(24)
+                      .height(24)
+                      .fillColor('#2C3E50')
                     
                     Column() {
                       Text(item.title)
@@ -586,6 +621,10 @@ export struct ProfilePage {
             }
             .width('100%')
             .padding(16)
+            .bindSheet($$this.showImportDialog, this.buildImportDialog(), {
+              height: 300,
+              dragBar: true
+            })
 
             // 最近联系人
             if (this.contacts.length > 0) {
@@ -665,10 +704,7 @@ export struct ProfilePage {
       height: 300,
       dragBar: true
     })
-    .bindSheet($$this.showImportDialog, this.buildImportDialog(), {
-      height: 300,
-      dragBar: true
-    })
+
   }
 
   @Builder
