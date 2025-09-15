@@ -524,14 +524,18 @@ struct GiftDetailPage {
         .fontColor(this.isFavorite ? Color.White : '#666666')
         .layoutWeight(1)
         .margin({ right: 8 })
-        .onClick(this.toggleFavorite.bind(this))
+        .onClick(() => {
+          this.toggleFavorite();
+        })
       
       Button('立即购买')
         .fontSize(14)
         .backgroundColor('#4CAF50')
         .fontColor(Color.White)
         .layoutWeight(2)
-        .onClick(this.handlePurchase.bind(this))
+        .onClick(() => {
+          this.handlePurchase();
+        })
     }
     .width('100%')
     .padding(16)

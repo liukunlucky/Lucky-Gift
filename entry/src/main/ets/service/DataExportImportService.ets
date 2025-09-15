@@ -625,7 +625,7 @@ export class DataExportImportService {
       return filePath;
     } catch (error) {
       console.error('保存文件失败:', error);
-      throw error;
+      throw new Error('保存文件失败');
     }
   }
 
@@ -641,7 +641,7 @@ export class DataExportImportService {
       return String.fromCharCode.apply(null, new Uint8Array(buffer));
     } catch (error) {
       console.error('读取文件失败:', error);
-      throw error;
+      throw new Error('读取文件失败');
     }
   }
 

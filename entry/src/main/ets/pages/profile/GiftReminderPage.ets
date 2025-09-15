@@ -1,11 +1,13 @@
 import router from '@ohos.router';
-import { Contact, GiftEvent } from '../../model/NewDataModels';
+import { Contact, GiftEvent, Reminder } from '../../model/NewDataModels';
 import { ContactDAO } from '../../database/ContactDAO';
 import { GiftEventDAO } from '../../database/GiftEventDAO';
+import { ReminderDAO } from '../../database/ReminderDAO';
 import { NewDatabaseManager } from '../../database/NewDatabaseManager';
 import reminderAgentManager from '@ohos.reminderAgentManager';
 import notificationManager from '@ohos.notificationManager';
 import { BusinessError } from '@ohos.base';
+import { common } from '@kit.AbilityKit';
 
 interface ReminderItem {
   id: string;
@@ -14,7 +16,7 @@ interface ReminderItem {
   title: string;
   content: string;
   dateTime: string;
-  type: 'birthday' | 'anniversary' | 'custom';
+  type: 'gift_event' | 'important_date' | 'holiday';
   isCompleted: boolean;
   isEnabled: boolean;
   createdAt: string;
@@ -33,7 +35,7 @@ struct GiftReminderPage {
   @State contacts: Contact[] = [];
   @State isLoading: boolean = true;
   @State showAddDialog: boolean = false;
-  @State selectedType: string = 'birthday';
+  @State selectedType: string = 'gift_event';
   @State selectedContactId: string = '';
   @State reminderTitle: string = '';
   @State reminderContent: string = '';
@@ -44,9 +46,20 @@ struct GiftReminderPage {
   private dbManager = new NewDatabaseManager();
   private contactDao = new ContactDAO(this.dbManager);
   private giftEventDao = new GiftEventDAO(this.dbManager);
+  private reminderDao = new ReminderDAO(this.dbManager);
   
-  aboutToAppear() {
-    this.loadData();
+  async aboutToAppear() {
+    try {
+      // 初始化数据库
+      const context = getContext(this) as common.UIAbilityContext;
+      await this.dbManager.initDatabase(context);
+      
+      // 加载数据
+      await this.loadData();
+    } catch (error) {
+      console.error('页面初始化失败:', error);
+      this.isLoading = false;
+    }
   }
   
   async loadData() {
@@ -56,8 +69,8 @@ struct GiftReminderPage {
       // 加载联系人数据
       this.contacts = await this.contactDao.getAllContacts();
       
-      // 加载提醒数据（这里模拟数据，实际应该从数据库加载）
-      this.loadReminders();
+      // 加载提醒数据
+      await this.loadReminders();
       
     } catch (error) {
       console.error('加载提醒数据失败:', error);
@@ -66,34 +79,30 @@ struct GiftReminderPage {
     }
   }
   
-  loadReminders() {
-    // 模拟提醒数据，实际应该从数据库加载
-    this.reminders = [
-      {
-        id: '1',
-        contactId: '1',
-        contactName: '张三',
-        title: '张三的生日',
-        content: '记得准备生日礼物',
-        dateTime: '2024-03-15 09:00',
-        type: 'birthday',
-        isEnabled: true,
-        isCompleted: false,
-        createdAt: '2024-01-01 00:00:00'
-      },
-      {
-        id: '2',
-        contactId: '2',
-        contactName: '李四',
-        title: '结婚纪念日',
-        content: '李四夫妇的结婚纪念日',
-        dateTime: '2024-04-20 10:00',
-        type: 'anniversary',
-        isEnabled: true,
-        isCompleted: false,
-        createdAt: '2024-01-01 00:00:00'
-      }
-    ];
+  async loadReminders() {
+    try {
+      const dbReminders = await this.reminderDao.getAllReminders();
+      this.reminders = dbReminders.map((reminder): ReminderItem => {
+        const contact = this.contacts.find(c => c.id === reminder.relatedId);
+        const reminderItem: ReminderItem = {
+          id: reminder.id,
+          contactId: reminder.relatedId,
+          contactName: contact?.name || '未知联系人',
+          title: reminder.title,
+          content: reminder.message || '',
+          dateTime: reminder.reminderDate,
+          type: reminder.type,
+          isEnabled: reminder.isActive,
+          isCompleted: reminder.isTriggered,
+          createdAt: reminder.createdAt,
+          reminderId: undefined
+        };
+        return reminderItem;
+      });
+    } catch (error) {
+      console.error('加载提醒数据失败:', error);
+      this.reminders = [];
+    }
   }
   
   async createSystemReminder(reminder: ReminderItem): Promise<number | null> {
@@ -150,13 +159,30 @@ struct GiftReminderPage {
       }
     }
     
+    // 更新数据库
+    try {
+      await this.reminderDao.updateReminder({
+        id: reminder.id,
+        type: reminder.type,
+        relatedId: reminder.contactId,
+        title: reminder.title,
+        message: reminder.content,
+        reminderDate: reminder.dateTime,
+        isActive: reminder.isEnabled,
+        isTriggered: reminder.isCompleted,
+        createdAt: reminder.createdAt
+      });
+    } catch (error) {
+      console.error('更新提醒失败:', error);
+    }
+    
     // 更新状态
     this.reminders = [...this.reminders];
   }
   
   showAddReminderDialog() {
     this.editingReminder = null;
-    this.selectedType = 'birthday';
+    this.selectedType = 'gift_event';
     this.selectedContactId = '';
     this.reminderTitle = '';
     this.reminderContent = '';
@@ -196,7 +222,7 @@ struct GiftReminderPage {
       this.editingReminder.title = this.reminderTitle;
       this.editingReminder.content = this.reminderContent;
       this.editingReminder.dateTime = dateTime;
-      this.editingReminder.type = this.selectedType as 'birthday' | 'anniversary' | 'custom';
+      this.editingReminder.type = this.selectedType as 'gift_event' | 'important_date' | 'holiday';
       
       // 如果提醒已启用，需要重新创建系统提醒
       if (this.editingReminder.isEnabled) {
@@ -205,6 +231,23 @@ struct GiftReminderPage {
         }
         const reminderId = await this.createSystemReminder(this.editingReminder);
         this.editingReminder.reminderId = reminderId || undefined;
+      }
+      
+      // 更新数据库
+      try {
+        await this.reminderDao.updateReminder({
+          id: this.editingReminder.id,
+          type: this.editingReminder.type,
+          relatedId: this.editingReminder.contactId,
+          title: this.editingReminder.title,
+          message: this.editingReminder.content,
+          reminderDate: this.editingReminder.dateTime,
+          isActive: this.editingReminder.isEnabled,
+          isTriggered: this.editingReminder.isCompleted,
+          createdAt: this.editingReminder.createdAt
+        });
+      } catch (error) {
+        console.error('更新提醒失败:', error);
       }
     } else {
       // 创建新提醒
@@ -215,7 +258,7 @@ struct GiftReminderPage {
         title: this.reminderTitle,
         content: this.reminderContent,
         dateTime: dateTime,
-        type: this.selectedType as 'birthday' | 'anniversary' | 'custom',
+        type: this.selectedType as 'gift_event' | 'important_date' | 'holiday',
         isEnabled: true,
         isCompleted: false,
         createdAt: new Date().toISOString()
@@ -225,7 +268,28 @@ struct GiftReminderPage {
       const reminderId = await this.createSystemReminder(newReminder);
       newReminder.reminderId = reminderId || undefined;
       
-      this.reminders.push(newReminder);
+      // 保存到数据库
+      try {
+        const savedReminder = await this.reminderDao.createReminder({
+          id: newReminder.id,
+          type: newReminder.type,
+          relatedId: newReminder.contactId,
+          title: newReminder.title,
+          message: newReminder.content,
+          reminderDate: newReminder.dateTime,
+          isActive: newReminder.isEnabled,
+          isTriggered: newReminder.isCompleted,
+          createdAt: newReminder.createdAt
+        });
+        this.reminders.push(newReminder);
+      } catch (error) {
+        console.error('保存提醒失败:', error);
+        // 如果保存失败，取消系统提醒
+        if (reminderId) {
+          await this.cancelSystemReminder(reminderId);
+        }
+        return;
+      }
     }
     
     this.reminders = [...this.reminders];
@@ -238,23 +302,31 @@ struct GiftReminderPage {
       await this.cancelSystemReminder(reminder.reminderId);
     }
     
+    // 从数据库删除
+    try {
+      await this.reminderDao.deleteReminder(reminder.id);
+    } catch (error) {
+      console.error('删除提醒失败:', error);
+    }
+    
     // 从列表中移除
     this.reminders = this.reminders.filter(r => r.id !== reminder.id);
   }
   
   getTypeIcon(type: string): Resource {
     switch (type) {
-      case 'birthday': return $r('app.media.icon_happy');
-      case 'anniversary': return $r('app.media.icon_memory');
+      case 'gift_event': return $r('app.media.icon_happy');
+      case 'important_date': return $r('app.media.icon_memory');
+      case 'holiday': return $r('app.media.icon_rq');
       default: return $r('app.media.icon_rq');
     }
   }
   
   getTypeName(type: string): string {
     switch (type) {
-      case 'birthday': return '生日';
-      case 'anniversary': return '纪念日';
-      case 'custom': return '自定义';
+      case 'gift_event': return '礼物事件';
+      case 'important_date': return '重要日期';
+      case 'holiday': return '节日';
       default: return '其他';
     }
   }
@@ -274,18 +346,27 @@ struct GiftReminderPage {
       return '已过期';
     }
   }
+
+  goBack() {
+    router.back();
+  }
   
   build() {
     Column() {
       // 顶部导航栏
       Row() {
-        Image($r('app.media.ic_arrow_right'))
-          .width(24)
-          .height(24)
-          .fillColor('#333333')
-          .onClick(() => {
-            router.back();
-          })
+        Button() {
+          Image($r('app.media.icon_back'))
+            .width(24)
+            .height(24)
+            .fillColor('#333333')
+        }
+        .width(40)
+        .height(40)
+        .backgroundColor(Color.Transparent)
+        .onClick(() => {
+          this.goBack()
+        })
         
         Text('礼物提醒')
           .fontSize(18)
@@ -328,11 +409,10 @@ struct GiftReminderPage {
         if (this.reminders.length === 0) {
           // 空状态
           Column() {
-            Image($r('app.media.icon_rq'))
-              .width(80)
-              .height(80)
-              .fillColor('#CCCCCC')
-            
+            Image($r('app.media.icon_empty'))
+              .width(173)
+              .height(128)
+
             Text('暂无提醒')
               .fontSize(16)
               .fontColor('#666666')
@@ -481,7 +561,7 @@ struct GiftReminderPage {
               .margin({ bottom: 8 })
             
             Row() {
-              ForEach(['birthday', 'anniversary', 'custom'], (type: string) => {
+              ForEach(['gift_event', 'important_date', 'holiday'], (type: string) => {
                 Text(this.getTypeName(type))
                   .fontSize(14)
                   .fontColor(this.selectedType === type ? Color.White : '#666666')

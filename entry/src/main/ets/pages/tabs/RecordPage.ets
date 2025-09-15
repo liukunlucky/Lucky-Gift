@@ -163,6 +163,31 @@ export struct RecordPage {
     return $r('app.media.icon_other');
   }
 
+  private getMoodColor(mood: string | undefined): string {
+    if (mood==='开心') {
+      return '#FFD60A'; // 黄色
+    }
+    if (mood==='兴奋') {
+      return '#FF3B30'; // 红色
+    }
+    if (mood==='感动') {
+      return '#FF9500'; // 橙色
+    }
+    if (mood==='紧张') {
+      return '#5856D6'; // 紫色
+    }
+    if (mood==='期待') {
+      return '#007AFF'; // 蓝色
+    }
+    if (mood==='满足') {
+      return '#34C759'; // 绿色
+    }
+    if (mood==='温暖') {
+      return '#FF2D92'; // 粉色
+    }
+    return '#FFD60A'; // 默认黄色
+  }
+
   // 获取预算状态颜色
   getBudgetStatusColor(budget: number, actualCost: number): string {
     if (actualCost <= budget) {
@@ -178,7 +203,7 @@ export struct RecordPage {
     Column() {
       // 顶部工具栏
       Row() {
-        Text('情感时间轴')
+        Text('时间轴')
           .fontSize(20)
           .fontWeight(FontWeight.Bold)
           .fontColor('#333333')
@@ -238,7 +263,7 @@ export struct RecordPage {
             .margin({ top: 12 })
         }
         .width('100%')
-        .height('60%')
+        .layoutWeight(1)
         .justifyContent(FlexAlign.Start)
         .alignItems(HorizontalAlign.Center)
       } else {
@@ -271,7 +296,7 @@ export struct RecordPage {
               })
           }
           .width('100%')
-          .height('60%')
+          .layoutWeight(1)
           .justifyContent(FlexAlign.Start)
           .alignItems(HorizontalAlign.Center)
           .padding(32)
@@ -290,7 +315,6 @@ export struct RecordPage {
             .width('100%')
             .padding({ left: 16, right: 16, top: 8 })
           }
-          .layoutWeight(1)
           .scrollBar(BarState.Off)
         }
       }
@@ -337,113 +361,232 @@ export struct RecordPage {
       .width(20)
       .alignItems(HorizontalAlign.Center)
       
-      // 事件卡片
+      // 重新设计的事件卡片 - 清晰展示所有信息
       Column() {
-        // 卡片头部
-        Row() {
-          Column() {
-            Text(event.contactName)
-              .fontSize(16)
-              .fontWeight(FontWeight.Medium)
-              .fontColor('#333333')
-            
-            Text(`${event.occasion} · ${this.formatDate(event.date)}`)
-              .fontSize(12)
+        // 卡片标题 - 礼物名称
+        Text(event.actualGift || event.giftIdea)
+          .fontSize(16)
+          .fontWeight(FontWeight.Bold)
+          .fontColor('#1A1A1A')
+          .maxLines(2)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+          .width('100%')
+          .textAlign(TextAlign.Start)
+          .margin({ bottom: 12 })
+        
+        // 详细信息列表
+        Column({ space: 8 }) {
+          // 收礼人信息
+          Row() {
+            Text('收礼人：')
+              .fontSize(13)
               .fontColor('#666666')
-              .margin({ top: 2 })
+
+            Text(event.contactName)
+              .fontSize(13)
+              .fontColor('#1A1A1A')
+              .fontWeight(FontWeight.Medium)
+              .layoutWeight(1)
           }
-          .alignItems(HorizontalAlign.Start)
+          .width('100%')
+          .alignItems(VerticalAlign.Center)
           
-          Blank()
-          Image(this.getIconByMood(event.mood))
-            .width(20)
-            .height(20)
-            .fillColor('#CCCCCC')
+          // 送礼时间
+          Row() {
+            Text('送礼时间：')
+              .fontSize(13)
+              .fontColor('#666666')
+
+            Text(this.formatDate(event.date))
+              .fontSize(13)
+              .fontColor('#1A1A1A')
+              .layoutWeight(1)
+          }
+          .width('100%')
+          .alignItems(VerticalAlign.Center)
+          
+          // 对方心情
+          Row() {
+            Text('对方心情：')
+              .fontSize(13)
+              .fontColor('#666666')
+
+            Row() {
+              Image(this.getIconByMood(event.mood))
+                .width(16)
+                .height(16)
+                .fillColor(this.getMoodColor(event.mood))
+              
+              Text(event.mood || '未知')
+                .fontSize(13)
+                .fontColor('#1A1A1A')
+                .margin({ left: 6 })
+            }
+            .layoutWeight(1)
+          }
+          .width('100%')
+          .alignItems(VerticalAlign.Center)
+          
+          // 花费金额
+          Row() {
+            Text('花费金额：')
+              .fontSize(13)
+              .fontColor('#666666')
+
+            Text(`${event.actualCost || event.budget}元`)
+              .fontSize(13)
+              .fontColor(this.getBudgetStatusColor(event.budget, event.actualCost || event.budget))
+              .fontWeight(FontWeight.Medium)
+              .layoutWeight(1)
+          }
+          .width('100%')
+          .alignItems(VerticalAlign.Center)
+          
+          // 送礼场合
+          Row() {
+            Text('送礼场合：')
+              .fontSize(13)
+              .fontColor('#666666')
+
+            Text(event.occasion)
+              .fontSize(13)
+              .fontColor('#FF6B35')
+              .backgroundColor('#FFF0ED')
+              .padding({ left: 8, right: 8, top: 2, bottom: 2 })
+              .borderRadius(6)
+              .border({ width: 1, color: '#FFE0D6' })
+          }
+          .width('100%')
+          .alignItems(VerticalAlign.Center)
         }
         .width('100%')
         .margin({ bottom: 12 })
         
-        // 礼物信息
-        Column() {
-          Text(event.actualGift || event.giftIdea)
-            .fontSize(14)
-            .fontColor('#333333')
-            .fontWeight(FontWeight.Medium)
-            .margin({ bottom: 8 })
-          
-          // 图片展示
-          if (event.images && event.images.length > 0) {
-            Image(event.images[0])
+        // 图片展示（如果有）
+        if (event.images && event.images.length > 0) {
+          Image(event.images[0])
+            .width('100%')
+            .height(100)
+            .objectFit(ImageFit.Cover)
+            .borderRadius(8)
+            .margin({ bottom: 12 })
+        }
+        
+        // 故事描述（如果有）
+        if (event.story) {
+          Column() {
+            Text('故事描述：')
+              .fontSize(12)
+              .fontColor('#666666')
               .width('100%')
-              .height(120)
-              .objectFit(ImageFit.Cover)
-              .borderRadius(8)
-              .margin({ bottom: 8 })
-          }
-          
-          if (event.story) {
+              .textAlign(TextAlign.Start)
+              .margin({ bottom: 4 })
+            
             Text(event.story)
-              .fontSize(13)
+              .fontSize(12)
               .fontColor('#666666')
               .maxLines(3)
               .textOverflow({ overflow: TextOverflow.Ellipsis })
-              .lineHeight(18)
-              .margin({ bottom: 12 })
+              .lineHeight(16)
+              .width('100%')
+              .textAlign(TextAlign.Start)
           }
+          .width('100%')
+          .alignItems(HorizontalAlign.Start)
+          .margin({ bottom: 12 })
         }
-        .width('100%')
-        .alignItems(HorizontalAlign.Start)
         
-        // 标签和预算
+        // 卡片底部 - 标签和状态
         Row() {
-          // 标签
-          if (event.tags && event.tags.length > 0) {
-            ForEach(event.tags.slice(0, 2), (tag: string) => {
-              Text(`#${tag}`)
-                .fontSize(10)
-                .fontColor('#FF6B35')
-                .backgroundColor('#FFF0ED')
-                .padding({ left: 6, right: 6, top: 2, bottom: 2 })
-                .borderRadius(4)
-                .margin({ right: 6 })
-            })
+          // 左侧：标签
+          Row() {
+            if (event.tags && event.tags.length > 0) {
+              ForEach(event.tags.slice(0, 3), (tag: string, tagIndex: number) => {
+                Text(`#${tag}`)
+                  .fontSize(9)
+                  .fontColor('#8E8E93')
+                  .backgroundColor('#F2F2F7')
+                  .padding({ left: 6, right: 6, top: 2, bottom: 2 })
+                  .borderRadius(4)
+                  .margin({ right: 4 })
+              })
+              
+              if (event.tags.length > 3) {
+                Text(`+${event.tags.length - 3}`)
+                  .fontSize(9)
+                  .fontColor('#8E8E93')
+                  .backgroundColor('#F2F2F7')
+                  .padding({ left: 6, right: 6, top: 2, bottom: 2 })
+                  .borderRadius(4)
+              }
+            }
           }
+          .layoutWeight(1)
           
-          Blank()
-          
-          // 预算信息
-          Text(`¥${event.actualCost || event.budget}`)
-            .fontSize(12)
-            .fontColor(this.getBudgetStatusColor(event.budget, event.actualCost || event.budget))
-            .fontWeight(FontWeight.Medium)
+          // 右侧：状态指示器
+          Row() {
+            // 提醒状态
+            if (event.reminderSet) {
+              Row() {
+                Image($r('app.media.icon_ld'))
+                  .width(24)
+                  .height(24)
+                Text('已设置提醒')
+                  .fontSize(13)
+                  .fontColor('#34C759')
+                  .margin({ left: 2 })
+              }
+              .padding({ left: 6, right: 6, top: 2, bottom: 2 })
+              .borderRadius(8)
+              .margin({ left: 4 })
+            }
+            
+            // 完成状态指示器
+            if (event.actualGift) {
+              Text('✓')
+                .fontSize(10)
+                .fontColor(Color.White)
+                .backgroundColor('#34C759')
+                .width(16)
+                .height(16)
+                .borderRadius(8)
+                .textAlign(TextAlign.Center)
+                .margin({ left: 4 })
+            }
+          }.onClick(() => {
+            this.navigateToGiftRemind(event);
+          })
         }
         .width('100%')
-        
-        // 提醒标识
-        if (event.reminderSet) {
-          Row() {
-            Text('🔔')
-              .fontSize(12)
-            
-            Text('已设置提醒')
-              .fontSize(11)
-              .fontColor('#666666')
-              .margin({ left: 4 })
-          }
-          .margin({ top: 8 })
-        }
+        .alignItems(VerticalAlign.Center)
       }
       .layoutWeight(1)
       .padding(16)
       .backgroundColor(Color.White)
-      .borderRadius(12)
+      .borderRadius(16)
       .margin({ left: 12, bottom: 16 })
+      .shadow({
+        radius: 8,
+        color: '#1A000000',
+        offsetX: 0,
+        offsetY: 2
+      })
+      .linearGradient({
+        angle: 135,
+        colors: [[this.getMoodColor(event.mood) + '20', 0.0], ['#F8F9FA', 1.0]]
+      })
       .onClick(() => {
         this.navigateToEventDetail(event);
       })
     }
     .width('100%')
     .alignItems(VerticalAlign.Top)
+  }
+
+  navigateToGiftRemind(_event: GiftEvent) {
+    router.pushUrl({
+      url: 'pages/profile/GiftReminderPage'
+    });
   }
 
   @Builder

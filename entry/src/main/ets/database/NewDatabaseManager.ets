@@ -42,6 +42,10 @@ export class NewDatabaseManager {
     }
   }
 
+  isInitialized(): boolean {
+    return this.rdbStore !== null;
+  }
+
   private async createTables(): Promise<void> {
     if (!this.rdbStore) return;
 
@@ -103,29 +107,7 @@ export class NewDatabaseManager {
         FOREIGN KEY (contact_id) REFERENCES contacts (id) ON DELETE CASCADE
       )`,
 
-      // 灵感创意表
-      `CREATE TABLE IF NOT EXISTS inspirations (
-        id TEXT PRIMARY KEY,
-        title TEXT NOT NULL,
-        description TEXT NOT NULL,
-        detailed_description TEXT,
-        images TEXT, -- JSON数组
-        tags TEXT, -- JSON数组
-        target_audience TEXT, -- JSON数组
-        occasions TEXT, -- JSON数组
-        interests TEXT, -- JSON数组
-        budget_min REAL NOT NULL DEFAULT 0,
-        budget_max REAL NOT NULL DEFAULT 0,
-        budget_label TEXT NOT NULL,
-        gift_type TEXT NOT NULL,
-        difficulty TEXT NOT NULL DEFAULT 'medium',
-        time_required TEXT,
-        materials TEXT, -- JSON数组
-        steps TEXT, -- JSON数组
-        tips TEXT, -- JSON数组
-        is_recommended INTEGER NOT NULL DEFAULT 0,
-        created_at TEXT NOT NULL
-      )`,
+
 
       // 收藏的灵感表
       `CREATE TABLE IF NOT EXISTS favorite_inspirations (
@@ -206,7 +188,6 @@ export class NewDatabaseManager {
       'CREATE INDEX IF NOT EXISTS idx_gift_events_date ON gift_events (date)',
       'CREATE INDEX IF NOT EXISTS idx_gift_events_contact ON gift_events (contact_id)',
       'CREATE INDEX IF NOT EXISTS idx_important_dates_contact ON important_dates (contact_id)',
-      'CREATE INDEX IF NOT EXISTS idx_inspirations_tags ON inspirations (tags)',
       'CREATE INDEX IF NOT EXISTS idx_reminders_date ON reminders (reminder_date)'
     ];
 
@@ -218,26 +199,34 @@ export class NewDatabaseManager {
   private async initDefaultData(): Promise<void> {
     if (!this.rdbStore) return;
 
-    // 检查是否已有默认设置
-    const settingsCount = await this.rdbStore.querySql('SELECT COUNT(*) as count FROM app_settings');
-    if (settingsCount.getLong(0) === 0) {
-      // 插入默认设置
-      await this.rdbStore.executeSql(
-        'INSERT INTO app_settings (id) VALUES (?)',
-        ['default']
-      );
-    }
+    try {
+      // 检查是否已有默认设置
+      const settingsCount = await this.rdbStore.querySql('SELECT COUNT(*) as count FROM app_settings');
+      if (settingsCount.goToFirstRow() && settingsCount.getLong(0) === 0) {
+        // 插入默认设置
+        await this.rdbStore.executeSql(
+          'INSERT INTO app_settings (id) VALUES (?)',
+          ['default']
+        );
+      }
+      settingsCount.close();
 
-    // 初始化默认节日数据
-    const holidaysCount = await this.rdbStore.querySql('SELECT COUNT(*) as count FROM holidays');
-    if (holidaysCount.getLong(0) === 0) {
-      await this.initDefaultHolidays();
-    }
+      // 初始化默认节日数据
+      const holidaysCount = await this.rdbStore.querySql('SELECT COUNT(*) as count FROM holidays');
+      if (holidaysCount.goToFirstRow() && holidaysCount.getLong(0) === 0) {
+        await this.initDefaultHolidays();
+      }
+      holidaysCount.close();
 
-    // 初始化礼物卡模板
-    const templatesCount = await this.rdbStore.querySql('SELECT COUNT(*) as count FROM gift_card_templates');
-    if (templatesCount.getLong(0) === 0) {
-      await this.initDefaultGiftCardTemplates();
+      // 初始化礼物卡模板
+      const templatesCount = await this.rdbStore.querySql('SELECT COUNT(*) as count FROM gift_card_templates');
+      if (templatesCount.goToFirstRow() && templatesCount.getLong(0) === 0) {
+        await this.initDefaultGiftCardTemplates();
+      }
+      templatesCount.close();
+    } catch (error) {
+      console.error('初始化默认数据失败:', error);
+      throw new Error(`初始化默认数据失败: ${error}`);
     }
   }
 

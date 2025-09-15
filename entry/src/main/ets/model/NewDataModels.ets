@@ -154,12 +154,18 @@ export interface Reminder {
   id: string;
   type: 'gift_event' | 'important_date' | 'holiday';
   relatedId: string; // 关联的事件ID
+  contactId?: string; // 联系人ID
   title: string;
   message: string;
+  content?: string; // 提醒内容
   reminderDate: string;
+  dateTime?: string; // 提醒日期时间
   isActive: boolean;
+  isEnabled?: boolean; // 是否启用
   isTriggered: boolean;
+  isCompleted?: boolean; // 是否完成
   createdAt: string;
+  reminderId?: number; // 系统提醒ID
 }
 
 // 应用设置

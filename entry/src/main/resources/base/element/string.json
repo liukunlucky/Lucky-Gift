@@ -19,6 +19,10 @@
     {
       "name": "permission_write_imagevideo",
       "value": "用于保存回忆路线图片到相册"
+    },
+    {
+      "name": "permission_reminder_reason",
+      "value": "用于创建送礼提醒通知"
     }
   ]
 }

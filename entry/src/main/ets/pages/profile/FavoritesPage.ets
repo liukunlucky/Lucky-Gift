@@ -13,14 +13,25 @@ struct FavoritesPage {
   @State showDeleteDialog: boolean = false;
   @State selectedItem: Inspiration | null = null;
   
-  private inspirationDAO: InspirationDAO = new InspirationDAO(new NewDatabaseManager());
+  private dbManager: NewDatabaseManager = new NewDatabaseManager();
+  private inspirationDAO: InspirationDAO | null = null;
   private categories: string[] = ['全部', '生日礼物', '节日礼物', '纪念日', '表达感谢', '道歉礼物', '惊喜礼物'];
   
-  aboutToAppear() {
+  async aboutToAppear() {
+    // 初始化数据库
+    await this.dbManager.initDatabase(getContext(this));
+    this.inspirationDAO = new InspirationDAO(this.dbManager);
+    
     this.loadFavorites();
   }
   
   async loadFavorites() {
+    if (!this.inspirationDAO) {
+      console.error('数据库未初始化');
+      this.isLoading = false;
+      return;
+    }
+    
     this.isLoading = true;
     
     try {
@@ -57,54 +68,13 @@ struct FavoritesPage {
   }
   
   async toggleFavorite(inspiration: Inspiration) {
+    if (!inspiration.id || !this.inspirationDAO) return;
+    
     try {
-      const updatedInspiration: Inspiration = {
-        id: inspiration.id,
-        title: inspiration.title,
-        description: inspiration.description,
-        detailedDescription: inspiration.detailedDescription,
-        images: inspiration.images,
-        tags: inspiration.tags,
-        targetAudience: inspiration.targetAudience,
-        occasions: inspiration.occasions,
-        interests: inspiration.interests,
-        budgetRange: inspiration.budgetRange,
-        giftType: inspiration.giftType,
-        difficulty: inspiration.difficulty,
-        timeRequired: inspiration.timeRequired,
-        materials: inspiration.materials,
-        steps: inspiration.steps,
-        tips: inspiration.tips,
-        isRecommended: inspiration.isRecommended,
-        createdAt: inspiration.createdAt
-      };
+      // 调用DAO的取消收藏方法
+      await this.inspirationDAO.removeFromFavorites(inspiration.id);
       
-      const updateData: Inspiration = {
-        id: inspiration.id,
-        title: inspiration.title,
-        description: inspiration.description,
-        detailedDescription: inspiration.detailedDescription,
-        images: inspiration.images,
-        tags: inspiration.tags,
-        targetAudience: inspiration.targetAudience,
-        occasions: inspiration.occasions,
-        interests: inspiration.interests,
-        budgetRange: inspiration.budgetRange,
-        giftType: inspiration.giftType,
-        difficulty: inspiration.difficulty,
-        timeRequired: inspiration.timeRequired,
-        materials: inspiration.materials,
-        steps: inspiration.steps,
-        tips: inspiration.tips,
-        isRecommended: false,
-        createdAt: inspiration.createdAt
-      };
-      
-      if (inspiration.id) {
-        await this.inspirationDAO.updateInspiration(inspiration.id, updateData);
-      }
-      
-      // 从收藏列表中移除
+      // 从本地收藏列表中移除
       const index = this.favorites.findIndex(item => item.id === inspiration.id);
       if (index > -1) {
         this.favorites.splice(index, 1);
@@ -129,7 +99,7 @@ struct FavoritesPage {
   
   navigateToDetail(inspiration: Inspiration) {
     router.pushUrl({
-      url: 'pages/browse/InspirationDetailPage',
+      url: 'pages/InspirationDetailPage',
       params: {
         inspirationId: inspiration.id
       }
@@ -157,17 +127,17 @@ struct FavoritesPage {
       // 顶部导航栏
       Row() {
         Button() {
-          Text('←')
-              .fontSize(20)
-              .fontColor('#FFFFFF')
+          Image($r('app.media.icon_back'))
             .width(24)
             .height(24)
-            .fontColor('#333333')
+            .fillColor('#333333')
         }
         .width(40)
         .height(40)
         .backgroundColor(Color.Transparent)
-        .onClick(() => this.goBack())
+        .onClick(() => {
+          this.goBack()
+        })
         
         Text('我的收藏')
           .fontSize(18)
@@ -260,11 +230,10 @@ struct FavoritesPage {
         
         if (this.getFilteredFavorites().length === 0) {
           Column() {
-            Image($r('app.media.ic_empty'))
-              .width(80)
-              .height(80)
-              .fillColor('#CCCCCC')
-            
+            Image($r('app.media.icon_empty'))
+              .width(173)
+              .height(128)
+
             Text(this.searchText.trim() || this.selectedCategory !== '全部' ? '没有找到相关收藏' : '还没有收藏任何灵感')
               .fontSize(16)
               .fontColor('#999999')

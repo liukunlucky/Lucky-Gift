@@ -36,7 +36,7 @@ struct MainTabsPage {
       TabContent() {
         BrowsePage()
       }
-      .tabBar(this.buildTabBarItem(0, '浏览', $r('app.media.icon_search')))
+      .tabBar(this.buildTabBarItem(0, '浏览', $r('app.media.icon_home')))
 
       // 记录Tab
       TabContent() {

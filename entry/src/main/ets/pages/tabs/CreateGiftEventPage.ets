@@ -1,10 +1,18 @@
-import { GiftEvent, Contact, Inspiration } from '../../model/NewDataModels';
+import { GiftEvent, Contact, Inspiration, Reminder } from '../../model/NewDataModels';
 import { GiftEventDAO } from '../../database/GiftEventDAO';
 import { ContactDAO } from '../../database/ContactDAO';
 import { InspirationDAO } from '../../database/InspirationDAO';
+import { ReminderDAO } from '../../database/ReminderDAO';
 import { NewDatabaseManager } from '../../database/NewDatabaseManager';
 import router from '@ohos.router';
 import picker from '@ohos.file.picker';
+import reminderAgentManager from '@ohos.reminderAgentManager';
+import notificationManager from '@ohos.notificationManager';
+// 兼容的TextPickerResult类型定义
+interface CompatibleTextPickerResult {
+  index: number | number[];
+  value: string | string[];
+}
 
 // 页面参数接口
 interface PageParams {
@@ -50,10 +58,14 @@ struct CreateGiftEventPage {
   @State showOccasionDialog: boolean = false;
   @State customOccasion: string = '';
   
+  // 添加联系人对话框相关
+  @State showAddContactDialog: boolean = false;
+  
   private dbManager = new NewDatabaseManager();
   private giftEventDAO: GiftEventDAO = new GiftEventDAO(this.dbManager);
   private contactDAO: ContactDAO = new ContactDAO(this.dbManager);
   private inspirationDAO: InspirationDAO = new InspirationDAO(this.dbManager);
+  private reminderDAO: ReminderDAO = new ReminderDAO(this.dbManager);
 
   private getIconByMood(mood: string): Resource {
     if (mood==='开心') {
@@ -100,6 +112,18 @@ struct CreateGiftEventPage {
     }
     
     this.loadData(params);
+  }
+  
+  // 页面显示时刷新联系人列表
+  async onPageShow() {
+    try {
+      // 重新加载联系人列表，以获取可能新增的联系人
+      const updatedContacts = await this.contactDAO.getAllContacts();
+      this.contacts = updatedContacts;
+      console.log('联系人列表已刷新，当前联系人数量:', this.contacts.length);
+    } catch (error) {
+      console.error('刷新联系人列表失败:', error);
+    }
   }
   
   async loadData(params: PageParams) {
@@ -154,10 +178,31 @@ struct CreateGiftEventPage {
     this.reminderEnabled = !!event.reminderDate;
     this.reminderDate = event.reminderDate ? event.reminderDate.split('T')[0] : '';
     
-    // 加载联系人
+    // 加载联系人 - 修复收礼人显示问题
     const contact = this.contacts.find(c => c.id === event.contactId);
     if (contact) {
       this.selectedContact = contact;
+      // 确保recipientName与selectedContact保持一致
+      this.recipientName = contact.name;
+    } else {
+      // 如果找不到联系人，创建一个临时联系人对象以保持数据一致性
+        console.warn('未找到对应的联系人，contactId:', event.contactId);
+        if (event.contactName) {
+          const tempContact: Contact = {
+            id: String(event.contactId || 0),
+            name: event.contactName,
+            relationship: '',
+            avatar: '',
+            birthday: '',
+            importantDates: [],
+            preferences: [],
+            notes: '',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          };
+          this.selectedContact = tempContact;
+          this.recipientName = tempContact.name;
+        }
     }
   }
   
@@ -240,13 +285,43 @@ struct CreateGiftEventPage {
       
       console.log('事件数据:', JSON.stringify(eventData));
       
+      let eventId: string;
       if (this.isEditMode) {
         console.log('更新事件:', this.eventId);
         await this.giftEventDAO.updateGiftEvent(this.eventId, eventData);
+        eventId = this.eventId;
       } else {
         console.log('创建新事件');
         const newId = await this.giftEventDAO.createGiftEvent(eventData as GiftEvent);
         console.log('创建成功，ID:', newId);
+        eventId = newId;
+      }
+
+      // 创建系统提醒和数据库提醒记录
+      if (this.reminderEnabled && this.reminderDate) {
+        const reminderId = await this.createSystemReminder(eventData);
+        if (reminderId) {
+          // 保存提醒到数据库
+          const reminderData: Reminder = {
+            id: `reminder_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            type: 'gift_event',
+            relatedId: eventId,
+            title: `送礼提醒：${eventData.contactName}`,
+            message: `${eventData.occasion} - ${eventData.giftIdea || '准备礼物'}`,
+            reminderDate: new Date(this.reminderDate).toISOString(),
+            isActive: true,
+            isTriggered: false,
+            createdAt: new Date().toISOString()
+          };
+          
+          try {
+            await this.reminderDAO.createReminder(reminderData);
+            console.log('提醒已保存到数据库');
+          } catch (error) {
+            console.error('保存提醒到数据库失败:', error);
+          }
+          console.log('系统提醒创建成功，ID:', reminderId);
+        }
       }
       
       console.log('保存成功，返回记录页面');
@@ -273,12 +348,138 @@ struct CreateGiftEventPage {
     }
   }
   
-  validateForm(): boolean {
-    if (!this.recipientName.trim()) {
-      console.log('收礼人姓名不能为空');
+  // 导航到添加联系人页面
+  navigateToAddContact() {
+    router.pushUrl({
+      url: 'pages/profile/ContactFormPage',
+      params: {
+        isEdit: false
+      }
+    });
+  }
+  
+  // 选择联系人
+  selectContact(contact: Contact) {
+    this.selectedContact = contact;
+    this.recipientName = contact.name;
+  }
+  
+  // 显示收礼人选择器
+  showRecipientPicker() {
+    if (this.contacts.length === 0) {
       AlertDialog.show({
         title: '提示',
-        message: '请输入收礼人姓名',
+        message: '暂无联系人，请先添加联系人',
+        primaryButton: {
+          value: '添加联系人',
+          action: () => {
+            this.navigateToAddContact();
+          }
+        },
+        secondaryButton: {
+          value: '取消',
+          action: () => {}
+        }
+      });
+      return;
+    }
+    
+    const contactNames = this.contacts.map(contact => contact.name);
+    
+    // 确保contactNames不为空
+    if (contactNames.length === 0) {
+      console.error('联系人列表为空，无法显示选择器');
+      return;
+    }
+    
+    let selectedIndex = 0;
+    if (this.selectedContact) {
+      const foundIndex = this.contacts.findIndex(contact => contact.id === this.selectedContact!.id);
+      selectedIndex = foundIndex >= 0 ? foundIndex : 0;
+    }
+    
+    // 确保selectedIndex在有效范围内
+    selectedIndex = Math.max(0, Math.min(selectedIndex, contactNames.length - 1));
+    
+    TextPickerDialog.show({
+      range: contactNames,
+      selected: selectedIndex,
+      canLoop: false,
+      onAccept: (value: CompatibleTextPickerResult) => {
+        let index: number = 0;
+        if (Array.isArray(value.index)) {
+          if (value.index.length > 0) {
+            // 使用forEach避免索引访问
+            value.index.forEach((item: number, i: number) => {
+              if (i === 0) {
+                index = item;
+              }
+            });
+          }
+        } else {
+          index = value.index as number;
+        }
+        if (index >= 0 && index < this.contacts.length) {
+          let selectedContact: Contact | undefined;
+          for (let i = 0; i < this.contacts.length; i++) {
+            if (i === index) {
+              selectedContact = this.contacts[i];
+              break;
+            }
+          }
+          // 避免重复选择同一联系人导致的循环
+          if (selectedContact && (!this.selectedContact || this.selectedContact.id !== selectedContact.id)) {
+            this.selectContact(selectedContact);
+          }
+        }
+      },
+      onCancel: () => {
+        console.log('取消选择收礼人');
+      }
+    });
+  }
+
+  // 创建系统提醒
+  async createSystemReminder(eventData: GiftEvent): Promise<number | null> {
+    if (!this.reminderEnabled || !this.reminderDate) {
+      return null;
+    }
+
+    try {
+      const reminderDateTime = new Date(this.reminderDate);
+      
+      const reminderRequest: reminderAgentManager.ReminderRequestCalendar = {
+        reminderType: reminderAgentManager.ReminderType.REMINDER_TYPE_CALENDAR,
+        dateTime: {
+          year: reminderDateTime.getFullYear(),
+          month: reminderDateTime.getMonth() + 1,
+          day: reminderDateTime.getDate(),
+          hour: 9, // 默认上午9点提醒
+          minute: 0
+        },
+        title: `送礼提醒：${eventData.contactName}`,
+        content: `${eventData.occasion} - ${eventData.giftIdea || '准备礼物'}`,
+        expiredContent: '提醒已过期',
+        snoozeContent: '稍后提醒',
+        notificationId: 100,
+        slotType: notificationManager.SlotType.SOCIAL_COMMUNICATION
+      };
+      
+      const reminderId = await reminderAgentManager.publishReminder(reminderRequest);
+      console.info('创建系统提醒成功，ID:', reminderId);
+      return reminderId;
+    } catch (error) {
+      console.error('创建系统提醒失败:', error);
+      return null;
+    }
+  }
+  
+  validateForm(): boolean {
+    if (!this.selectedContact) {
+      console.log('收礼人不能为空');
+      AlertDialog.show({
+        title: '提示',
+        message: '请选择收礼人',
         confirm: {
           value: '确定',
           action: () => {}
@@ -357,8 +558,9 @@ struct CreateGiftEventPage {
   }
   
   build() {
-    Column() {
-      // 顶部导航栏
+    Stack() {
+      Column() {
+        // 顶部导航栏
       Row() {
         Button() {
           Text('←')
@@ -462,14 +664,54 @@ struct CreateGiftEventPage {
                   }
                   .margin({ bottom: 8 })
                   
-                  TextInput({ placeholder: '输入收礼人姓名', text: this.recipientName })
-                    .fontSize(16)
+                  if (this.contacts.length > 0) {
+                    // 有联系人时显示下拉框
+                    Button() {
+                      Row() {
+                        Text(this.selectedContact ? this.selectedContact.name : '选择收礼人')
+                          .fontSize(16)
+                          .fontColor(this.selectedContact ? '#333333' : '#999999')
+                          .layoutWeight(1)
+                        
+                        Text('▼')
+                          .fontSize(12)
+                          .fontColor('#999999')
+                      }
+                    }
+                    .width('100%')
+                    .height(48)
                     .backgroundColor('#F8F9FA')
                     .borderRadius(8)
                     .padding({ left: 16, right: 16 })
-                    .onChange((value: string) => {
-                       this.recipientName = value;
-                     })
+                    .onClick(() => {
+                      this.showRecipientPicker();
+                    })
+                  } else {
+                    // 没有联系人时显示提示
+                    Column() {
+                      Button() {
+                        Row() {
+                          Text('暂无联系人，请先添加关系')
+                            .fontSize(16)
+                            .fontColor('#999999')
+                            .layoutWeight(1)
+                          
+                          Text('添加')
+                            .fontSize(14)
+                            .fontColor('#FF6B35')
+                        }
+                      }
+                      .width('100%')
+                      .height(48)
+                      .backgroundColor('#FFF5F0')
+                      .borderRadius(8)
+                      .padding({ left: 16, right: 16 })
+                      .border({ width: 1, color: '#FF6B35', style: BorderStyle.Dashed })
+                      .onClick(() => {
+                        this.navigateToAddContact();
+                      })
+                    }
+                  }
                 }
                 .width('100%')
                 .alignItems(HorizontalAlign.Start)
@@ -982,6 +1224,9 @@ struct CreateGiftEventPage {
       dragBar: true,
       backgroundColor: '#FFFFFF'
     })
+
+
+    }
   }
   
   @Builder
@@ -1062,7 +1307,7 @@ struct CreateGiftEventPage {
     }
     .width('100%')
   }
-  
+
   showCustomOccasionInput() {
     this.customOccasion = '';
   }

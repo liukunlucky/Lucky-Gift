@@ -2,8 +2,8 @@ import { AbilityConstant, ConfigurationConstant, UIAbility, Want } from '@kit.Ab
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { window } from '@kit.ArkUI';
 import { WindowAbility } from './WindowAbility';
-import { DatabaseManager } from '../database/DatabaseManager';
-import { DataInitService } from '../service/DataInitService';
+import { NewDatabaseManager } from '../database/NewDatabaseManager';
+import { InspirationDataInitializer } from '../database/InspirationDataInitializer';
 
 const DOMAIN = 0x0000;
 
@@ -16,6 +16,7 @@ export default class EntryAbility extends UIAbility {
     // 初始化数据库
     this.initDatabase();
   }
+
 
   onDestroy(): void {
     hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onDestroy');
@@ -52,15 +53,16 @@ export default class EntryAbility extends UIAbility {
   // 初始化数据库
   private async initDatabase(): Promise<void> {
     try {
-      hilog.info(DOMAIN, 'testTag', '开始初始化数据库...');
+      hilog.info(DOMAIN, 'testTag', '数据库初始化成功');
+      hilog.info(DOMAIN, 'testTag', '开始初始化数据...');
       
       // 初始化数据库
-      const dbManager = DatabaseManager.getInstance();
+      const dbManager = new NewDatabaseManager();
       await dbManager.initDatabase(this.context);
       
-      // 初始化数据
-      const dataInitService = new DataInitService();
-      await dataInitService.initializeData();
+      // 初始化灵感数据
+      const dataInitializer = new InspirationDataInitializer();
+      await dataInitializer.initializeAllData();
       
       hilog.info(DOMAIN, 'testTag', '数据库初始化完成');
     } catch (error) {

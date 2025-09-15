@@ -99,38 +99,6 @@ export class ContactDAO {
     return contact;
   }
 
-  // 更新联系人
-  async updateContact(id: string, updates: Contact): Promise<void> {
-    const rdbStore = this.dbManager.getRdbStore();
-    if (!rdbStore) throw new Error('数据库未初始化');
-
-    const valueBucket: relationalStore.ValuesBucket = {
-      updated_at: this.dbManager.getCurrentTimestamp()
-    };
-
-    if (updates.name !== undefined) valueBucket.name = updates.name;
-    if (updates.relationship !== undefined) valueBucket.relationship = updates.relationship;
-    if (updates.avatar !== undefined) valueBucket.avatar = updates.avatar;
-    if (updates.birthday !== undefined) valueBucket.birthday = updates.birthday;
-    if (updates.notes !== undefined) valueBucket.notes = updates.notes;
-
-    const predicates = new relationalStore.RdbPredicates('contacts');
-    predicates.equalTo('id', id);
-
-    await rdbStore.update(valueBucket, predicates);
-  }
-
-  // 删除联系人
-  async deleteContact(id: string): Promise<void> {
-    const rdbStore = this.dbManager.getRdbStore();
-    if (!rdbStore) throw new Error('数据库未初始化');
-
-    const predicates = new relationalStore.RdbPredicates('contacts');
-    predicates.equalTo('id', id);
-
-    await rdbStore.delete(predicates);
-  }
-
   // 搜索联系人
   async searchContacts(keyword: string): Promise<Contact[]> {
     const rdbStore = this.dbManager.getRdbStore();
@@ -173,6 +141,81 @@ export class ContactDAO {
     resultSet.close();
 
     return contacts;
+  }
+
+  // 更新联系人
+  async updateContact(contact: Contact): Promise<void> {
+    const rdbStore = this.dbManager.getRdbStore();
+    if (!rdbStore) throw new Error('数据库未初始化');
+
+    const now = this.dbManager.getCurrentTimestamp();
+    const valueBucket: relationalStore.ValuesBucket = {
+      name: contact.name,
+      relationship: contact.relationship,
+      avatar: contact.avatar || null,
+      birthday: contact.birthday || null,
+      notes: contact.notes || null,
+      updated_at: now
+    };
+
+    const predicates = new relationalStore.RdbPredicates('contacts');
+    predicates.equalTo('id', contact.id);
+    await rdbStore.update(valueBucket, predicates);
+
+    // 删除现有的重要日期和偏好，然后重新插入
+    await this.deleteImportantDatesByContactId(contact.id);
+    await this.deleteContactPreferencesByContactId(contact.id);
+
+    // 重新插入重要日期
+    if (contact.importantDates && contact.importantDates.length > 0) {
+      for (const date of contact.importantDates) {
+        await this.addImportantDate(contact.id, date);
+      }
+    }
+
+    // 重新插入偏好
+    if (contact.preferences && contact.preferences.length > 0) {
+      for (const preference of contact.preferences) {
+        await this.addContactPreference(contact.id, preference);
+      }
+    }
+  }
+
+  // 删除联系人
+  async deleteContact(contactId: string): Promise<void> {
+    const rdbStore = this.dbManager.getRdbStore();
+    if (!rdbStore) throw new Error('数据库未初始化');
+
+    // 删除相关的重要日期
+    await this.deleteImportantDatesByContactId(contactId);
+    
+    // 删除相关的偏好
+    await this.deleteContactPreferencesByContactId(contactId);
+    
+    // 删除联系人
+    const predicates = new relationalStore.RdbPredicates('contacts');
+    predicates.equalTo('id', contactId);
+    await rdbStore.delete(predicates);
+  }
+
+  // 删除联系人的所有重要日期
+  private async deleteImportantDatesByContactId(contactId: string): Promise<void> {
+    const rdbStore = this.dbManager.getRdbStore();
+    if (!rdbStore) throw new Error('数据库未初始化');
+
+    const predicates = new relationalStore.RdbPredicates('important_dates');
+    predicates.equalTo('contact_id', contactId);
+    await rdbStore.delete(predicates);
+  }
+
+  // 删除联系人的所有偏好
+  private async deleteContactPreferencesByContactId(contactId: string): Promise<void> {
+    const rdbStore = this.dbManager.getRdbStore();
+    if (!rdbStore) throw new Error('数据库未初始化');
+
+    const predicates = new relationalStore.RdbPredicates('contact_preferences');
+    predicates.equalTo('contact_id', contactId);
+    await rdbStore.delete(predicates);
   }
 
   // 添加重要日期
@@ -240,6 +283,34 @@ export class ContactDAO {
     return id;
   }
 
+  // 更新重要日期
+  async updateImportantDate(date: ImportantDate): Promise<void> {
+    const rdbStore = this.dbManager.getRdbStore();
+    if (!rdbStore) throw new Error('数据库未初始化');
+
+    const valueBucket: relationalStore.ValuesBucket = {
+      name: date.name,
+      date: date.date,
+      is_recurring: date.isRecurring ? 1 : 0,
+      reminder_enabled: date.reminderEnabled ? 1 : 0,
+      reminder_days: date.reminderDays
+    };
+
+    const predicates = new relationalStore.RdbPredicates('important_dates');
+    predicates.equalTo('id', date.id);
+    await rdbStore.update(valueBucket, predicates);
+  }
+
+  // 删除重要日期
+  async deleteImportantDate(dateId: string): Promise<void> {
+    const rdbStore = this.dbManager.getRdbStore();
+    if (!rdbStore) throw new Error('数据库未初始化');
+
+    const predicates = new relationalStore.RdbPredicates('important_dates');
+    predicates.equalTo('id', dateId);
+    await rdbStore.delete(predicates);
+  }
+
   // 获取联系人偏好
   async getContactPreferencesByContactId(contactId: string): Promise<ContactPreference[]> {
     const rdbStore = this.dbManager.getRdbStore();
@@ -263,6 +334,32 @@ export class ContactDAO {
     resultSet.close();
 
     return preferences;
+  }
+
+  // 更新联系人偏好
+  async updateContactPreference(preference: ContactPreference): Promise<void> {
+    const rdbStore = this.dbManager.getRdbStore();
+    if (!rdbStore) throw new Error('数据库未初始化');
+
+    const valueBucket: relationalStore.ValuesBucket = {
+      category: preference.category,
+      content: preference.content,
+      priority: preference.priority
+    };
+
+    const predicates = new relationalStore.RdbPredicates('contact_preferences');
+    predicates.equalTo('id', preference.id);
+    await rdbStore.update(valueBucket, predicates);
+  }
+
+  // 删除联系人偏好
+  async deleteContactPreference(preferenceId: string): Promise<void> {
+    const rdbStore = this.dbManager.getRdbStore();
+    if (!rdbStore) throw new Error('数据库未初始化');
+
+    const predicates = new relationalStore.RdbPredicates('contact_preferences');
+    predicates.equalTo('id', preferenceId);
+    await rdbStore.delete(predicates);
   }
 
   // 获取即将到来的重要日期

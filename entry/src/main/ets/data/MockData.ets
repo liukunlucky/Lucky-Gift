@@ -1,5 +1,6 @@
 // 统一的Mock数据管理文件
 import { Inspiration, GiftEvent, Contact, BudgetRange } from '../model/NewDataModels';
+import { RecipientType, OccasionType, GiftType, BudgetRange as BudgetRangeEnum } from '../model/GiftEnums';
 
 /**
  * Mock数据管理类
@@ -18,7 +19,7 @@ export class MockData {
         id: '1',
         title: '给女朋友的浪漫惊喜',
         description: '精心准备的生日礼物套装',
-        tags: ['女朋友', '生日', '浪漫'],
+        tags: [RecipientType.GIRLFRIEND, OccasionType.BIRTHDAY, GiftType.JEWELRY],
         budgetRange: { min: 200, max: 500, label: '200-500元' },
         images: [],
         targetAudience: ['女朋友'],
@@ -33,7 +34,7 @@ export class MockData {
         id: '2',
         title: '送给妈妈的温馨礼物',
         description: '表达孝心的实用礼品',
-        tags: ['妈妈', '母亲节', '孝心'],
+        tags: [RecipientType.MOTHER, OccasionType.MOTHERS_DAY, GiftType.DAILY_ITEMS],
         budgetRange: { min: 100, max: 300, label: '100-300元' },
         images: [],
         targetAudience: ['妈妈'],
@@ -48,7 +49,7 @@ export class MockData {
         id: '3',
         title: '给爸爸的实用好物',
         description: '贴心实用的父亲节礼物',
-        tags: ['爸爸', '父亲节', '实用'],
+        tags: [RecipientType.FATHER, OccasionType.FATHERS_DAY, GiftType.DAILY_ITEMS],
         budgetRange: { min: 150, max: 400, label: '150-400元' },
         images: [],
         targetAudience: ['爸爸'],
@@ -63,7 +64,7 @@ export class MockData {
         id: '4',
         title: '闺蜜生日惊喜',
         description: '和闺蜜一起度过难忘生日',
-        tags: ['闺蜜', '生日', '友谊'],
+        tags: [RecipientType.BESTIE, OccasionType.BIRTHDAY, GiftType.DIY_HANDMADE],
         budgetRange: { min: 100, max: 250, label: '100-250元' },
         images: [],
         targetAudience: ['闺蜜'],
@@ -78,7 +79,7 @@ export class MockData {
         id: '5',
         title: '给男朋友的创意礼物',
         description: '独特的纪念日礼品',
-        tags: ['男朋友', '纪念日', '创意'],
+        tags: [RecipientType.BOYFRIEND, OccasionType.ANNIVERSARY, GiftType.CREATIVE_NOVEL],
         budgetRange: { min: 150, max: 350, label: '150-350元' },
         images: [],
         targetAudience: ['男朋友'],
@@ -93,7 +94,7 @@ export class MockData {
         id: '6',
         title: '给老师的感谢礼',
         description: '表达感激之情的礼物',
-        tags: ['老师', '感谢', '尊敬'],
+        tags: [RecipientType.TEACHER, OccasionType.TEACHERS_DAY, GiftType.DAILY_ITEMS],
         budgetRange: { min: 80, max: 200, label: '80-200元' },
         images: [],
         targetAudience: ['老师'],
@@ -108,7 +109,7 @@ export class MockData {
         id: '7',
         title: '给同事的友谊礼品',
         description: '增进同事关系的小礼物',
-        tags: ['同事', '友谊', '职场'],
+        tags: [RecipientType.COLLEAGUE, OccasionType.JUST_BECAUSE, GiftType.DAILY_ITEMS],
         budgetRange: { min: 50, max: 150, label: '50-150元' },
         images: [],
         targetAudience: ['同事'],
@@ -123,7 +124,7 @@ export class MockData {
         id: '8',
         title: '给孩子的成长礼物',
         description: '陪伴孩子成长的礼品',
-        tags: ['孩子', '成长', '教育'],
+        tags: [RecipientType.CHILD, OccasionType.BIRTHDAY, GiftType.CREATIVE_NOVEL],
         budgetRange: { min: 100, max: 300, label: '100-300元' },
         images: [],
         targetAudience: ['孩子'],
@@ -138,7 +139,7 @@ export class MockData {
         id: '9',
         title: '给长辈的孝心礼',
         description: '表达孝心的传统礼品',
-        tags: ['长辈', '孝心', '传统'],
+        tags: [RecipientType.ELDER_RELATIVE, OccasionType.SPRING_FESTIVAL, GiftType.DAILY_ITEMS],
         budgetRange: { min: 200, max: 500, label: '200-500元' },
         images: [],
         targetAudience: ['长辈'],
@@ -153,7 +154,7 @@ export class MockData {
         id: '10',
         title: '给宠物的爱心礼物',
         description: '让宠物开心的小惊喜',
-        tags: ['宠物', '爱心', '陪伴'],
+        tags: [RecipientType.OTHER, GiftType.DAILY_ITEMS],
         budgetRange: { min: 50, max: 150, label: '50-150元' },
         images: [],
         targetAudience: ['宠物'],
@@ -170,7 +171,7 @@ export class MockData {
         id: '11',
         title: '生日派对策划',
         description: '难忘的生日庆祝活动',
-        tags: ['生日', '派对', '庆祝'],
+        tags: [OccasionType.BIRTHDAY, GiftType.EXPERIENCE, BudgetRangeEnum.RANGE_200_500],
         budgetRange: { min: 300, max: 800, label: '300-800元' },
         images: [],
         targetAudience: ['朋友'],
@@ -185,7 +186,7 @@ export class MockData {
         id: '12',
         title: '毕业纪念册制作',
         description: '记录美好校园时光',
-        tags: ['毕业', '纪念', '回忆'],
+        tags: [OccasionType.GRADUATION, GiftType.DIY_HANDMADE, BudgetRangeEnum.RANGE_100_200],
         budgetRange: { min: 100, max: 300, label: '100-300元' },
         images: [],
         targetAudience: ['朋友'],
@@ -200,7 +201,7 @@ export class MockData {
         id: '13',
         title: '结婚祝福礼品',
         description: '新人的美好祝愿',
-        tags: ['结婚', '祝福', '新婚'],
+        tags: [OccasionType.WEDDING, GiftType.DAILY_ITEMS, BudgetRangeEnum.RANGE_200_500],
         budgetRange: { min: 200, max: 500, label: '200-500元' },
         images: [],
         targetAudience: ['朋友'],
@@ -215,7 +216,7 @@ export class MockData {
         id: '14',
         title: '节日庆祝活动',
         description: '传统节日的庆祝方式',
-        tags: ['节日', '传统', '庆祝'],
+        tags: [OccasionType.SPRING_FESTIVAL, GiftType.FOOD_BEVERAGE, BudgetRangeEnum.RANGE_200_500],
         budgetRange: { min: 150, max: 400, label: '150-400元' },
         images: [],
         targetAudience: ['家人'],
@@ -230,7 +231,7 @@ export class MockData {
         id: '15',
         title: '升职庆祝礼品',
         description: '庆祝职业成就的礼物',
-        tags: ['升职', '庆祝', '成就'],
+        tags: [OccasionType.PROMOTION, GiftType.EXPERIENCE, BudgetRangeEnum.RANGE_200_500],
         budgetRange: { min: 200, max: 600, label: '200-600元' },
         images: [],
         targetAudience: ['朋友'],
@@ -247,7 +248,7 @@ export class MockData {
         id: '16',
         title: '经济实惠小礼品',
         description: '50元以下的贴心礼物',
-        tags: ['经济', '实惠', '贴心'],
+        tags: [BudgetRangeEnum.UNDER_50, GiftType.DIY_HANDMADE, RecipientType.FRIEND],
         budgetRange: { min: 20, max: 50, label: '20-50元' },
         images: [],
         targetAudience: ['朋友'],
@@ -262,7 +263,7 @@ export class MockData {
         id: '17',
         title: '中等预算礼品',
         description: '100-200元的精选礼物',
-        tags: ['中等', '精选', '实用'],
+        tags: [BudgetRangeEnum.RANGE_100_200, GiftType.DAILY_ITEMS, RecipientType.FRIEND],
         budgetRange: { min: 100, max: 200, label: '100-200元' },
         images: [],
         targetAudience: ['朋友'],
@@ -277,7 +278,7 @@ export class MockData {
         id: '18',
         title: '高端定制礼品',
         description: '500元以上的奢华礼物',
-        tags: ['高端', '定制', '奢华'],
+        tags: [BudgetRangeEnum.RANGE_500_1000, GiftType.JEWELRY, RecipientType.GIRLFRIEND],
         budgetRange: { min: 500, max: 1000, label: '500-1000元' },
         images: [],
         targetAudience: ['恋人'],
@@ -292,7 +293,7 @@ export class MockData {
         id: '19',
         title: '学生党友好礼品',
         description: '适合学生预算的礼物',
-        tags: ['学生', '友好', '创意'],
+        tags: [BudgetRangeEnum.RANGE_50_100, GiftType.DIY_HANDMADE, RecipientType.FRIEND],
         budgetRange: { min: 30, max: 80, label: '30-80元' },
         images: [],
         targetAudience: ['朋友'],
@@ -307,7 +308,7 @@ export class MockData {
         id: '20',
         title: 'DIY手工礼物',
         description: '用心制作的独特礼品',
-        tags: ['DIY', '手工', '独特'],
+        tags: [GiftType.DIY_HANDMADE, BudgetRangeEnum.RANGE_50_100, RecipientType.FRIEND],
         budgetRange: { min: 30, max: 100, label: '30-100元' },
         images: [],
         targetAudience: ['朋友'],
@@ -324,7 +325,7 @@ export class MockData {
         id: '21',
         title: '实用型生活好物',
         description: '提升生活品质的实用礼品',
-        tags: ['实用', '生活', '品质'],
+        tags: [GiftType.DAILY_ITEMS, BudgetRangeEnum.RANGE_100_200, RecipientType.FRIEND],
         budgetRange: { min: 80, max: 250, label: '80-250元' },
         images: [],
         targetAudience: ['朋友'],
@@ -339,7 +340,7 @@ export class MockData {
         id: '22',
         title: '创意趣味礼品',
         description: '充满创意和乐趣的礼物',
-        tags: ['创意', '趣味', '新奇'],
+        tags: [GiftType.DIY_HANDMADE, BudgetRangeEnum.RANGE_100_200, RecipientType.FRIEND],
         budgetRange: { min: 50, max: 200, label: '50-200元' },
         images: [],
         targetAudience: ['朋友'],
@@ -354,7 +355,7 @@ export class MockData {
         id: '23',
         title: '纪念收藏类礼品',
         description: '具有纪念价值的收藏品',
-        tags: ['纪念', '收藏', '价值'],
+        tags: [GiftType.JEWELRY, BudgetRangeEnum.RANGE_200_500, OccasionType.ANNIVERSARY],
         budgetRange: { min: 100, max: 400, label: '100-400元' },
         images: [],
         targetAudience: ['朋友'],
@@ -369,7 +370,7 @@ export class MockData {
         id: '24',
         title: '体验服务类礼品',
         description: '难忘的体验和服务',
-        tags: ['体验', '服务', '难忘'],
+        tags: [GiftType.EXPERIENCE, BudgetRangeEnum.RANGE_200_500, OccasionType.ANNIVERSARY],
         budgetRange: { min: 200, max: 600, label: '200-600元' },
         images: [],
         targetAudience: ['朋友'],
@@ -384,7 +385,7 @@ export class MockData {
         id: '25',
         title: '美容护肤礼品',
         description: '呵护肌肤的美容产品',
-        tags: ['美容', '护肤', '呵护'],
+        tags: [GiftType.BEAUTY_SKINCARE, BudgetRangeEnum.RANGE_200_500, RecipientType.FRIEND],
         budgetRange: { min: 150, max: 400, label: '150-400元' },
         images: [],
         targetAudience: ['女性朋友'],
@@ -401,7 +402,7 @@ export class MockData {
         id: '26',
         title: '美食爱好者礼品',
         description: '满足味蕾的美食礼物',
-        tags: ['美食', '味蕾', '享受'],
+        tags: [GiftType.FOOD_BEVERAGE, BudgetRangeEnum.RANGE_100_200, RecipientType.FRIEND],
         budgetRange: { min: 100, max: 300, label: '100-300元' },
         images: [],
         targetAudience: ['朋友'],
@@ -416,7 +417,7 @@ export class MockData {
         id: '27',
         title: '运动健身礼品',
         description: '支持健康生活的运动用品',
-        tags: ['运动', '健身', '健康'],
+        tags: [GiftType.SPORTS_FITNESS, BudgetRangeEnum.RANGE_100_200, RecipientType.FRIEND],
         budgetRange: { min: 80, max: 250, label: '80-250元' },
         images: [],
         targetAudience: ['朋友'],
@@ -431,7 +432,7 @@ export class MockData {
         id: '28',
         title: '读书爱好者礼品',
         description: '书香气息的文化礼物',
-        tags: ['读书', '文化', '知识'],
+        tags: [GiftType.BOOKS_STATIONERY, BudgetRangeEnum.RANGE_100_200, RecipientType.FRIEND],
         budgetRange: { min: 50, max: 200, label: '50-200元' },
         images: [],
         targetAudience: ['朋友'],
@@ -446,7 +447,7 @@ export class MockData {
         id: '29',
         title: '音乐爱好者礼品',
         description: '音乐相关的精美礼物',
-        tags: ['音乐', '艺术', '享受'],
+        tags: [GiftType.TECH_DIGITAL, BudgetRangeEnum.RANGE_200_500, RecipientType.FRIEND],
         budgetRange: { min: 100, max: 400, label: '100-400元' },
         images: [],
         targetAudience: ['朋友'],
@@ -461,7 +462,7 @@ export class MockData {
         id: '30',
         title: '旅行爱好者礼品',
         description: '陪伴旅途的贴心用品',
-        tags: ['旅行', '探索', '冒险'],
+        tags: [GiftType.TRAVEL_OUTDOOR, BudgetRangeEnum.RANGE_200_500, RecipientType.FRIEND],
         budgetRange: { min: 120, max: 350, label: '120-350元' },
         images: [],
         targetAudience: ['朋友'],
@@ -747,5 +748,68 @@ export class MockData {
    */
   static getAllInspirations(): Inspiration[] {
     return MockData.getMockInspirations();
+  }
+
+  // 收藏相关的静态数据和方法
+  private static favoriteInspirationIds: Set<string> = new Set(); // 收藏数据，初始为空
+
+  /**
+   * 添加到收藏
+   */
+  static addToFavorites(inspirationId: string): void {
+    MockData.favoriteInspirationIds.add(inspirationId);
+  }
+
+  /**
+   * 从收藏中移除
+   */
+  static removeFromFavorites(inspirationId: string): void {
+    MockData.favoriteInspirationIds.delete(inspirationId);
+  }
+
+  /**
+   * 检查是否已收藏
+   */
+  static isFavorite(inspirationId: string): boolean {
+    return MockData.favoriteInspirationIds.has(inspirationId);
+  }
+
+  /**
+   * 获取收藏的灵感列表
+   */
+  static getFavoriteInspirations(): Inspiration[] {
+    const allInspirations = MockData.getAllInspirations();
+    return allInspirations.filter(inspiration => 
+      inspiration.id && MockData.favoriteInspirationIds.has(inspiration.id)
+    );
+  }
+
+  /**
+   * 添加新的灵感
+   */
+  static addInspiration(inspiration: Inspiration): void {
+    // 在实际应用中，这里会添加到数据源
+    // 目前只是模拟，不实际添加到静态数组
+    console.info('添加新灵感:', inspiration.title);
+  }
+
+  /**
+   * 更新灵感
+   */
+  static updateInspiration(id: string, updates: Inspiration): void {
+    // 在实际应用中，这里会更新数据源
+    // 目前只是模拟
+    console.info('更新灵感:', id, updates.title);
+  }
+
+  /**
+   * 删除灵感
+   */
+  static deleteInspiration(id: string): void {
+    // 在实际应用中，这里会从数据源删除
+    // 目前只是模拟
+    console.info('删除灵感:', id);
+    // 同时从收藏中移除
+    MockData.removeFromFavorites(id);
   }
 }

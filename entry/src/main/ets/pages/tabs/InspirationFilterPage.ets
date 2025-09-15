@@ -3,6 +3,7 @@ import { InspirationDAO } from '../../database/InspirationDAO';
 import { NewDatabaseManager } from '../../database/NewDatabaseManager';
 import { MockData } from '../../data/MockData';
 import router from '@ohos.router';
+import common from '@ohos.app.ability.common';
 
 interface RouterParams {
   filterType: string;
@@ -27,14 +28,22 @@ struct InspirationFilterPage {
   @State availableTags: string[] = [];
   @State sortBy: string = 'default'; // default, price_low, price_high, popular
   
-  private dbManager = new NewDatabaseManager();
-  private inspirationDAO: InspirationDAO = new InspirationDAO(this.dbManager);
+  private dbManager: NewDatabaseManager | null = null;
+  private inspirationDAO: InspirationDAO | null = null;
   
-  aboutToAppear() {
+  async aboutToAppear() {
     const params = router.getParams() as RouterParams;
     
     this.filterType = params.filterType || '';
     this.filterValue = params.filterValue || '';
+    
+    // 初始化数据库
+    const context = getContext(this) as common.UIAbilityContext;
+    this.dbManager = new NewDatabaseManager();
+    await this.dbManager.initDatabase(context);
+    
+    // 初始化DAO
+    this.inspirationDAO = new InspirationDAO(this.dbManager);
     
     this.loadData();
   }
@@ -42,6 +51,13 @@ struct InspirationFilterPage {
   async loadData() {
     try {
       this.isLoading = true;
+      
+      if (!this.inspirationDAO) {
+        console.error('数据库未初始化');
+        this.inspirations = this.getMockInspirations();
+        this.applyFilters();
+        return;
+      }
       
       // 根据筛选类型加载数据
       switch (this.filterType) {
@@ -139,7 +155,7 @@ struct InspirationFilterPage {
   
   navigateToDetail(inspiration: Inspiration) {
     router.pushUrl({
-      url: 'pages/tabs/InspirationDetailPage',
+      url: 'pages/InspirationDetailPage',
       params: {
         inspirationId: inspiration.id
       }

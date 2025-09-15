@@ -7,6 +7,7 @@ import { NewDatabaseManager } from '../../database/NewDatabaseManager';
 import fs from '@ohos.file.fs';
 import picker from '@ohos.file.picker';
 import { BusinessError } from '@ohos.base';
+import common from '@ohos.app.ability.common';
 
 // 菜单项接口定义
 interface MenuItem {
@@ -54,10 +55,10 @@ export struct ProfilePage {
   @State importProgress: number = 0;
   @State userLevel: string = 'LV1';
 
-  private dbManager = new NewDatabaseManager();
-  private contactDAO: ContactDAO = new ContactDAO(this.dbManager);
-  private inspirationDAO: InspirationDAO = new InspirationDAO(this.dbManager);
-  private giftEventDAO: GiftEventDAO = new GiftEventDAO(this.dbManager);
+  private dbManager: NewDatabaseManager | null = null;
+  private contactDAO: ContactDAO | null = null;
+  private inspirationDAO: InspirationDAO | null = null;
+  private giftEventDAO: GiftEventDAO | null = null;
   
   // 功能菜单配置
   private menuItems: MenuItem[] = [
@@ -120,13 +121,28 @@ export struct ProfilePage {
     }
   ];
 
-  aboutToAppear() {
+  async aboutToAppear() {
+    // 初始化数据库
+    const context = getContext(this) as common.UIAbilityContext;
+    this.dbManager = new NewDatabaseManager();
+    await this.dbManager.initDatabase(context);
+    
+    // 初始化DAO
+    this.contactDAO = new ContactDAO(this.dbManager);
+    this.inspirationDAO = new InspirationDAO(this.dbManager);
+    this.giftEventDAO = new GiftEventDAO(this.dbManager);
+    
     this.loadData();
   }
 
   async loadData() {
     try {
       this.isLoading = true;
+      
+      if (!this.contactDAO || !this.inspirationDAO || !this.giftEventDAO) {
+        console.error('数据库未初始化');
+        return;
+      }
       
       // 加载联系人
       this.contacts = await this.contactDAO.getAllContacts();
@@ -228,6 +244,11 @@ export struct ProfilePage {
       this.exportProgress = 0;
       
       // 收集所有数据
+      if (!this.contactDAO || !this.giftEventDAO || !this.inspirationDAO) {
+        console.error('数据库未初始化，无法导出数据');
+        return;
+      }
+      
       const exportData: ExportData = {
         version: '1.0',
         exportDate: new Date().toISOString(),
@@ -336,6 +357,11 @@ export struct ProfilePage {
   // 清空所有数据
   async clearAllData() {
     try {
+      if (!this.dbManager) {
+        console.error('数据库未初始化，无法清空数据');
+        return;
+      }
+      
       // 清空所有表的数据
       await this.dbManager.clearAllData();
       
@@ -677,8 +703,8 @@ export struct ProfilePage {
                     .margin({ right: 16 }) // 增加右边距
                     .onClick(() => {
                       router.pushUrl({
-                        url: 'pages/profile/ContactDetailPage',
-                        params: { contactId: contact.id }
+                        url: 'pages/profile/ContactFormPage',
+                        params: { contact: contact, isEdit: true }
                       });
                     })
                   })

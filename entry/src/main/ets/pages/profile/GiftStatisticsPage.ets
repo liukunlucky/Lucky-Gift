@@ -3,6 +3,7 @@ import { Contact, GiftEvent } from '../../model/NewDataModels';
 import { ContactDAO } from '../../database/ContactDAO';
 import { GiftEventDAO } from '../../database/GiftEventDAO';
 import { NewDatabaseManager } from '../../database/NewDatabaseManager';
+import { common } from '@kit.AbilityKit';
 
 interface MonthlyData {
   month: string;
@@ -72,8 +73,18 @@ struct GiftStatisticsPage {
   private contactDAO = new ContactDAO(this.dbManager);
   private giftEventDAO = new GiftEventDAO(this.dbManager);
   
-  aboutToAppear() {
-    this.loadData();
+  async aboutToAppear() {
+    try {
+      // 初始化数据库
+      const context = getContext(this) as common.UIAbilityContext;
+      await this.dbManager.initDatabase(context);
+      
+      // 加载数据
+      await this.loadData();
+    } catch (error) {
+      console.error('页面初始化失败:', error);
+      this.isLoading = false;
+    }
   }
   
   async loadData() {
@@ -224,18 +235,27 @@ struct GiftStatisticsPage {
   getMaxMonthlyAmount(): number {
     return Math.max(...this.monthlyData.map(d => d.amount), 1);
   }
-  
+
+  goBack() {
+    router.back();
+  }
+
   build() {
     Column() {
       // 顶部导航栏
       Row() {
-        Image($r('app.media.ic_arrow_right'))
-          .width(24)
-          .height(24)
-          .fillColor('#333333')
-          .onClick(() => {
-            router.back();
-          })
+        Button() {
+          Image($r('app.media.icon_back'))
+            .width(24)
+            .height(24)
+            .fillColor('#333333')
+        }
+        .width(40)
+        .height(40)
+        .backgroundColor(Color.Transparent)
+        .onClick(() => {
+          this.goBack()
+        })
         
         Text('送礼统计')
           .fontSize(18)
@@ -702,8 +722,8 @@ struct GiftStatisticsPage {
           .margin({ bottom: 8 })
           .onClick(() => {
             router.pushUrl({
-              url: 'pages/profile/ContactDetailPage',
-              params: { contactId: item.contact.id }
+              url: 'pages/profile/ContactFormPage',
+              params: { contact: item.contact, isEdit: true }
             });
           })
         })

@@ -3,18 +3,17 @@ import { BudgetCalculation, HolidayCountdown } from '../../model/NewDataModels';
 import { ToolsDAO } from '../../database/ToolsDAO';
 import { NewDatabaseManager } from '../../database/NewDatabaseManager';
 
-// 清单项目接口
-interface ChecklistItem {
+// 轮播图内容接口
+interface BannerItem {
   id: string;
   title: string;
-  description?: string;
-  isCompleted?: boolean;
-  isChecked?: boolean;
-  category: string;
-  priority?: 'high' | 'medium' | 'low';
-  createdAt: string;
-  orderIndex?: number;
-  isDefault?: boolean;
+  subtitle: string;
+  description: string;
+  backgroundColor: string;
+  textColor: string;
+  icon: string;
+  actionText?: string;
+  actionType?: string;
 }
 
 // 工具菜单接口
@@ -26,25 +25,48 @@ interface ToolMenu {
   color: string;
 }
 
+
+// 礼物推荐接口
+interface GiftRecommendation {
+  id: string;
+  title: string;
+  category: string;
+  priceRange: string;
+  popularity: number;
+  tags: string[];
+}
+
+
 @Component
 export struct ToolsPage {
-  @State checklistItems: ChecklistItem[] = [];
+  @State bannerItems: BannerItem[] = [];
+  @State giftRecommendations: GiftRecommendation[] = [];
   @State budgetCalculations: BudgetCalculation[] = [];
   @State upcomingHolidays: HolidayCountdown[] = [];
   @State isLoading: boolean = true;
   @State showBudgetCalculator: boolean = false;
-  @State showChecklistDetail: boolean = false;
   @State totalBudget: string = '';
   @State numberOfPeople: string = '';
   @State calculatedResult: number = 0;
-  @State completedCount: number = 0;
-  @State totalCount: number = 0;
-  
+  @State currentBannerIndex: number = 0;
   private dbManager = new NewDatabaseManager();
   private toolsDAO: ToolsDAO = new ToolsDAO(this.dbManager);
-  
   // 工具菜单配置
   private toolMenus: ToolMenu[] = [
+    {
+      id: 'record',
+      title: '快速记录',
+      description: '记录送礼想法',
+      icon: $r('app.media.icon_record'),
+      color: '#4CAF50'
+    },
+    {
+      id: 'reminder',
+      title: '送礼提醒',
+      description: '重要日期提醒',
+      icon: $r('app.media.icon_rl'),
+      color: '#2196F3'
+    },
     {
       id: 'checklist',
       title: '礼物清单检查',
@@ -77,140 +99,126 @@ export struct ToolsPage {
 
   aboutToAppear() {
     this.loadData();
+    // 加载轮播图数据
+    this.bannerItems = this.getBannerItems();
+    // 加载礼物推荐数据
+    this.giftRecommendations = this.getGiftRecommendations();
+    // 模拟加载完成
+    setTimeout(() => {
+      this.isLoading = false;
+    }, 1000);
   }
 
   async loadData() {
     try {
-      this.isLoading = true;
-      
-      // 加载检查清单（使用默认数据）
-      this.checklistItems = this.getDefaultChecklistItems();
-      
-      // 加载预算计算记录
+      // 加载轮播图数据
+      this.bannerItems = this.getBannerItems();
+      // 加载礼物推荐数据
+      this.giftRecommendations = this.getGiftRecommendations();
+      // 加载预算计算数据
       this.budgetCalculations = await this.toolsDAO.getAllBudgetCalculations();
-      
-      // 加载即将到来的节日
+      // 加载节日倒计时数据
       this.upcomingHolidays = await this.toolsDAO.getUpcomingHolidays(30);
-      
-      // 更新计数
-      this.updateCounts();
     } catch (error) {
-      console.error('加载工具数据失败:', error);
-      this.checklistItems = this.getDefaultChecklistItems();
-      this.upcomingHolidays = [];
-      this.updateCounts();
+      console.error('加载数据失败:', error);
     } finally {
       this.isLoading = false;
     }
   }
 
-  // 获取默认检查清单
-  getDefaultChecklistItems(): ChecklistItem[] {
+  // 获取轮播图数据
+  getBannerItems(): BannerItem[] {
     return [
       {
         id: '1',
-        category: '准备阶段',
-        title: '了解收礼人的喜好',
-        description: '询问朋友或观察TA的兴趣爱好',
-        orderIndex: 1,
-        isDefault: true,
-        createdAt: new Date().toISOString()
+        title: '🎁 智能礼物推荐',
+        subtitle: '让AI帮你选礼物',
+        description: '基于收礼人的喜好和场合，为你推荐最合适的礼物',
+        backgroundColor: '#FF6B35',
+        textColor: '#FFFFFF',
+        icon: '🤖',
+        actionText: '立即体验',
+        actionType: 'recommendation'
       },
       {
         id: '2',
-        category: '准备阶段',
-        title: '确定预算范围',
-        description: '根据关系亲密度和经济能力设定预算',
-        orderIndex: 2,
-        isDefault: true,
-        createdAt: new Date().toISOString()
+        title: '💝 节日礼物指南',
+        subtitle: '不同节日送什么',
+        description: '情人节、生日、纪念日...每个节日都有专属推荐',
+        backgroundColor: '#E91E63',
+        textColor: '#FFFFFF',
+        icon: '📅',
+        actionText: '查看指南',
+        actionType: 'guide'
       },
       {
         id: '3',
-        category: '选择阶段',
-        title: '选择合适的礼物',
-        description: '结合喜好、预算和场合选择礼物',
-        orderIndex: 3,
-        isDefault: true,
-        createdAt: new Date().toISOString()
+        title: '💰 预算优化助手',
+        subtitle: '花最少的钱送最好的礼',
+        description: '根据你的预算，找到性价比最高的礼物选择',
+        backgroundColor: '#2196F3',
+        textColor: '#FFFFFF',
+        icon: '💡',
+        actionText: '开始优化',
+        actionType: 'budget'
       },
       {
         id: '4',
-        category: '选择阶段',
-        title: '考虑礼物的实用性',
-        description: '确保礼物对收礼人有实际价值',
-        orderIndex: 4,
-        isDefault: true,
-        createdAt: new Date().toISOString()
-      },
-      {
-        id: '5',
-        category: '购买阶段',
-        title: '比较价格和质量',
-        description: '在多个渠道对比，选择性价比最高的',
-        orderIndex: 5,
-        isDefault: true,
-        createdAt: new Date().toISOString()
-      },
-      {
-        id: '6',
-        category: '包装阶段',
-        title: '精心包装礼物',
-        description: '选择合适的包装纸和装饰',
-        orderIndex: 6,
-        isDefault: true,
-        createdAt: new Date().toISOString()
-      },
-      {
-        id: '7',
-        category: '包装阶段',
-        title: '准备贺卡或祝福语',
-        description: '写下真诚的祝福和心意',
-        orderIndex: 7,
-        isDefault: true,
-        createdAt: new Date().toISOString()
-      },
-      {
-        id: '8',
-        category: '送礼阶段',
-        title: '选择合适的送礼时机',
-        description: '在合适的时间和场合送出礼物',
-        orderIndex: 8,
-        isDefault: true,
-        createdAt: new Date().toISOString()
+        title: '🎨 个性化定制',
+        subtitle: '独一无二的心意',
+        description: '定制专属礼物，让你的心意更加特别',
+        backgroundColor: '#9C27B0',
+        textColor: '#FFFFFF',
+        icon: '✨',
+        actionText: '开始定制',
+        actionType: 'customize'
       }
     ];
   }
 
-  // 更新计数
-  updateCounts() {
-    this.completedCount = this.checklistItems.filter(item => item.isChecked).length;
-    this.totalCount = this.checklistItems.length;
-  }
-
-  // 切换检查清单项状态
-  toggleChecklistItem(item: ChecklistItem) {
-    // 更新本地状态
-    const index = this.checklistItems.findIndex(i => i.id === item.id);
-    if (index !== -1) {
-      this.checklistItems[index].isChecked = !item.isChecked;
-      this.updateCounts();
-    }
-  }
-
-  // 重置检查清单
-  resetChecklist() {
-    this.checklistItems.forEach(item => {
-      item.isChecked = false;
-    });
-    this.updateCounts();
+  // 获取礼物推荐数据
+  getGiftRecommendations(): GiftRecommendation[] {
+    return [
+      {
+        id: '1',
+        title: '定制照片相册',
+        category: '纪念品',
+        priceRange: '50-200元',
+        popularity: 95,
+        tags: ['个性化', '纪念意义', '情侣']
+      },
+      {
+        id: '2',
+        title: '智能手表',
+        category: '数码产品',
+        priceRange: '500-2000元',
+        popularity: 88,
+        tags: ['实用', '科技', '健康']
+      },
+      {
+        id: '3',
+        title: '香薰蜡烛套装',
+        category: '生活用品',
+        priceRange: '80-300元',
+        popularity: 92,
+        tags: ['浪漫', '放松', '居家']
+      },
+      {
+        id: '4',
+        title: '手工巧克力',
+        category: '美食',
+        priceRange: '30-150元',
+        popularity: 85,
+        tags: ['甜蜜', '美味', '节日']
+      }
+    ];
   }
 
   // 计算预算
   calculateBudget() {
     const total = parseFloat(this.totalBudget);
     const people = parseInt(this.numberOfPeople);
-    
+
     if (total > 0 && people > 0) {
       this.calculatedResult = total / people;
     } else {
@@ -232,10 +240,10 @@ export struct ToolsPage {
           items: [],
           createdAt: ""
         };
-        
+
         await this.toolsDAO.createBudgetCalculation(calculation);
         this.budgetCalculations = await this.toolsDAO.getAllBudgetCalculations();
-        
+
         // 重置表单
         this.totalBudget = '';
         this.numberOfPeople = '';
@@ -250,8 +258,20 @@ export struct ToolsPage {
   // 导航到工具页面
   navigateToTool(toolId: string) {
     switch (toolId) {
+      case 'record':
+        router.pushUrl({
+          url: 'pages/tools/QuickRecordPage'
+        });
+        break;
+      case 'reminder':
+        router.pushUrl({
+          url: 'pages/profile/GiftReminderPage'
+        });
+        break;
       case 'checklist':
-        this.showChecklistDetail = true;
+        router.pushUrl({
+          url: 'pages/tools/GiftChecklistPage'
+        });
         break;
       case 'giftcard':
         router.pushUrl({
@@ -276,13 +296,13 @@ export struct ToolsPage {
       url: 'pages/tools/GiftCardMakerPage'
     });
   }
-  
+
   navigateToBudgetCalculator() {
     router.pushUrl({
       url: 'pages/tools/BudgetCalculatorPage'
     });
   }
-  
+
   navigateToHolidayCountdown() {
     router.pushUrl({
       url: 'pages/tools/HolidayCountdownPage'
@@ -305,218 +325,251 @@ export struct ToolsPage {
           .fontSize(20)
           .fontWeight(FontWeight.Bold)
           .fontColor('#333333')
-        
+
         Blank()
-        
+
         Text('让送礼更轻松')
           .fontSize(14)
           .fontColor('#666666')
       }
       .width('100%')
-      .padding({ left: 16, right: 16, top: 12, bottom: 12 })
+      .padding({
+        left: 20,
+        right: 20,
+        top: 16,
+        bottom: 16
+      })
       .backgroundColor(Color.White)
 
-      if (this.isLoading) {
-        // 加载状态
+      // 可滚动内容区域
+      Scroll() {
         Column() {
-          LoadingProgress()
-            .width(50)
-            .height(50)
-            .color('#FF6B35')
-          
-          Text('加载中...')
-            .fontSize(14)
-            .fontColor('#666666')
-            .margin({ top: 12 })
-        }
-        .width('100%')
-        .height('60%')
-        .justifyContent(FlexAlign.Center)
-        .alignItems(HorizontalAlign.Center)
-      } else {
-        Scroll() {
-          Column() {
-            // 工具菜单
+          if (this.isLoading) {
+            // 加载状态
             Column() {
-              Text('实用工具')
-                .fontSize(16)
-                .fontWeight(FontWeight.Medium)
-                .margin({ bottom: 16 })
-                .alignSelf(ItemAlign.Start)
-              
-              Grid() {
-                ForEach(this.toolMenus, (tool: ToolMenu) => {
-                  GridItem() {
+              LoadingProgress()
+                .width(50)
+                .height(50)
+                .color('#FF6B35')
+
+              Text('加载中...')
+                .fontSize(14)
+                .fontColor('#666666')
+                .margin({ top: 12 })
+            }
+            .width('100%')
+            .height('60%')
+            .justifyContent(FlexAlign.Center)
+            .alignItems(HorizontalAlign.Center)
+          } else {
+            Column() {
+              // 工具菜单
+              Column() {
+                Text('实用工具')
+                  .fontSize(16)
+                  .fontWeight(FontWeight.Medium)
+                  .margin({ bottom: 20 })
+                  .alignSelf(ItemAlign.Start)
+
+                Grid() {
+                  ForEach(this.toolMenus, (tool: ToolMenu) => {
+                    GridItem() {
+                      Column() {
+                        Image(tool.icon)
+                          .width(24)
+                          .height(24)
+                          .fillColor('#000000')
+                        Blank().height(10)
+                        Text(tool.title)
+                          .fontSize(14)
+                          .fontWeight(FontWeight.Medium)
+                          .fontColor('#333333')
+                          .margin({ bottom: 6 })
+                        Text(tool.description)
+                          .fontSize(11)
+                          .fontColor('#666666')
+                          .textAlign(TextAlign.Center)
+                          .maxLines(2)
+                      }
+                      .width('100%')
+                      .height(100)
+                      .justifyContent(FlexAlign.Center)
+                      .alignItems(HorizontalAlign.Center)
+                      .backgroundColor(Color.White)
+                      .borderRadius(12)
+                      .border({ width: 1, color: '#F0F0F0' })
+                      .onClick(() => {
+                        this.navigateToTool(tool.id);
+                      })
+                    }
+                  })
+                }
+                .columnsTemplate('1fr 1fr')
+                .rowsGap(12)
+                .columnsGap(12)
+                .height(324)
+              }
+              .width('100%')
+              .padding({
+                left: 20,
+                right: 20,
+                top: 20,
+                bottom: 20
+              })
+              .backgroundColor('#F8F9FA')
+              .margin({ top: 12 })
+
+              // 轮播图
+              Column() {
+                Swiper() {
+                  ForEach(this.bannerItems, (banner: BannerItem) => {
                     Column() {
-                      Image(tool.icon)
-                        .width(24)
-                        .height(24)
-                        .fillColor('#CCCCCC')
-                      
-                      Text(tool.title)
+                      Row() {
+                        Column() {
+                          Text(banner.title)
+                            .fontSize(18)
+                            .fontWeight(FontWeight.Bold)
+                            .fontColor(banner.textColor)
+                            .margin({ bottom: 4 })
+
+                          Text(banner.subtitle)
+                            .fontSize(14)
+                            .fontColor(banner.textColor)
+                            .opacity(0.9)
+                            .margin({ bottom: 8 })
+
+                          Text(banner.description)
+                            .fontSize(12)
+                            .fontColor(banner.textColor)
+                            .opacity(0.8)
+                            .maxLines(2)
+                            .textOverflow({ overflow: TextOverflow.Ellipsis })
+                            .margin({ bottom: 12 })
+
+                          if (banner.actionText) {
+                            Text(banner.actionText)
+                              .fontSize(12)
+                              .height(32)
+                              .backgroundColor(Color.White)
+                              .fontColor(banner.backgroundColor)
+                              .borderRadius(16)
+                              .padding({
+                                left: 16,
+                                right: 16,
+                                top: 6,
+                                bottom: 6
+                              })
+                              .textAlign(TextAlign.Center)
+                          }
+                        }
+                        .layoutWeight(1)
+                        .alignItems(HorizontalAlign.Start)
+
+                        Text(banner.icon)
+                          .fontSize(48)
+                          .margin({ left: 16 })
+                      }
+                      .width('100%')
+                      .height('100%')
+                      .padding(20)
+                      .justifyContent(FlexAlign.SpaceBetween)
+                      .alignItems(VerticalAlign.Center)
+                    }
+                    .width('100%')
+                    .height(160)
+                    .backgroundColor(banner.backgroundColor)
+                    .borderRadius(12)
+                    .onClick(() => {
+                      this.handleBannerAction(banner.actionType || '');
+                    })
+                  })
+                }
+                .width('100%')
+                .height(160)
+                .autoPlay(true)
+                .interval(4000)
+                .indicator(true)
+                .loop(true)
+                .duration(300)
+                .itemSpace(0)
+                .indicatorStyle({
+                  bottom: 12,
+                  right: 12,
+                  color: Color.White,
+                  selectedColor: '#FFD700'
+                })
+                .onChange((index: number) => {
+                  this.currentBannerIndex = index;
+                })
+              }
+              .width('100%')
+              .padding({top: 16, bottom: 16, left: 20, right: 20})
+              .margin({ bottom: 8 })
+
+
+              // 热门礼物推荐
+              Column() {
+                Row() {
+                  Text('热门礼物推荐')
+                    .fontSize(16)
+                    .fontWeight(FontWeight.Medium)
+                }
+                .width('100%')
+                .margin({ bottom: 16 })
+
+                ForEach(this.giftRecommendations, (gift: GiftRecommendation) => {
+                  Row() {
+                    Column() {
+                      Text(gift.title)
                         .fontSize(14)
                         .fontWeight(FontWeight.Medium)
                         .fontColor('#333333')
                         .margin({ bottom: 4 })
-                      
-                      Text(tool.description)
-                        .fontSize(11)
-                        .fontColor('#666666')
-                        .textAlign(TextAlign.Center)
-                        .maxLines(2)
-                    }
-                    .width('100%')
-                    .height(120)
-                    .justifyContent(FlexAlign.Center)
-                    .alignItems(HorizontalAlign.Center)
-                    .backgroundColor(Color.White)
-                    .borderRadius(12)
-                    .border({ width: 1, color: '#F0F0F0' })
-                    .onClick(() => {
-                      this.navigateToTool(tool.id);
-                    })
-                  }
-                })
-              }
-              .columnsTemplate('1fr 1fr')
-              .rowsGap(12)
-              .columnsGap(12)
-              .height(250)
-            }
-            .width('100%')
-            .padding(16)
-            .backgroundColor('#F8F9FA')
-            .margin({ bottom: 8 })
 
-            // 快速检查清单
-            Column() {
-              Row() {
-                Text('送礼检查清单')
-                  .fontSize(16)
-                  .fontWeight(FontWeight.Medium)
-                
-                Blank()
-                
-                Button('重置')
-                  .fontSize(12)
-                  .height(28)
-                  .backgroundColor('#F0F0F0')
-                  .fontColor('#666666')
-                  .borderRadius(14)
-                  .onClick(() => {
-                    this.resetChecklist();
-                  })
-              }
-              .width('100%')
-              .margin({ bottom: 16 })
-              
-              // 进度条
-              Row() {
-                Progress({ 
-                  value: this.completedCount, 
-                  total: this.totalCount, 
-                  type: ProgressType.Linear 
-                })
-                  .layoutWeight(1)
-                  .color('#FF6B35')
-                  .backgroundColor('#F0F0F0')
-                  .height(6)
-                
-                Text(`${this.completedCount}/${this.totalCount}`)
-                  .fontSize(12)
-                  .fontColor('#666666')
-                  .margin({ left: 12 })
-              }
-              .width('100%')
-              .margin({ bottom: 16 })
-              
-              // 检查清单项
-              ForEach(this.checklistItems.slice(0, 5), (item: ChecklistItem) => {
-                Row() {
-                  Checkbox({ name: item.id, group: 'checklist' })
-                    .select(item.isChecked)
-                    .selectedColor('#FF6B35')
-                    .onChange((value: boolean) => {
-                      this.toggleChecklistItem(item);
-                    })
-                  
-                  Column() {
-                    Text(item.title)
-                      .fontSize(14)
-                      .fontColor(item.isChecked ? '#999999' : '#333333')
-                      .decoration({ type: item.isChecked ? TextDecorationType.LineThrough : TextDecorationType.None })
-                    
-                    if (item.description) {
-                      Text(item.description)
-                        .fontSize(12)
-                        .fontColor('#666666')
-                        .margin({ top: 2 })
-                        .maxLines(1)
-                        .textOverflow({ overflow: TextOverflow.Ellipsis })
-                    }
-                  }
-                  .layoutWeight(1)
-                  .alignItems(HorizontalAlign.Start)
-                  .margin({ left: 12 })
-                }
-                .width('100%')
-                .padding({ top: 8, bottom: 8 })
-                .alignItems(VerticalAlign.Top)
-              })
-              
-              if (this.checklistItems.length > 5) {
-                Button(`查看全部 ${this.checklistItems.length} 项`)
-                  .fontSize(12)
-                  .height(32)
-                  .backgroundColor('#F0F0F0')
-                  .fontColor('#666666')
-                  .borderRadius(16)
-                  .margin({ top: 8 })
-                  .onClick(() => {
-                    this.showChecklistDetail = true;
-                  })
-              }
-            }
-            .width('100%')
-            .padding(16)
-            .backgroundColor(Color.White)
-            .borderRadius(12)
-            .margin({ bottom: 8 })
+                      Row() {
+                        Text(gift.category)
+                          .fontSize(12)
+                          .fontColor('#666666')
 
-            // 即将到来的节日
-            if (this.upcomingHolidays.length > 0) {
-              Column() {
-                Text('即将到来的节日')
-                  .fontSize(16)
-                  .fontWeight(FontWeight.Medium)
-                  .margin({ bottom: 16 })
-                  .alignSelf(ItemAlign.Start)
-                
-                ForEach(this.upcomingHolidays.slice(0, 3), (holiday: HolidayCountdown) => {
-                  Row() {
-                    Column() {
-                      Text(holiday.name)
-                        .fontSize(14)
-                        .fontWeight(FontWeight.Medium)
-                        .fontColor('#333333')
-                      
-                      Text(this.formatDate(holiday.date))
-                        .fontSize(12)
-                        .fontColor('#666666')
-                        .margin({ top: 2 })
+                        Text('·')
+                          .fontSize(12)
+                          .fontColor('#CCCCCC')
+                          .margin({ left: 8, right: 8 })
+
+                        Text(gift.priceRange)
+                          .fontSize(12)
+                          .fontColor('#FF6B35')
+                      }
+                      .margin({ bottom: 8 })
+
+                      Row() {
+                        ForEach(gift.tags.slice(0, 3), (tag: string) => {
+                          Text(tag)
+                            .fontSize(10)
+                            .fontColor('#666666')
+                            .backgroundColor('#F0F0F0')
+                            .borderRadius(8)
+                            .padding({
+                              left: 6,
+                              right: 6,
+                              top: 2,
+                              bottom: 2
+                            })
+                            .margin({ right: 4 })
+                        })
+                      }
                     }
+                    .layoutWeight(1)
                     .alignItems(HorizontalAlign.Start)
-                    
-                    Blank()
-                    
+
                     Column() {
-                      Text(`${holiday.daysUntil || 0}`)
-                        .fontSize(18)
+                      Text(`${gift.popularity}%`)
+                        .fontSize(16)
                         .fontWeight(FontWeight.Bold)
                         .fontColor('#FF6B35')
-                      
-                      Text('天')
-                        .fontSize(12)
+
+                      Text('热度')
+                        .fontSize(10)
                         .fontColor('#666666')
                     }
                     .alignItems(HorizontalAlign.Center)
@@ -524,291 +577,64 @@ export struct ToolsPage {
                   .width('100%')
                   .padding({ top: 12, bottom: 12 })
                   .border({ width: { bottom: 1 }, color: '#F0F0F0' })
-                })
-                
-                Button('查看更多节日')
-                  .fontSize(12)
-                  .height(32)
-                  .backgroundColor('#F0F0F0')
-                  .fontColor('#666666')
-                  .borderRadius(16)
-                  .margin({ top: 12 })
                   .onClick(() => {
-                    this.navigateToTool('countdown');
+                    this.navigateToGiftDetail(gift.id);
                   })
+                })
               }
               .width('100%')
               .padding(16)
               .backgroundColor(Color.White)
               .borderRadius(12)
               .margin({ bottom: 8 })
-            }
 
-            // 最近的预算计算
-            if (this.budgetCalculations.length > 0) {
-              Column() {
-                Text('最近的预算计算')
-                  .fontSize(16)
-                  .fontWeight(FontWeight.Medium)
-                  .margin({ bottom: 16 })
-                  .alignSelf(ItemAlign.Start)
-                
-                ForEach(this.budgetCalculations.slice(0, 3), (calculation: BudgetCalculation) => {
-                  Row() {
-                    Column() {
-                      Text(calculation.title || '预算计算')
-                        .fontSize(14)
-                        .fontWeight(FontWeight.Medium)
-                        .fontColor('#333333')
-                      
-                      Text(`总预算 ¥${calculation.totalBudget} · ${calculation.numberOfPeople}人`)
-                        .fontSize(12)
-                        .fontColor('#666666')
-                        .margin({ top: 2 })
-                    }
-                    .alignItems(HorizontalAlign.Start)
-                    
-                    Blank()
-                    
-                    Text(`¥${calculation.budgetPerPerson?.toFixed(0)}/人`)
-                      .fontSize(14)
-                      .fontWeight(FontWeight.Medium)
-                      .fontColor('#FF6B35')
-                  }
-                  .width('100%')
-                  .padding({ top: 12, bottom: 12 })
-                  .border({ width: { bottom: 1 }, color: '#F0F0F0' })
-                })
-              }
-              .width('100%')
-              .padding(16)
-              .backgroundColor(Color.White)
-              .borderRadius(12)
-              .margin({ bottom: 20 })
             }
           }
         }
-        .layoutWeight(1)
-        .scrollBar(BarState.Off)
+        .width('100%')
       }
+      .layoutWeight(1)
+      .scrollable(ScrollDirection.Vertical)
+      .scrollBar(BarState.Auto)
     }
     .width('100%')
     .height('100%')
     .backgroundColor('#F8F9FA')
-    .bindSheet($$this.showBudgetCalculator, this.buildBudgetCalculatorDialog(), {
-      height: 400,
-      dragBar: true
-    })
-    .bindSheet($$this.showChecklistDetail, this.buildChecklistDetailDialog(), {
-      height: 600,
-      dragBar: true
-    })
   }
 
-  @Builder
-  buildBudgetCalculatorDialog() {
-    Column() {
-      Text('预算计算器')
-        .fontSize(18)
-        .fontWeight(FontWeight.Medium)
-        .margin({ bottom: 24 })
-      
-      // 总预算输入
-      Column() {
-        Text('总预算（元）')
-          .fontSize(14)
-          .fontColor('#333333')
-          .alignSelf(ItemAlign.Start)
-          .margin({ bottom: 8 })
-        
-        TextInput({ placeholder: '请输入总预算金额' })
-          .type(InputType.Number)
-          .height(44)
-          .borderRadius(8)
-          .backgroundColor('#F8F9FA')
-          .onChange((value: string) => {
-            this.totalBudget = value;
-            this.calculateBudget();
-          })
-      }
-      .width('100%')
-      .margin({ bottom: 16 })
-      
-      // 人数输入
-      Column() {
-        Text('人数')
-          .fontSize(14)
-          .fontColor('#333333')
-          .alignSelf(ItemAlign.Start)
-          .margin({ bottom: 8 })
-        
-        TextInput({ placeholder: '请输入人数' })
-          .type(InputType.Number)
-          .height(44)
-          .borderRadius(8)
-          .backgroundColor('#F8F9FA')
-          .onChange((value: string) => {
-            this.numberOfPeople = value;
-            this.calculateBudget();
-          })
-      }
-      .width('100%')
-      .margin({ bottom: 24 })
-      
-      // 计算结果
-      if (this.calculatedResult > 0) {
-        Column() {
-          Text('每人预算')
-            .fontSize(14)
-            .fontColor('#666666')
-            .margin({ bottom: 8 })
-          
-          Text(`¥${this.calculatedResult.toFixed(2)}`)
-            .fontSize(32)
-            .fontWeight(FontWeight.Bold)
-            .fontColor('#FF6B35')
-        }
-        .width('100%')
-        .padding(16)
-        .backgroundColor('#FFF0ED')
-        .borderRadius(8)
-        .margin({ bottom: 24 })
-      }
-      
-      // 操作按钮
-      Row() {
-        Button('取消')
-          .layoutWeight(1)
-          .height(44)
-          .backgroundColor('#F0F0F0')
-          .fontColor('#333333')
-          .borderRadius(22)
-          .margin({ right: 8 })
-          .onClick(() => {
-            this.showBudgetCalculator = false;
-            this.totalBudget = '';
-            this.numberOfPeople = '';
-            this.calculatedResult = 0;
-          })
-        
-        Button('保存')
-          .layoutWeight(1)
-          .height(44)
-          .backgroundColor('#FF6B35')
-          .fontColor(Color.White)
-          .borderRadius(22)
-          .margin({ left: 8 })
-          .enabled(this.calculatedResult > 0)
-          .onClick(() => {
-            this.saveBudgetCalculation();
-          })
-      }
-      .width('100%')
+  // 处理轮播图动作
+  private handleBannerAction(actionType: string): void {
+    switch (actionType) {
+      case 'recommendation':
+        router.pushUrl({
+          url: 'pages/tools/SmartRecommendationPage'
+        });
+        break;
+      case 'guide':
+        router.pushUrl({
+          url: 'pages/tools/HolidayGuidePage'
+        });
+        break;
+      case 'budget':
+        router.pushUrl({
+          url: 'pages/tools/BudgetCalculatorPage'
+        });
+        break;
+      case 'customize':
+        console.info('个性化定制');
+        break;
+      default:
+        break;
     }
-    .width('100%')
-    .padding(24)
   }
 
-  @Builder
-  buildChecklistDetailDialog() {
-    Column() {
-      Text('送礼检查清单')
-        .fontSize(18)
-        .fontWeight(FontWeight.Bold)
-        .fontColor('#333333')
-        .margin({ bottom: 16 })
-      
-      // 进度显示
-      Row() {
-        Progress({ 
-          value: this.completedCount, 
-          total: this.totalCount, 
-          type: ProgressType.Linear 
-        })
-          .layoutWeight(1)
-          .color('#FF6B35')
-          .backgroundColor('#F0F0F0')
-          .height(6)
-        
-        Text(`${this.completedCount}/${this.totalCount}`)
-          .fontSize(12)
-          .fontColor('#666666')
-          .margin({ left: 12 })
-      }
-      .width('100%')
-      .margin({ bottom: 20 })
-      
-      // 完整检查清单
-      Scroll() {
-        Column() {
-          ForEach(this.checklistItems, (item: ChecklistItem) => {
-            Row() {
-              Checkbox({ name: item.id, group: 'checklist' })
-                .select(item.isChecked)
-                .selectedColor('#FF6B35')
-                .onChange((value: boolean) => {
-                  this.toggleChecklistItem(item);
-                })
-              
-              Column() {
-                Text(item.title)
-                  .fontSize(14)
-                  .fontColor(item.isChecked ? '#999999' : '#333333')
-                  .decoration({ type: item.isChecked ? TextDecorationType.LineThrough : TextDecorationType.None })
-                
-                if (item.description) {
-                  Text(item.description)
-                    .fontSize(12)
-                    .fontColor('#666666')
-                    .margin({ top: 2 })
-                    .maxLines(2)
-                    .textOverflow({ overflow: TextOverflow.Ellipsis })
-                }
-              }
-              .layoutWeight(1)
-              .alignItems(HorizontalAlign.Start)
-              .margin({ left: 12 })
-            }
-            .width('100%')
-            .padding({ top: 12, bottom: 12 })
-            .alignItems(VerticalAlign.Top)
-            .onClick(() => {
-              this.toggleChecklistItem(item);
-            })
-          })
-        }
-      }
-      .layoutWeight(1)
-      .scrollBar(BarState.Auto)
-      
-      // 操作按钮
-      Row() {
-        Button('重置清单')
-          .layoutWeight(1)
-          .height(44)
-          .backgroundColor('#F0F0F0')
-          .fontColor('#333333')
-          .borderRadius(22)
-          .margin({ right: 8 })
-          .onClick(() => {
-            this.resetChecklist();
-          })
-        
-        Button('完成')
-          .layoutWeight(1)
-          .height(44)
-          .backgroundColor('#FF6B35')
-          .fontColor(Color.White)
-          .borderRadius(22)
-          .margin({ left: 8 })
-          .onClick(() => {
-            this.showChecklistDetail = false;
-          })
-      }
-      .width('100%')
-      .margin({ top: 16 })
-    }
-    .width('100%')
-    .padding(24)
+  // 导航到推荐页面
+  private navigateToRecommendations(): void {
+    console.info('导航到推荐页面');
+  }
+
+  // 导航到礼物详情
+  private navigateToGiftDetail(giftId: string): void {
+    console.info('导航到礼物详情:', giftId);
   }
 }
