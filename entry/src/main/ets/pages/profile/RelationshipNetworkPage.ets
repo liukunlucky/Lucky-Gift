@@ -4,7 +4,7 @@ import { ContactDAO } from '../../database/ContactDAO';
 import { GiftEventDAO } from '../../database/GiftEventDAO';
 import { NewDatabaseManager } from '../../database/NewDatabaseManager';
 import { common } from '@kit.AbilityKit';
-import { RelationshipType, getRelationshipTypeName, getRelationshipTypeColor } from '../../model/RelationshipType';
+import { RelationshipType, getRelationshipTypeName, getRelationshipTypeColor, getRelationshipTypeTextColor } from '../../model/RelationshipType';
 
 
 interface RelationshipData {
@@ -317,42 +317,12 @@ struct RelationshipNetworkPage {
                       
                       Text(getRelationshipTypeName(data.contact.relationship as RelationshipType))
                         .fontSize(12)
-                        .fontColor(getRelationshipTypeColor(data.contact.relationship as RelationshipType))
-                        .backgroundColor(getRelationshipTypeColor(data.contact.relationship as RelationshipType) + '20')
+                        .fontColor(getRelationshipTypeTextColor(data.contact.relationship as RelationshipType))
+                        .backgroundColor(getRelationshipTypeColor(data.contact.relationship as RelationshipType))
                         .padding({ left: 8, right: 8, top: 2, bottom: 2 })
                         .borderRadius(10)
                     }
                     .width('100%')
-                    
-                    Row() {
-                      Text(`送礼 ${data.giftCount} 次`)
-                        .fontSize(12)
-                        .fontColor('#666666')
-                      
-                      if (data.totalSpent > 0) {
-                        Text(`·`)
-                          .fontSize(12)
-                          .fontColor('#666666')
-                          .margin({ left: 4, right: 4 })
-                        
-                        Text(`¥${this.formatAmount(data.totalSpent)}`)
-                          .fontSize(12)
-                          .fontColor('#666666')
-                      }
-                      
-                      if (data.lastGiftDate) {
-                        Text(`·`)
-                          .fontSize(12)
-                          .fontColor('#666666')
-                          .margin({ left: 4, right: 4 })
-                        
-                        Text(`最近 ${data.lastGiftDate}`)
-                          .fontSize(12)
-                          .fontColor('#666666')
-                      }
-                    }
-                    .width('100%')
-                    .margin({ top: 4 })
                   }
                   .layoutWeight(1)
                   .alignItems(HorizontalAlign.Start)

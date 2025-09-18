@@ -138,6 +138,32 @@ export struct RecordPage {
     return `${month}月${day}日`;
   }
 
+  // 格式化时间轴显示的日期（年月日）
+  formatTimelineDate(dateStr: string): string {
+    const date = new Date(dateStr);
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    return `${year}年\n${month}月${day}日`;
+  }
+
+  // 格式化时间轴显示的时间（时分）
+  formatTimelineTime(dateStr: string): string {
+    const date = new Date(dateStr);
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    return `${hours}:${minutes}`;
+  }
+
+  // 检查是否为同一天
+  isSameDay(date1: string, date2: string): boolean {
+    const d1 = new Date(date1);
+    const d2 = new Date(date2);
+    return d1.getFullYear() === d2.getFullYear() &&
+           d1.getMonth() === d2.getMonth() &&
+           d1.getDate() === d2.getDate();
+  }
+
   private getIconByMood(mood: string | undefined): Resource {
     if (mood==='开心') {
       return $r('app.media.icon_happy');
@@ -188,6 +214,66 @@ export struct RecordPage {
     return '#FFD60A'; // 默认黄色
   }
 
+  // 获取记录类型背景颜色
+  private getRecordTypeColor(recordType: string | undefined): string {
+    if (recordType === 'give') {
+      return '#F8F9FA'; // 橙色 - 送礼
+    } else if (recordType === 'receive') {
+      return '#F8F9FA'; // 绿色 - 收礼
+    }
+    return '#F8F9FA'; // 默认橙色
+  }
+
+  // 获取联系人标签文本
+  private getContactLabel(recordType: string | undefined): string {
+    if (recordType === 'give') {
+      return '收礼人：';
+    } else if (recordType === 'receive') {
+      return '送礼人：';
+    }
+    return '收礼人：'; // 默认
+  }
+
+  // 获取时间标签文本
+  private getTimeLabel(recordType: string | undefined): string {
+    if (recordType === 'give') {
+      return '送礼时间：';
+    } else if (recordType === 'receive') {
+      return '收礼时间：';
+    }
+    return '送礼时间：'; // 默认
+  }
+
+  // 获取场合标签文本
+  private getOccasionLabel(recordType: string | undefined): string {
+    if (recordType === 'give') {
+      return '送礼场合：';
+    } else if (recordType === 'receive') {
+      return '收礼场合：';
+    }
+    return '送礼场合：'; // 默认
+  }
+
+  // 获取心情标签文本
+  private getMoodLabel(recordType: string | undefined): string {
+    if (recordType === 'give') {
+      return '对方反应：';
+    } else if (recordType === 'receive') {
+      return '我的心情：';
+    }
+    return '对方心情：'; // 默认
+  }
+
+  // 获取心情字段值
+  private getMoodValue(event: GiftEvent): string | undefined {
+    if (event.recordType === 'give') {
+      return event.reaction; // 送礼时显示对方反应
+    } else if (event.recordType === 'receive') {
+      return event.mood; // 收礼时显示我的心情
+    }
+    return event.mood; // 默认
+  }
+
   // 获取预算状态颜色
   getBudgetStatusColor(budget: number, actualCost: number): string {
     if (actualCost <= budget) {
@@ -203,44 +289,26 @@ export struct RecordPage {
     Column() {
       // 顶部工具栏
       Row() {
-        Text('时间轴')
+        Blank().width(40)
+        Text('收送礼记录')
           .fontSize(20)
           .fontWeight(FontWeight.Bold)
           .fontColor('#333333')
+          .textAlign(TextAlign.Center)
           .layoutWeight(1)
-        
-        // 筛选按钮
-        Row() {
-           Image($r('app.media.icon_search'))
-             .width(16)
-             .height(16)
-             .fillColor('#666666')
-             .margin({ right: 4 })
-           
-           Text('筛选')
-            .fontSize(14)
-            .fontColor('#333333')
+
+        Button() {
+          Image($r('app.media.ic_add'))
+            .width(36)
+            .height(36)
+            .fillColor('#FF6B35')
         }
-        .height(32)
-        .backgroundColor('#F0F0F0')
-        .borderRadius(16)
-        .margin({ right: 8 })
-        .padding({ left: 12, right: 12 })
-        .justifyContent(FlexAlign.Center)
-        .alignItems(VerticalAlign.Center)
-        .visibility(this.giftEvents.length > 0 ? Visibility.Visible : Visibility.Hidden)
+        .width(40)
+        .height(40)
+        .backgroundColor(Color.Transparent)
         .onClick(() => {
-          this.showFilterDialog = true;
+          this.navigateToCreateRecord();
         })
-        
-        // 添加按钮
-        Image($r('app.media.ic_add'))
-          .width(36)
-          .height(36)
-          .fillColor('#FF6B35')
-          .onClick(() => {
-            this.navigateToCreateRecord();
-          })
       }
       .width('100%')
       .padding({ left: 16, right: 16, top: 12, bottom: 12 })
@@ -270,10 +338,9 @@ export struct RecordPage {
         if (this.filteredEvents.length === 0) {
           // 空状态
           Column() {
-            Image($r('app.media.icon_record'))
-              .width(64)
-              .height(64)
-              .fillColor('#CCCCCC')
+            Image($r('app.media.icon_empty'))
+              .width(173)
+              .height(128)
               .margin({ bottom: 20, top: 100 })
             
             Text('还没有记录哦')
@@ -281,7 +348,7 @@ export struct RecordPage {
               .fontColor('#666666')
               .margin({ bottom: 12 })
             
-            Text('点击右上角的 + 号开始记录你的送礼故事吧')
+            Text('开始记录你的送礼故事吧')
               .fontSize(14)
               .fontColor('#999999')
               .textAlign(TextAlign.Center)
@@ -316,6 +383,8 @@ export struct RecordPage {
             .padding({ left: 16, right: 16, top: 8 })
           }
           .scrollBar(BarState.Off)
+          .padding({ left: 16, right: 16, top: 16, bottom: 76 })
+          .edgeEffect(EdgeEffect.Spring)
         }
       }
     }
@@ -331,54 +400,105 @@ export struct RecordPage {
   @Builder
   buildTimelineItem(event: GiftEvent, index: number) {
     Row() {
-      // 时间轴线条
+      // 时间轴区域 - 包含时间信息
       Column() {
-        if (index === 0) {
-          Column()
-            .width(2)
-            .height(20)
-            .backgroundColor('#F0F0F0')
-        } else {
-          Column()
-            .width(2)
-            .height(20)
-            .backgroundColor('#FF6B35')
+        // 时间显示区域
+        Column() {
+          // 检查是否需要显示日期（第一个或与前一个不是同一天）
+          if (index === 0 || !this.isSameDay(event.date, this.filteredEvents[index - 1].date)) {
+            Column() {
+              Text(this.formatTimelineDate(event.date))
+                .fontSize(9)
+                .fontColor('#666666')
+                .fontWeight(FontWeight.Normal)
+                .textAlign(TextAlign.Center)
+                .lineHeight(12)
+            }
+            .backgroundColor('#F5F5F5')
+            .borderRadius(6)
+            .padding({ left: 4, right: 4, top: 3, bottom: 3 })
+            .margin({ bottom: 8 })
+          }
         }
+        .width(50)
+        .alignItems(HorizontalAlign.Center)
         
-        // 时间轴节点
-        Column()
-          .width(12)
-          .height(12)
-          .backgroundColor('#FF6B35')
-          .borderRadius(6)
-          .border({ width: 3, color: Color.White })
-        
-        Column()
-          .width(2)
-          .height(20)
-          .backgroundColor(index === this.filteredEvents.length - 1 ? '#F0F0F0' : '#FF6B35')
+        // 时间轴线条和节点
+         Column() {
+           // 上方连接线
+           if (index === 0) {
+             Column()
+               .width(3)
+               .height(20)
+               .linearGradient({
+                 angle: 180,
+                 colors: [['#F0F0F0', 0.0], ['#E0E0E0', 1.0]]
+               })
+               .borderRadius(1.5)
+           } else {
+             Column()
+               .width(3)
+               .height(20)
+               .linearGradient({
+                 angle: 180,
+                 colors: [['#FF6B35', 0.0], ['#FF8A65', 1.0]]
+               })
+               .borderRadius(1.5)
+           }
+           
+           // 时间轴节点
+           Column()
+             .width(16)
+             .height(16)
+             .linearGradient({
+               angle: 135,
+               colors: [['#FF6B35', 0.0], ['#FF8A65', 1.0]]
+             })
+             .borderRadius(8)
+             .border({ width: 3, color: Color.White })
+             .shadow({
+               radius: 6,
+               color: '#40FF6B35',
+               offsetX: 0,
+               offsetY: 2
+             })
+           
+           // 下方连接线
+           Column()
+             .width(3)
+             .height(20)
+             .linearGradient({
+               angle: 180,
+               colors: index === this.filteredEvents.length - 1 ? 
+                 [['#E0E0E0', 0.0], ['#F0F0F0', 1.0]] :
+                 [['#FF8A65', 0.0], ['#FF6B35', 1.0]]
+             })
+             .borderRadius(1.5)
+         }
+        .alignItems(HorizontalAlign.Center)
       }
-      .width(20)
+      .width(60)
       .alignItems(HorizontalAlign.Center)
       
       // 重新设计的事件卡片 - 清晰展示所有信息
-      Column() {
-        // 卡片标题 - 礼物名称
-        Text(event.actualGift || event.giftIdea)
-          .fontSize(16)
-          .fontWeight(FontWeight.Bold)
-          .fontColor('#1A1A1A')
-          .maxLines(2)
-          .textOverflow({ overflow: TextOverflow.Ellipsis })
-          .width('100%')
-          .textAlign(TextAlign.Start)
-          .margin({ bottom: 12 })
+      Stack() {
+        Column() {
+          // 卡片标题 - 礼物名称
+          Text(event.actualGift || event.giftIdea)
+            .fontSize(16)
+            .fontWeight(FontWeight.Bold)
+            .fontColor('#1A1A1A')
+            .maxLines(2)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
+            .width('100%')
+            .textAlign(TextAlign.Start)
+            .margin({ bottom: 12 })
         
         // 详细信息列表
         Column({ space: 8 }) {
-          // 收礼人信息
+          // 联系人信息
           Row() {
-            Text('收礼人：')
+            Text(this.getContactLabel(event.recordType))
               .fontSize(13)
               .fontColor('#666666')
 
@@ -391,9 +511,9 @@ export struct RecordPage {
           .width('100%')
           .alignItems(VerticalAlign.Center)
           
-          // 送礼时间
+          // 时间信息
           Row() {
-            Text('送礼时间：')
+            Text(this.getTimeLabel(event.recordType))
               .fontSize(13)
               .fontColor('#666666')
 
@@ -405,19 +525,19 @@ export struct RecordPage {
           .width('100%')
           .alignItems(VerticalAlign.Center)
           
-          // 对方心情
+          // 心情显示
           Row() {
-            Text('对方心情：')
+            Text(this.getMoodLabel(event.recordType))
               .fontSize(13)
               .fontColor('#666666')
 
             Row() {
-              Image(this.getIconByMood(event.mood))
+              Image(this.getIconByMood(this.getMoodValue(event)))
                 .width(16)
                 .height(16)
-                .fillColor(this.getMoodColor(event.mood))
+                .fillColor(this.getMoodColor(this.getMoodValue(event)))
               
-              Text(event.mood || '未知')
+              Text(this.getMoodValue(event) || '未知')
                 .fontSize(13)
                 .fontColor('#1A1A1A')
                 .margin({ left: 6 })
@@ -442,9 +562,9 @@ export struct RecordPage {
           .width('100%')
           .alignItems(VerticalAlign.Center)
           
-          // 送礼场合
+          // 场合信息
           Row() {
-            Text('送礼场合：')
+            Text(this.getOccasionLabel(event.recordType))
               .fontSize(13)
               .fontColor('#666666')
 
@@ -529,8 +649,8 @@ export struct RecordPage {
             if (event.reminderSet) {
               Row() {
                 Image($r('app.media.icon_ld'))
-                  .width(24)
-                  .height(24)
+                  .width(16)
+                  .height(16)
                 Text('已设置提醒')
                   .fontSize(13)
                   .fontColor('#34C759')
@@ -559,22 +679,29 @@ export struct RecordPage {
         }
         .width('100%')
         .alignItems(VerticalAlign.Center)
+        }
+        .layoutWeight(1)
+        .padding(20)
+        
+        // 右上角角标
+        this.buildRecordTypeBadge(event.recordType)
       }
       .layoutWeight(1)
-      .padding(16)
+      .borderWidth(1)
+      .borderColor('#15000000')
       .backgroundColor(Color.White)
-      .borderRadius(16)
-      .margin({ left: 12, bottom: 16 })
-      .shadow({
-        radius: 8,
-        color: '#1A000000',
-        offsetX: 0,
-        offsetY: 2
-      })
+          .borderRadius(18)
+          .margin({ left: 8, bottom: 18 })
+          .shadow({
+            radius: 12,
+            color: '#15000000',
+            offsetX: 0,
+            offsetY: 4
+          })
       .linearGradient({
-        angle: 135,
-        colors: [[this.getMoodColor(event.mood) + '20', 0.0], ['#F8F9FA', 1.0]]
-      })
+          angle: 135,
+          colors: [[this.getRecordTypeColor(event.recordType), 0.0], ['#F8F9FA', 1.0]]
+        })
       .onClick(() => {
         this.navigateToEventDetail(event);
       })
@@ -587,6 +714,26 @@ export struct RecordPage {
     router.pushUrl({
       url: 'pages/profile/GiftReminderPage'
     });
+  }
+
+  // 构建记录类型角标
+  @Builder
+  buildRecordTypeBadge(recordType: string | undefined) {
+    Column() {
+      Text(recordType === 'give' ? '送礼' : '收礼')
+        .fontSize(14)
+        .fontColor(Color.White)
+        .fontWeight(FontWeight.Bold)
+        .textAlign(TextAlign.Center)
+    }
+    .width(40)
+    .height(20)
+    .backgroundColor(recordType === 'give' ? '#FF6B35' : '#34C759')
+    .borderRadius({ topLeft: 0, topRight: 16, bottomLeft: 8, bottomRight: 0 })
+    .justifyContent(FlexAlign.Center)
+    .position({ x: '100%', y: 0 })
+    .translate({ x: -40, y: 0 })
+    .zIndex(10)
   }
 
   @Builder

@@ -21,6 +21,8 @@ interface ReminderItem {
   isEnabled: boolean;
   createdAt: string;
   reminderId?: number; // 系统提醒ID
+  relatedId?: string; // 关联的事件ID
+  isLinkedToGiftEvent?: boolean; // 是否关联收礼事件
 }
 
 interface SelectOption {
@@ -41,7 +43,8 @@ struct GiftReminderPage {
   @State reminderContent: string = '';
   @State reminderDate: string = '';
   @State reminderTime: string = '09:00';
-  @State editingReminder: ReminderItem | null = null;
+  @State private editingReminder: ReminderItem | null = null;
+  @State private deletingReminder: ReminderItem | null = null;
   
   private dbManager = new NewDatabaseManager();
   private contactDao = new ContactDAO(this.dbManager);
@@ -82,12 +85,85 @@ struct GiftReminderPage {
   async loadReminders() {
     try {
       const dbReminders = await this.reminderDao.getAllReminders();
-      this.reminders = dbReminders.map((reminder): ReminderItem => {
-        const contact = this.contacts.find(c => c.id === reminder.relatedId);
+      this.reminders = await Promise.all(dbReminders.map(async (reminder): Promise<ReminderItem> => {
+        // 判断是否关联收礼事件
+        let isLinkedToGiftEvent = false;
+        let contactName = '未知联系人';
+        
+        // 首先尝试检查是否真正关联了收礼事件
+        // 只有当reminder.relatedId确实对应一个存在的收礼事件时，才认为是关联的
+        if (reminder.type === 'gift_event' && reminder.relatedId) {
+          try {
+            const giftEvent = await this.giftEventDao.getGiftEventById(reminder.relatedId);
+            if (giftEvent) {
+              // 确实找到了对应的收礼事件，说明是关联的
+              isLinkedToGiftEvent = true;
+              contactName = giftEvent.contactName;
+            } else {
+              // 没有找到对应的收礼事件，说明relatedId存储的是contactId
+              isLinkedToGiftEvent = false;
+              // 从联系人表获取信息
+              const contact = this.contacts.find(c => c.id === reminder.relatedId);
+              if (contact) {
+                contactName = contact.name;
+              } else {
+                // 如果在当前联系人列表中找不到，尝试从数据库重新获取
+                try {
+                  const dbContact = await this.contactDao.getContactById(reminder.relatedId);
+                  if (dbContact) {
+                    contactName = dbContact.name;
+                    // 同时更新本地联系人列表
+                    this.contacts.push(dbContact);
+                  }
+                } catch (error) {
+                  console.error('获取联系人信息失败:', error);
+                }
+              }
+            }
+          } catch (error) {
+            console.error('检查关联事件失败:', error);
+            // 出错时默认认为不是关联的，从联系人表获取信息
+            isLinkedToGiftEvent = false;
+            const contact = this.contacts.find(c => c.id === reminder.relatedId);
+            if (contact) {
+              contactName = contact.name;
+            } else {
+              try {
+                const dbContact = await this.contactDao.getContactById(reminder.relatedId);
+                if (dbContact) {
+                  contactName = dbContact.name;
+                  this.contacts.push(dbContact);
+                }
+              } catch (error) {
+                console.error('获取联系人信息失败:', error);
+              }
+            }
+          }
+        } else {
+          // 其他类型的提醒，从联系人表获取信息
+          // reminder.relatedId 存储的就是 contactId
+          const contact = this.contacts.find(c => c.id === reminder.relatedId);
+          if (contact) {
+            contactName = contact.name;
+          } else {
+            // 如果在当前联系人列表中找不到，可能是新添加的联系人，尝试从数据库重新获取
+            try {
+              const dbContact = await this.contactDao.getContactById(reminder.relatedId);
+              if (dbContact) {
+                contactName = dbContact.name;
+                // 同时更新本地联系人列表
+                this.contacts.push(dbContact);
+              }
+            } catch (error) {
+              console.error('获取联系人信息失败:', error);
+            }
+          }
+        }
+        
         const reminderItem: ReminderItem = {
           id: reminder.id,
           contactId: reminder.relatedId,
-          contactName: contact?.name || '未知联系人',
+          contactName: contactName,
           title: reminder.title,
           content: reminder.message || '',
           dateTime: reminder.reminderDate,
@@ -95,10 +171,12 @@ struct GiftReminderPage {
           isEnabled: reminder.isActive,
           isCompleted: reminder.isTriggered,
           createdAt: reminder.createdAt,
-          reminderId: undefined
+          reminderId: undefined,
+          relatedId: reminder.relatedId,
+          isLinkedToGiftEvent: isLinkedToGiftEvent
         };
         return reminderItem;
-      });
+      }));
     } catch (error) {
       console.error('加载提醒数据失败:', error);
       this.reminders = [];
@@ -296,23 +374,6 @@ struct GiftReminderPage {
     this.showAddDialog = false;
   }
   
-  async deleteReminder(reminder: ReminderItem) {
-    // 取消系统提醒
-    if (reminder.reminderId) {
-      await this.cancelSystemReminder(reminder.reminderId);
-    }
-    
-    // 从数据库删除
-    try {
-      await this.reminderDao.deleteReminder(reminder.id);
-    } catch (error) {
-      console.error('删除提醒失败:', error);
-    }
-    
-    // 从列表中移除
-    this.reminders = this.reminders.filter(r => r.id !== reminder.id);
-  }
-  
   getTypeIcon(type: string): Resource {
     switch (type) {
       case 'gift_event': return $r('app.media.icon_happy');
@@ -347,6 +408,14 @@ struct GiftReminderPage {
     }
   }
 
+  formatSpecificDate(dateTime: string): string {
+    const date = new Date(dateTime);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
   goBack() {
     router.back();
   }
@@ -376,8 +445,8 @@ struct GiftReminderPage {
           .textAlign(TextAlign.Center)
         
         Image($r('app.media.ic_add'))
-          .width(24)
-          .height(24)
+          .width(36)
+          .height(36)
           .fillColor('#FF6B35')
           .onClick(() => {
             this.showAddReminderDialog();
@@ -418,21 +487,10 @@ struct GiftReminderPage {
               .fontColor('#666666')
               .margin({ top: 16 })
             
-            Text('点击右上角添加提醒')
+            Text('点击右上角按钮添加提醒')
               .fontSize(14)
               .fontColor('#999999')
               .margin({ top: 8 })
-            
-            Button('添加提醒')
-              .width(120)
-              .height(40)
-              .backgroundColor('#FF6B35')
-              .fontColor(Color.White)
-              .borderRadius(20)
-              .margin({ top: 24 })
-              .onClick(() => {
-                this.showAddReminderDialog();
-              })
           }
           .width('100%')
           .layoutWeight(1)
@@ -442,92 +500,83 @@ struct GiftReminderPage {
           // 提醒列表
           Scroll() {
             Column() {
-              ForEach(this.reminders, (reminder: ReminderItem) => {
-                Row() {
-                  // 类型图标
-                  Image(this.getTypeIcon(reminder.type))
-                    .width(24)
-                    .height(24)
-                    .fillColor('#FF6B35')
-                    .margin({ right: 12 })
-                  
-                  // 提醒信息
-                  Column() {
-                    Row() {
-                      Text(reminder.title)
-                        .fontSize(16)
-                        .fontWeight(FontWeight.Medium)
-                        .fontColor('#333333')
+              List() {
+                ForEach(this.reminders, (reminder: ReminderItem) => {
+                  ListItem() {
+                    Column() {
+                      // 第一行：送给：联系人名字 + 右侧时间显示
+                      Row() {
+                        Row() {
+                          Text('送给：')
+                            .fontSize(14)
+                            .fontColor('#666666')
+                          Text(reminder.contactName)
+                            .fontSize(16)
+                            .fontWeight(FontWeight.Medium)
+                            .fontColor('#333333')
+                        }
                         .layoutWeight(1)
+                        
+                        Text(this.formatDateTime(reminder.dateTime))
+                          .fontSize(14)
+                          .fontColor('#FF6B35')
+                      }
+                      .width('100%')
+                      .alignItems(VerticalAlign.Center)
                       
-                      Text(this.formatDateTime(reminder.dateTime))
-                        .fontSize(12)
-                        .fontColor('#FF6B35')
-                        .backgroundColor('#FFF0ED')
-                        .padding({ left: 8, right: 8, top: 2, bottom: 2 })
-                        .borderRadius(10)
+                      // 第二行：根据提醒类型决定是否显示标题
+                      if (!reminder.isLinkedToGiftEvent && reminder.title && reminder.title.trim() !== '') {
+                        Text(reminder.title)
+                          .fontSize(14)
+                          .fontColor('#666666')
+                          .width('100%')
+                          .margin({ top: 6 })
+                          .maxLines(2)
+                          .textOverflow({ overflow: TextOverflow.Ellipsis })
+                      }
+                      
+                      // 第三行：具体提醒日期
+                      Text(this.formatSpecificDate(reminder.dateTime))
+                        .fontSize(14)
+                        .fontColor('#999999')
+                        .width('100%')
+                        .margin({ top: 6 })
+                      
+                      // 第四行：是否关联收礼
+                      Row() {
+                        Image($r('app.media.icon_check'))
+                          .width(12)
+                          .height(12)
+                          .fillColor('#4CAF50')
+                          .margin({ right: 4 })
+                        Text('已关联')
+                          .fontSize(12)
+                          .fontColor('#4CAF50')
+                      }
+                      .width('100%')
+                      .visibility(reminder.isLinkedToGiftEvent? Visibility.Visible: Visibility.None)
+                      .alignItems(VerticalAlign.Center)
+                      .margin({ top: 6 })
                     }
                     .width('100%')
-                    
-                    Text(`${reminder.contactName} · ${this.getTypeName(reminder.type)}`)
-                      .fontSize(12)
-                      .fontColor('#666666')
-                      .margin({ top: 4 })
-                    
-                    if (reminder.content) {
-                      Text(reminder.content)
-                        .fontSize(12)
-                        .fontColor('#999999')
-                        .margin({ top: 2 })
-                        .maxLines(1)
-                        .textOverflow({ overflow: TextOverflow.Ellipsis })
-                    }
+                    .padding(16)
+                    .backgroundColor(Color.White)
+                    .borderRadius(12)
+                    .alignItems(HorizontalAlign.Start)
+                    .onClick(() => {
+                      // 暂时去掉编辑功能
+                      // this.showEditReminderDialog(reminder);
+                    })
                   }
-                  .layoutWeight(1)
-                  .alignItems(HorizontalAlign.Start)
-                  
-                  // 开关和操作
-                  Column() {
-                    Toggle({ type: ToggleType.Switch, isOn: reminder.isEnabled })
-                      .width(40)
-                      .height(20)
-                      .selectedColor('#FF6B35')
-                      .onChange((isOn: boolean) => {
-                        this.toggleReminder(reminder);
-                      })
-                    
-                    Row() {
-                      Image($r('app.media.ic_settings'))
-                        .width(16)
-                        .height(16)
-                        .fillColor('#666666')
-                        .margin({ right: 8 })
-                        .onClick(() => {
-                          this.showEditReminderDialog(reminder);
-                        })
-                      
-                      Image($r('app.media.icon_delete'))
-                        .width(16)
-                        .height(16)
-                        .fillColor('#FF4444')
-                        .onClick(() => {
-                          this.deleteReminder(reminder);
-                        })
-                    }
-                    .margin({ top: 8 })
-                  }
-                }
-                .width('100%')
-                .padding(16)
-                .backgroundColor(Color.White)
-                .borderRadius(12)
-                .margin({ bottom: 8, left: 16, right: 16 })
-              })
+                  .swipeAction({ end: this.buildSwipeAction(reminder) })
+                  .margin({ bottom: 8, left: 16, right: 16 })
+                })
+              }
+              .scrollBar(BarState.Off)
             }
             .width('100%')
-            .padding({ bottom: 20 })
+            .padding({ bottom: 60, top: 20, left: 10, right: 10 })
           }
-          .layoutWeight(1)
           .scrollBar(BarState.Off)
           .margin({ top: 8 })
         }
@@ -538,8 +587,81 @@ struct GiftReminderPage {
     .backgroundColor('#F8F9FA')
     .bindSheet($$this.showAddDialog, this.buildAddReminderDialog(), {
       height: 600,
-      dragBar: true
+      dragBar: true,
+      showClose: false
     })
+  }
+  
+  // 构建左滑删除操作按钮
+  @Builder
+  buildSwipeAction(reminder: ReminderItem) {
+    Row() {
+      Button() {
+        Column() {
+          Image($r('app.media.icon_delete'))
+            .width(24)
+            .height(24)
+            .fillColor('#FF4444')
+          Text('删除')
+            .fontSize(12)
+            .fontColor('#FF4444')
+            .margin({ top: 4 })
+        }
+      }
+      .width(80)
+      .backgroundColor(Color.Transparent)
+      .height('100%')
+      .borderRadius(0)
+      .onClick(() => {
+        this.showDeleteConfirmDialog(reminder);
+      })
+    }
+    .height('100%')
+  }
+  
+  showDeleteConfirmDialog(reminder: ReminderItem) {
+    this.deletingReminder = reminder;
+    AlertDialog.show({
+      title: '删除提醒',
+      message: `确定要删除提醒"${reminder.title}"吗？`,
+      primaryButton: {
+        value: '取消',
+        action: () => {
+          this.deletingReminder = null;
+        }
+      },
+      secondaryButton: {
+        value: '删除',
+        fontColor: '#FF4444',
+        action: () => {
+          this.deleteReminder();
+        }
+      }
+    });
+  }
+  
+  async deleteReminder() {
+    if (!this.deletingReminder) return;
+    
+    try {
+      // 如果有系统提醒ID，先取消系统提醒
+      if (this.deletingReminder.reminderId) {
+        await reminderAgentManager.cancelReminder(this.deletingReminder.reminderId);
+      }
+      
+      // 从数据库删除
+      await this.reminderDao.deleteReminder(this.deletingReminder.id);
+      
+      // 从本地列表中移除
+      const index = this.reminders.findIndex(r => r.id === this.deletingReminder!.id);
+      if (index > -1) {
+        this.reminders.splice(index, 1);
+      }
+      
+      this.deletingReminder = null;
+    } catch (error) {
+      console.error('删除提醒失败:', error);
+    }
   }
   
   @Builder
@@ -552,33 +674,6 @@ struct GiftReminderPage {
       
       Scroll() {
         Column() {
-          // 提醒类型
-          Column() {
-            Text('提醒类型')
-              .fontSize(14)
-              .fontColor('#333333')
-              .alignSelf(ItemAlign.Start)
-              .margin({ bottom: 8 })
-            
-            Row() {
-              ForEach(['gift_event', 'important_date', 'holiday'], (type: string) => {
-                Text(this.getTypeName(type))
-                  .fontSize(14)
-                  .fontColor(this.selectedType === type ? Color.White : '#666666')
-                  .backgroundColor(this.selectedType === type ? '#FF6B35' : '#F0F0F0')
-                  .padding({ left: 16, right: 16, top: 8, bottom: 8 })
-                  .borderRadius(16)
-                  .margin({ right: 8 })
-                  .onClick(() => {
-                    this.selectedType = type;
-                  })
-              }, (type: string) => type)
-            }
-            .width('100%')
-          }
-          .width('100%')
-          .margin({ bottom: 16 })
-          
           // 选择联系人
           Column() {
             Text('选择联系人')
@@ -633,7 +728,7 @@ struct GiftReminderPage {
               .alignSelf(ItemAlign.Start)
               .margin({ bottom: 8 })
             
-            TextArea({ placeholder: '请输入提醒内容（可选）', text: this.reminderContent })
+            TextArea({ placeholder: '请输入提醒内容', text: this.reminderContent })
               .fontSize(14)
               .fontColor('#333333')
               .backgroundColor('#F8F9FA')
@@ -661,62 +756,86 @@ struct GiftReminderPage {
               selected: this.reminderDate ? new Date(this.reminderDate) : new Date()
             })
               .onChange((value: DatePickerResult) => {
-                const month = value.month !== undefined ? value.month + 1 : 1;
+                const month = value.month !== undefined ? value.month : 1;
                 const day = value.day !== undefined ? value.day : 1;
                 this.reminderDate = `${value.year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
               })
           }
           .width('100%')
           .margin({ bottom: 16 })
-          
-          // 提醒时间
-          Column() {
-            Text('提醒时间')
-              .fontSize(14)
-              .fontColor('#333333')
-              .alignSelf(ItemAlign.Start)
-              .margin({ bottom: 8 })
-            
-            TimePicker({
-              selected: new Date(`2024-01-01 ${this.reminderTime}`)
-            })
-              .onChange((value: TimePickerResult) => {
-                this.reminderTime = `${String(value.hour).padStart(2, '0')}:${String(value.minute).padStart(2, '0')}`;
-              })
-          }
-          .width('100%')
-          .margin({ bottom: 24 })
         }
       }
       .layoutWeight(1)
       
       // 操作按钮
-      Row() {
-        Button('取消')
-          .layoutWeight(1)
-          .height(44)
-          .backgroundColor('#F0F0F0')
-          .fontColor('#333333')
-          .borderRadius(22)
-          .margin({ right: 8 })
-          .onClick(() => {
-            this.showAddDialog = false;
-          })
-        
-        Button(this.editingReminder ? '保存' : '添加')
-          .layoutWeight(1)
-          .height(44)
-          .backgroundColor('#FF6B35')
-          .fontColor(Color.White)
-          .borderRadius(22)
-          .margin({ left: 8 })
-          .onClick(() => {
-            this.saveReminder();
-          })
+      if (this.editingReminder) {
+        // 编辑模式：取消、删除、保存
+        Row() {
+          Button('取消')
+            .layoutWeight(1)
+            .height(44)
+            .backgroundColor('#F0F0F0')
+            .fontColor('#333333')
+            .borderRadius(22)
+            .margin({ right: 4 })
+            .onClick(() => {
+              this.showAddDialog = false;
+            })
+          
+          Button('删除')
+            .layoutWeight(1)
+            .height(44)
+            .backgroundColor('#FF4444')
+            .fontColor(Color.White)
+            .borderRadius(22)
+            .margin({ left: 4, right: 4 })
+            .onClick(() => {
+              this.showAddDialog = false;
+              this.showDeleteConfirmDialog(this.editingReminder!);
+            })
+          
+          Button('保存')
+            .layoutWeight(1)
+            .height(44)
+            .backgroundColor('#FF6B35')
+            .fontColor(Color.White)
+            .borderRadius(22)
+            .margin({ left: 4 })
+            .onClick(() => {
+              this.saveReminder();
+            })
+        }
+        .width('100%')
+      } else {
+        // 添加模式：取消、添加
+        Row() {
+          Button('取消')
+            .layoutWeight(1)
+            .height(44)
+            .backgroundColor('#F0F0F0')
+            .fontColor('#333333')
+            .borderRadius(22)
+            .margin({ right: 8 })
+            .onClick(() => {
+              this.showAddDialog = false;
+            })
+          
+          Button('添加')
+            .layoutWeight(1)
+            .height(44)
+            .backgroundColor('#FF6B35')
+            .fontColor(Color.White)
+            .borderRadius(22)
+            .margin({ left: 8 })
+            .onClick(() => {
+              this.saveReminder();
+            })
+        }
+        .width('100%')
       }
-      .width('100%')
     }
     .width('100%')
     .padding(24)
   }
+
 }

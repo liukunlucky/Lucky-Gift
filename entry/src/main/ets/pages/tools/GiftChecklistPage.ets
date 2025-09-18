@@ -106,17 +106,18 @@ struct GiftChecklistPage {
       .margin({ bottom: 8 })
 
       // 检查清单
-      Scroll() {
-        Column() {
-          ForEach(this.getFilteredItems(), (item: ChecklistItem) => {
-            this.buildChecklistItem(item);
-          })
-        }
-        .width('100%')
+      List() {
+        ForEach(this.getFilteredItems(), (item: ChecklistItem) => {
+          ListItem() {
+            this.buildChecklistItem(item)
+          }
+        })
       }
       .layoutWeight(1)
       .scrollBar(BarState.Auto)
       .backgroundColor('#F8F9FA')
+      .divider({ strokeWidth: 0 })
+      .padding({ left: 16, right: 16, top: 8 })
     }
     .width('100%')
     .height('100%')
@@ -125,17 +126,19 @@ struct GiftChecklistPage {
 
   @Builder
   buildCategoryButton(category: string, title: string) {
-    Button(title)
-      .fontSize(12)
-      .fontColor(this.selectedCategory === category ? Color.White : '#666666')
-      .backgroundColor(this.selectedCategory === category ? '#FF6B35' : '#F0F0F0')
-      .borderRadius(16)
-      .height(32)
-      .padding({ left: 12, right: 12 })
-      .margin({ right: 8 })
-      .onClick(() => {
-        this.selectedCategory = category;
-      })
+    Button() {
+      Text(title)
+        .fontSize(12)
+        .fontColor(this.selectedCategory === category ? Color.White : '#666666')
+    }
+    .backgroundColor(this.selectedCategory === category ? '#FF6B35' : '#F0F0F0')
+    .borderRadius(16)
+    .height(32)
+    .padding({ left: 12, right: 12 })
+    .margin({ right: 8 })
+    .onClick(() => {
+      this.selectedCategory = category;
+    })
   }
 
   @Builder
@@ -174,7 +177,7 @@ struct GiftChecklistPage {
     .padding(16)
     .backgroundColor(Color.White)
     .borderRadius(8)
-    .margin({ bottom: 8, left: 16, right: 16 })
+    .margin({ bottom: 8 })
     .alignItems(VerticalAlign.Top)
     .onClick(() => {
       this.toggleChecklistItem(item);
@@ -268,7 +271,17 @@ struct GiftChecklistPage {
   private toggleChecklistItem(item: ChecklistItem): void {
     const index = this.checklistItems.findIndex(i => i.id === item.id);
     if (index !== -1) {
-      this.checklistItems[index].isChecked = !this.checklistItems[index].isChecked;
+      // 创建新数组来触发UI更新
+      const newItems = this.checklistItems.slice();
+      const updatedItem: ChecklistItem = {
+        id: newItems[index].id,
+        title: newItems[index].title,
+        description: newItems[index].description,
+        isChecked: !newItems[index].isChecked,
+        category: newItems[index].category
+      };
+      newItems[index] = updatedItem;
+      this.checklistItems = newItems;
       this.updateCompletedCount();
     }
   }
@@ -278,9 +291,12 @@ struct GiftChecklistPage {
   }
 
   private resetChecklist(): void {
-    this.checklistItems.forEach(item => {
+    // 创建新数组来触发UI更新
+    const newItems = this.checklistItems.slice();
+    newItems.forEach(item => {
       item.isChecked = false;
     });
-    this.completedCount = 0;
+    this.checklistItems = newItems;
+    this.updateCompletedCount();
   }
 }

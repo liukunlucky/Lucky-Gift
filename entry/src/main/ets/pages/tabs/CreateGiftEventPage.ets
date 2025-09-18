@@ -31,6 +31,7 @@ struct CreateGiftEventPage {
   @State isSaving: boolean = false;
   
   // 表单数据
+  @State recordType: 'give' | 'receive' = 'give'; // 记录类型：送礼或收礼
   @State selectedContact: Contact | null = null;
   @State recipientName: string = '';
   @State eventTitle: string = '';
@@ -177,6 +178,7 @@ struct CreateGiftEventPage {
     this.selectedImages = event.images || [];
     this.reminderEnabled = !!event.reminderDate;
     this.reminderDate = event.reminderDate ? event.reminderDate.split('T')[0] : '';
+    this.recordType = event.recordType || 'give'; // 加载记录类型，默认为送礼
     
     // 加载联系人 - 修复收礼人显示问题
     const contact = this.contacts.find(c => c.id === event.contactId);
@@ -233,7 +235,7 @@ struct CreateGiftEventPage {
       end: new Date('2100-12-31'),
       selected: new Date(this.eventDate),
       onAccept: (value: DatePickerResult) => {
-        const selectedDate = new Date(value.year!, value.month! + 1, value.day!);
+        const selectedDate = new Date(value.year!, value.month!, value.day!);
         this.eventDate = selectedDate.toISOString().split('T')[0];
       }
     });
@@ -249,7 +251,7 @@ struct CreateGiftEventPage {
       end: new Date('2100-12-31'),
       selected: this.reminderDate ? new Date(this.reminderDate) : new Date(),
       onAccept: (value: DatePickerResult) => {
-        const selectedDate = new Date(value.year!, value.month! + 1, value.day!);
+        const selectedDate = new Date(value.year!, value.month!, value.day!);
         this.reminderDate = selectedDate.toISOString().split('T')[0];
       }
     });
@@ -280,7 +282,8 @@ struct CreateGiftEventPage {
         tags: [],
         reminderSet: this.reminderEnabled,
         reminderDate: this.reminderEnabled && this.reminderDate ? 
-          new Date(this.reminderDate).toISOString() : undefined
+          new Date(this.reminderDate).toISOString() : undefined,
+        recordType: this.recordType // 添加记录类型字段
       };
       
       console.log('事件数据:', JSON.stringify(eventData));
@@ -299,28 +302,32 @@ struct CreateGiftEventPage {
 
       // 创建系统提醒和数据库提醒记录
       if (this.reminderEnabled && this.reminderDate) {
+        // 尝试创建系统提醒（可能失败，但不影响整个保存流程）
         const reminderId = await this.createSystemReminder(eventData);
-        if (reminderId) {
-          // 保存提醒到数据库
-          const reminderData: Reminder = {
-            id: `reminder_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-            type: 'gift_event',
-            relatedId: eventId,
-            title: `送礼提醒：${eventData.contactName}`,
-            message: `${eventData.occasion} - ${eventData.giftIdea || '准备礼物'}`,
-            reminderDate: new Date(this.reminderDate).toISOString(),
-            isActive: true,
-            isTriggered: false,
-            createdAt: new Date().toISOString()
-          };
-          
-          try {
-            await this.reminderDAO.createReminder(reminderData);
-            console.log('提醒已保存到数据库');
-          } catch (error) {
-            console.error('保存提醒到数据库失败:', error);
+        console.log('lucky reminderId is ' + reminderId)
+        // 无论系统提醒是否成功，都保存提醒记录到数据库
+        const reminderData: Reminder = {
+          id: `reminder_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          type: 'gift_event',
+          relatedId: eventId,
+          title: `送礼提醒：${eventData.contactName}`,
+          message: `${eventData.occasion} - ${eventData.giftIdea || '准备礼物'}`,
+          reminderDate: new Date(this.reminderDate).toISOString(),
+          isActive: true,
+          isTriggered: false,
+          createdAt: new Date().toISOString()
+        };
+        
+        try {
+          await this.reminderDAO.createReminder(reminderData);
+          console.log('提醒已保存到数据库');
+          if (reminderId) {
+            console.log('系统提醒创建成功，ID:', reminderId);
+          } else {
+            console.log('系统提醒创建失败，但提醒记录已保存到数据库');
           }
-          console.log('系统提醒创建成功，ID:', reminderId);
+        } catch (error) {
+          console.error('保存提醒到数据库失败:', error);
         }
       }
       
@@ -563,14 +570,17 @@ struct CreateGiftEventPage {
         // 顶部导航栏
       Row() {
         Button() {
-          Text('←')
-            .fontSize(20)
-            .fontColor('#333333')
+          Image($r('app.media.icon_back'))
+            .width(24)
+            .height(24)
+            .fillColor('#333333')
         }
         .width(40)
         .height(40)
         .backgroundColor(Color.Transparent)
-        .onClick(() => this.goBack())
+        .onClick(() => {
+          this.goBack()
+        })
         
         Text(this.isEditMode ? '编辑记录' : '创建记录')
           .fontSize(18)
@@ -650,10 +660,77 @@ struct CreateGiftEventPage {
                 .margin({ bottom: 16 })
               
               Column() {
-                // 收礼人选择
+                // 记录类型选择
                 Column() {
                   Row() {
-                    Text('收礼人')
+                    Text('记录类型')
+                      .fontSize(14)
+                      .fontColor('#666666')
+                    
+                    Text('*')
+                      .fontSize(14)
+                      .fontColor('#FF4444')
+                      .margin({ left: 2 })
+                  }
+                  .margin({ bottom: 8 })
+                  
+                  Row() {
+                    // 送礼选项
+                    Row() {
+                      Radio({ value: 'give', group: 'recordType' })
+                        .checked(this.recordType === 'give')
+                        .onChange((isChecked: boolean) => {
+                          if (isChecked) {
+                            this.recordType = 'give';
+                          }
+                        })
+                        .radioStyle({
+                          checkedBackgroundColor: '#FF6B35'
+                        })
+                      
+                      Text('送礼')
+                        .fontSize(16)
+                        .fontColor('#333333')
+                        .margin({ left: 8 })
+                    }
+                    .onClick(() => {
+                      this.recordType = 'give';
+                    })
+                    
+                    // 收礼选项
+                    Row() {
+                      Radio({ value: 'receive', group: 'recordType' })
+                        .checked(this.recordType === 'receive')
+                        .onChange((isChecked: boolean) => {
+                          if (isChecked) {
+                            this.recordType = 'receive';
+                          }
+                        })
+                        .radioStyle({
+                          checkedBackgroundColor: '#FF6B35'
+                        })
+                      
+                      Text('收礼')
+                        .fontSize(16)
+                        .fontColor('#333333')
+                        .margin({ left: 8 })
+                    }
+                    .margin({ left: 32 })
+                    .onClick(() => {
+                      this.recordType = 'receive';
+                    })
+                  }
+                  .width('100%')
+                  .alignItems(VerticalAlign.Center)
+                }
+                .width('100%')
+                .alignItems(HorizontalAlign.Start)
+                .margin({ bottom: 16 })
+                
+                // 收礼人/送礼人选择
+                Column() {
+                  Row() {
+                    Text(this.recordType === 'give' ? '收礼人' : '送礼人')
                       .fontSize(14)
                       .fontColor('#666666')
                     
@@ -668,7 +745,7 @@ struct CreateGiftEventPage {
                     // 有联系人时显示下拉框
                     Button() {
                       Row() {
-                        Text(this.selectedContact ? this.selectedContact.name : '选择收礼人')
+                        Text(this.selectedContact ? this.selectedContact.name : (this.recordType === 'give' ? '选择收礼人' : '选择送礼人'))
                           .fontSize(16)
                           .fontColor(this.selectedContact ? '#333333' : '#999999')
                           .layoutWeight(1)
@@ -731,7 +808,10 @@ struct CreateGiftEventPage {
                   }
                   .margin({ bottom: 8 })
                   
-                  TextInput({ placeholder: '为这次送礼起个名字', text: this.eventTitle })
+                  TextInput({ 
+                    placeholder: this.recordType === 'receive' ? '为这次收礼起个名字' : '为这次送礼起个名字', 
+                    text: this.eventTitle 
+                  })
                     .fontSize(16)
                     .backgroundColor('#F8F9FA')
                     .borderRadius(8)
@@ -840,8 +920,9 @@ struct CreateGiftEventPage {
                 .margin({ bottom: 16 })
               
               Column() {
-                // 礼物创意
-                Column() {
+                // 礼物创意（仅送礼状态显示）
+                if (this.recordType === 'give') {
+                  Column() {
                   Row() {
                     Text('礼物创意')
                       .fontSize(14)
@@ -913,10 +994,11 @@ struct CreateGiftEventPage {
                     .onChange((value: string) => {
                       this.giftIdea = value;
                     })
+                  }
+                  .width('100%')
+                  .alignItems(HorizontalAlign.Start)
+                  .margin({ bottom: 16 })
                 }
-                .width('100%')
-                .alignItems(HorizontalAlign.Start)
-                .margin({ bottom: 16 })
                 
                 // 实际花费
                 Column() {
@@ -1039,8 +1121,9 @@ struct CreateGiftEventPage {
                 .margin({ bottom: 16 })
               
               Column() {
-                // 送礼故事
-                Column() {
+                // 送礼故事（仅送礼状态显示）
+                if (this.recordType === 'give') {
+                  Column() {
                   Row() {
                     Text('送礼故事')
                       .fontSize(14)
@@ -1057,13 +1140,13 @@ struct CreateGiftEventPage {
                     .onChange((value: string) => {
                       this.story = value;
                     })
-                }
-                .width('100%')
-                .alignItems(HorizontalAlign.Start)
-                .margin({ bottom: 16 })
-                
-                // 对方反应
-                Column() {
+                  }
+                  .width('100%')
+                  .alignItems(HorizontalAlign.Start)
+                  .margin({ bottom: 16 })
+                  
+                  // 对方反应
+                  Column() {
                   Row() {
                     Text('对方反应')
                       .fontSize(14)
@@ -1093,46 +1176,49 @@ struct CreateGiftEventPage {
                       })
                     })
                   }
+                  }
+                  .width('100%')
+                  .alignItems(HorizontalAlign.Start)
+                  .margin({ bottom: 16 })
                 }
-                .width('100%')
-                .alignItems(HorizontalAlign.Start)
-                .margin({ bottom: 16 })
                 
-                // 我的心情
-                Column() {
-                  Row() {
-                    Text('我的心情')
-                      .fontSize(14)
-                      .fontColor('#666666')
-                  }
-                  .margin({ bottom: 8 })
-                  
-                  Flex({ wrap: FlexWrap.Wrap }) {
-                    ForEach(this.moods, (mood: string) => {
-                      Button() {
-                        Row() {
-                          Image(this.getIconByMood(mood))
-                            .width(14)
-                            .height(14)
-                            .margin({ right: 4 })
-                          Text(mood)
-                            .fontSize(14)
+                // 我的心情（仅收礼模式显示）
+                if (this.recordType === 'receive') {
+                  Column() {
+                    Row() {
+                      Text('我的心情')
+                        .fontSize(14)
+                        .fontColor('#666666')
+                    }
+                    .margin({ bottom: 8 })
+                    
+                    Flex({ wrap: FlexWrap.Wrap }) {
+                      ForEach(this.moods, (mood: string) => {
+                        Button() {
+                          Row() {
+                            Image(this.getIconByMood(mood))
+                              .width(14)
+                              .height(14)
+                              .margin({ right: 4 })
+                            Text(mood)
+                              .fontSize(14)
+                          }
                         }
-                      }
-                      .fontColor(this.mood === mood ? '#FFFFFF' : '#666666')
-                      .backgroundColor(this.mood === mood ? '#FF6B35' : '#F5F5F5')
-                      .borderRadius(16)
-                      .padding({ left: 16, right: 16, top: 8, bottom: 8 })
-                      .margin({ right: 8, bottom: 8 })
-                      .onClick(() => {
-                        this.mood = this.mood === mood ? '' : mood;
+                        .fontColor(this.mood === mood ? '#FFFFFF' : '#666666')
+                        .backgroundColor(this.mood === mood ? '#FF6B35' : '#F5F5F5')
+                        .borderRadius(16)
+                        .padding({ left: 16, right: 16, top: 8, bottom: 8 })
+                        .margin({ right: 8, bottom: 8 })
+                        .onClick(() => {
+                          this.mood = this.mood === mood ? '' : mood;
+                        })
                       })
-                    })
+                    }
                   }
+                  .width('100%')
+                  .alignItems(HorizontalAlign.Start)
+                  .margin({ bottom: 16 })
                 }
-                .width('100%')
-                .alignItems(HorizontalAlign.Start)
-                .margin({ bottom: 16 })
               }
             }
             .width('100%')
@@ -1141,74 +1227,69 @@ struct CreateGiftEventPage {
             .padding(16)
             .margin({ bottom: 16 })
             
-            // 提醒设置
-            Column() {
-              Text('提醒设置')
-                .fontSize(18)
-                .fontWeight(FontWeight.Medium)
-                .fontColor('#333333')
-                .margin({ bottom: 16 })
-              
+            // 提醒设置（仅收礼模式显示）
+            if (this.recordType === 'receive') {
               Column() {
-                Row() {
-                  Column() {
-                    Text('明年提醒')
-                      .fontSize(16)
-                      .fontColor('#333333')
-                    
+                Text('提醒设置')
+                  .fontSize(18)
+                  .fontWeight(FontWeight.Medium)
+                  .fontColor('#333333')
+                  .margin({ bottom: 16 })
+                
+                Column() {
+                  Row() {
                     Text('在指定日期前提醒我准备礼物')
                       .fontSize(12)
                       .fontColor('#999999')
                       .margin({ top: 2 })
+                      .layoutWeight(1)
+                    
+                    Toggle({ type: ToggleType.Switch, isOn: this.reminderEnabled })
+                      .selectedColor('#FF6B35')
+                      .onChange((isOn: boolean) => {
+                        this.reminderEnabled = isOn;
+                      })
                   }
-                  .layoutWeight(1)
-                  .alignItems(HorizontalAlign.Start)
+                  .width('100%')
+                  .alignItems(VerticalAlign.Center)
                   
-                  Toggle({ type: ToggleType.Switch, isOn: this.reminderEnabled })
-                    .selectedColor('#FF6B35')
-                    .onChange((isOn: boolean) => {
-                      this.reminderEnabled = isOn;
-                    })
-                }
-                .width('100%')
-                .alignItems(VerticalAlign.Center)
-                
-                if (this.reminderEnabled) {
-                  Column() {
+                  if (this.reminderEnabled) {
                     Column() {
-                      Row() {
-                        Text('提醒日期')
-                          .fontSize(14)
-                          .fontColor('#666666')
-                      }
-                      .margin({ bottom: 8 })
-                      
-                      Button() {
-                        Text(this.reminderDate || '选择提醒日期')
-                          .fontSize(16)
-                          .fontColor(this.reminderDate ? '#333333' : '#999999')
+                      Column() {
+                        Row() {
+                          Text('提醒日期')
+                            .fontSize(14)
+                            .fontColor('#666666')
+                        }
+                        .margin({ bottom: 8 })
+                        
+                        Button() {
+                          Text(this.reminderDate || '选择提醒日期')
+                            .fontSize(16)
+                            .fontColor('#333333')
+                        }
+                        .width('100%')
+                        .height(48)
+                        .backgroundColor('#F8F9FA')
+                        .borderRadius(8)
+                        .onClick(() => {
+                          this.showReminderDatePicker();
+                        })
                       }
                       .width('100%')
-                      .height(48)
-                      .backgroundColor('#F8F9FA')
-                      .borderRadius(8)
-                      .onClick(() => {
-                        this.showReminderDatePicker();
-                      })
+                      .alignItems(HorizontalAlign.Start)
+                      .margin({ bottom: 16 })
                     }
-                    .width('100%')
-                    .alignItems(HorizontalAlign.Start)
-                    .margin({ bottom: 16 })
+                    .margin({ top: 16 })
                   }
-                  .margin({ top: 16 })
                 }
               }
+              .width('100%')
+              .backgroundColor('#FFFFFF')
+              .borderRadius(12)
+              .padding(16)
+              .margin({ bottom: 16 })
             }
-            .width('100%')
-            .backgroundColor('#FFFFFF')
-            .borderRadius(12)
-            .padding(16)
-            .margin({ bottom: 16 })
           }
           .padding(16)
         }

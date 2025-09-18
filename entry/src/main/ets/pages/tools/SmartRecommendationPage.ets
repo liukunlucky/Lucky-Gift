@@ -47,20 +47,20 @@ struct SmartRecommendationPage {
           router.back();
         })
 
-        Text('🤖 智能礼物推荐')
+        Text('智能礼物推荐')
           .fontSize(18)
           .fontWeight(FontWeight.Medium)
           .fontColor('#333333')
-          .layoutWeight(1)
           .textAlign(TextAlign.Center)
 
         Button() {
-          Text('重新开始')
-            .fontSize(14)
-            .fontColor('#FF6B35')
+          Image($r('app.media.icon_reset'))
+            .width(24)
+            .height(24)
+            .fillColor('#333333')
         }
-        .width(80)
-        .height(32)
+        .width(40)
+        .height(40)
         .backgroundColor(Color.Transparent)
         .onClick(() => {
           this.resetRecommendation();
@@ -68,6 +68,7 @@ struct SmartRecommendationPage {
       }
       .width('100%')
       .height(56)
+      .justifyContent(FlexAlign.SpaceBetween)
       .padding({ left: 16, right: 16 })
       .backgroundColor(Color.White)
 
@@ -79,7 +80,7 @@ struct SmartRecommendationPage {
             .height(60)
             .color('#FF6B35')
 
-          Text('AI正在分析中...')
+          Text('正在分析中...')
             .fontSize(16)
             .fontColor('#333333')
             .margin({ top: 20 })
@@ -131,56 +132,54 @@ struct SmartRecommendationPage {
       .padding(20)
       .backgroundColor(Color.White)
 
-      Scroll() {
-        Column() {
-          if (this.currentStep < this.questions.length) {
-            Text(this.questions[this.currentStep].question)
-              .fontSize(18)
-              .fontWeight(FontWeight.Medium)
-              .fontColor('#333333')
-              .textAlign(TextAlign.Center)
-              .margin({ bottom: 30 })
+      Column() {
+        if (this.currentStep < this.questions.length) {
+          Text(this.questions[this.currentStep].question)
+            .fontSize(18)
+            .fontWeight(FontWeight.Medium)
+            .fontColor('#333333')
+            .textAlign(TextAlign.Center)
+            .margin({ bottom: 30 })
 
-            // 选项列表
-            Column() {
-              ForEach(this.questions[this.currentStep].options, (option: string, index: number) => {
-                Row() {
-                  Text(option)
-                    .fontSize(16)
-                    .fontColor(this.questions[this.currentStep].selectedOption === option ? '#FF6B35' : '#333333')
-                    .layoutWeight(1)
+          // 选项列表
+          Column() {
+            ForEach(this.questions[this.currentStep].options, (option: string, index: number) => {
+              Row() {
+                Text(option)
+                  .fontSize(16)
+                  .fontColor(this.questions[this.currentStep].selectedOption === option ? '#FF6B35' : '#333333')
+                  .layoutWeight(1)
 
-                  if (this.questions[this.currentStep].selectedOption === option) {
-                    Image($r('app.media.icon_check'))
-                      .width(20)
-                      .height(20)
-                      .fillColor('#FF6B35')
-                  }
+                if (this.questions[this.currentStep].selectedOption === option) {
+                  Image($r('app.media.icon_check'))
+                    .width(20)
+                    .height(20)
+                    .fillColor('#FF6B35')
                 }
-                .width('100%')
-                .height(60)
-                .padding({ left: 20, right: 20 })
-                .backgroundColor(this.questions[this.currentStep].selectedOption === option ? '#FFF5F0' : Color.White)
-                .borderRadius(12)
-                .border({
-                  width: 2,
-                  color: this.questions[this.currentStep].selectedOption === option ? '#FF6B35' : '#F0F0F0'
-                })
-                .margin({ bottom: 12 })
-                .onClick(() => {
-                  this.selectOption(this.questions[this.currentStep].id, option);
-                })
-              }, (option: string) => option)
-            }
-            .width('100%')
+              }
+              .width('100%')
+              .height(60)
+              .padding({ left: 20, right: 20 })
+              .backgroundColor(this.questions[this.currentStep].selectedOption === option ? '#FFF5F0' : Color.White)
+              .borderRadius(12)
+              .border({
+                width: 2,
+                color: this.questions[this.currentStep].selectedOption === option ? '#FF6B35' : '#F0F0F0'
+              })
+              .margin({ bottom: 12 })
+              .onClick(() => {
+                this.selectOption(this.questions[this.currentStep].id, option);
+              })
+            }, (option: string) => option)
           }
+          .width('100%')
         }
-        .width('100%')
-        .padding(20)
       }
-      .layoutWeight(1)
+      .width('100%')
+      .padding(20)
+      .constraintSize({ minHeight: '60%' })
 
-      // 底部按钮
+      // 底部按钮 - 固定在底部
       Row() {
         if (this.currentStep > 0) {
           Button('上一步')
@@ -214,8 +213,14 @@ struct SmartRecommendationPage {
           })
       }
       .width('100%')
-      .padding(20)
+      .padding({ left: 20, right: 20, top: 16, bottom: 20 })
       .backgroundColor(Color.White)
+      .shadow({
+        radius: 8,
+        color: '#1A000000',
+        offsetX: 0,
+        offsetY: -2
+      })
     }
   }
 
@@ -224,7 +229,7 @@ struct SmartRecommendationPage {
     Scroll() {
       Column() {
         // 结果标题
-        Text('🎁 为您推荐以下礼物')
+        Text('为您推荐以下礼物')
           .fontSize(20)
           .fontWeight(FontWeight.Bold)
           .fontColor('#333333')
@@ -234,7 +239,7 @@ struct SmartRecommendationPage {
         ForEach(this.suggestions, (suggestion: GiftSuggestion) => {
           Column() {
             Row() {
-              Image(suggestion.image)
+              Image($r('app.media.ic_gift_placeholder'))
                 .width(80)
                 .height(80)
                 .borderRadius(8)
@@ -309,6 +314,7 @@ struct SmartRecommendationPage {
           .fontColor(Color.White)
           .backgroundColor('#FF6B35')
           .borderRadius(25)
+          .visibility(Visibility.None)
           .width(200)
           .height(50)
           .margin({ top: 20, bottom: 20 })
@@ -358,10 +364,22 @@ struct SmartRecommendationPage {
   }
 
   private selectOption(questionId: string, option: string): void {
-    const questionIndex = this.questions.findIndex(q => q.id === questionId);
-    if (questionIndex !== -1) {
-      this.questions[questionIndex].selectedOption = option;
+    // 使用响应式更新方法 - 创建新数组触发UI更新
+    const updatedQuestions: RecommendationQuestion[] = [];
+    for (const question of this.questions) {
+      if (question.id === questionId) {
+        const updatedQuestion: RecommendationQuestion = {
+          id: question.id,
+          question: question.question,
+          options: question.options,
+          selectedOption: option
+        };
+        updatedQuestions.push(updatedQuestion);
+      } else {
+        updatedQuestions.push(question);
+      }
     }
+    this.questions = updatedQuestions;
   }
 
   private canProceed(): boolean {

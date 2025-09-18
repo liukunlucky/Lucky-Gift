@@ -18,7 +18,6 @@
     "pages/SearchFilterPage",
     "pages/GiftDetailPage",
     "pages/InspirationDetailPage",
-    "pages/SettingPage",
     "pages/tabs/InspirationFilterPage",
     "pages/profile/RelationshipNetworkPage",
     "pages/profile/GiftReminderPage",

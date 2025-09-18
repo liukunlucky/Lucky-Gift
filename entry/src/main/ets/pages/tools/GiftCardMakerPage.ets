@@ -1,7 +1,8 @@
 import router from '@ohos.router';
 import { BusinessError } from '@ohos.base';
-import { photoAccessHelper } from '@kit.MediaLibraryKit';
 import image from '@ohos.multimedia.image';
+import componentSnapshot from '@ohos.arkui.componentSnapshot';
+import promptAction from '@ohos.promptAction';
 
 interface CardTemplate {
   id: string;
@@ -108,7 +109,45 @@ struct GiftCardMakerPage {
     this.selectedTemplate = template;
   }
   
+  // 验证表单是否完整
+  private isFormValid(): boolean {
+    return this.selectedTemplate !== null && 
+           this.receiverName.trim().length > 0 && 
+           this.customMessage.trim().length > 0;
+  }
+  
+  // 获取缺失的字段信息
+  private getMissingFields(): string[] {
+    const missing: string[] = [];
+    if (!this.selectedTemplate) {
+      missing.push('模板');
+    }
+    if (!this.receiverName.trim()) {
+      missing.push('收件人');
+    }
+    if (!this.customMessage.trim()) {
+      missing.push('祝福语');
+    }
+    return missing;
+  }
+  
+  // 显示缺失字段的提示
+  private showMissingFieldsToast() {
+    const missingFields = this.getMissingFields();
+    if (missingFields.length > 0) {
+      const message = `请填写：${missingFields.join('、')}`;
+      promptAction.showToast({
+        message: message,
+        duration: 2000
+      });
+    }
+  }
+  
   togglePreview() {
+    if (!this.isFormValid()) {
+      this.showMissingFieldsToast();
+      return;
+    }
     this.isPreviewMode = !this.isPreviewMode;
   }
   
@@ -129,23 +168,44 @@ struct GiftCardMakerPage {
       
     } catch (error) {
       console.error('保存卡片失败:', error);
+      this.showErrorMessage(error as Error);
     } finally {
       this.isSaving = false;
     }
   }
   
   async generateAndSaveCard() {
-    // 模拟生成卡片的过程
-    return new Promise<void>((resolve) => {
-      setTimeout(() => {
-        resolve();
-      }, 2000);
-    });
+    try {
+      // 使用componentSnapshot截取卡片预览
+      const pixelMap = await componentSnapshot.get('giftCardPreview');
+      
+      // SaveButton组件会自动处理保存到相册的逻辑
+      console.log('礼物卡截图已生成');
+      
+    } catch (error) {
+      console.error('生成卡片失败:', error);
+      throw new Error('生成卡片失败');
+    }
   }
+
+
   
   showSuccessMessage() {
     // 显示保存成功的提示
     console.log('卡片已保存到相册');
+  }
+
+  showErrorMessage(error: Error) {
+    // 显示错误提示
+    let message = '保存失败';
+    if (error.message.includes('权限')) {
+      message = '需要相册访问权限才能保存图片';
+    } else if (error.message.includes('截图')) {
+      message = '截图失败，请重试';
+    } else if (error.message.includes('保存')) {
+      message = '保存到相册失败，请检查存储空间';
+    }
+    console.error('保存礼物卡失败:', message);
   }
   
   goBack() {
@@ -157,17 +217,17 @@ struct GiftCardMakerPage {
       // 顶部导航栏
       Row() {
         Button() {
-          Text('←')
-              .fontSize(20)
-              .fontColor('#FFFFFF')
+          Image($r('app.media.icon_back'))
             .width(24)
             .height(24)
-            .fontColor('#333333')
+            .fillColor('#333333')
         }
         .width(40)
         .height(40)
         .backgroundColor(Color.Transparent)
-        .onClick(() => this.goBack())
+        .onClick(() => {
+          this.goBack()
+        })
         
         Text('礼物卡制作器')
           .fontSize(18)
@@ -177,13 +237,14 @@ struct GiftCardMakerPage {
           .textAlign(TextAlign.Center)
         
         Button() {
-          Text(this.isPreviewMode ? '编辑' : '预览')
+          Text(this.isPreviewMode ? '' : '预览')
             .fontSize(16)
-            .fontColor('#FF6B35')
+            .fontColor(this.isFormValid() ? '#FF6B35' : '#CCCCCC')
         }
         .width(60)
         .height(40)
         .backgroundColor(Color.Transparent)
+        .opacity(this.isFormValid() ? 1.0 : 0.6)
         .onClick(() => this.togglePreview())
       }
       .width('100%')
@@ -198,11 +259,12 @@ struct GiftCardMakerPage {
           Column() {
             this.CardPreview()
           }
+          .id('giftCardPreview')
           .margin({ top: 32, bottom: 32 })
           
           // 保存按钮
-          Button() {
-            if (this.isSaving) {
+          if (this.isSaving) {
+            Button() {
               Row() {
                 LoadingProgress()
                   .width(20)
@@ -214,18 +276,39 @@ struct GiftCardMakerPage {
                   .fontSize(16)
                   .fontColor('#FFFFFF')
               }
-            } else {
-              Text('保存到相册')
-                .fontSize(16)
-                .fontColor('#FFFFFF')
             }
+            .width('80%')
+            .height(48)
+            .backgroundColor('#FF6B35')
+            .borderRadius(24)
+            .enabled(false)
+          } else if (this.customMessage.trim().length > 0) {
+            SaveButton({
+              icon: SaveIconStyle.FULL_FILLED,
+              text: SaveDescription.SAVE_IMAGE,
+              buttonType: ButtonType.Capsule
+            })
+            .width('80%')
+            .height(48)
+            .backgroundColor('#FF6B35')
+            .borderRadius(24)
+            .onClick(async (event: ClickEvent, result: SaveButtonOnClickResult) => {
+              if (result === SaveButtonOnClickResult.SUCCESS) {
+                await this.saveCard();
+              }
+            })
+          } else {
+            Button() {
+              Text('请输入祝福语')
+                .fontSize(16)
+                .fontColor('#999999')
+            }
+            .width('80%')
+            .height(48)
+            .backgroundColor('#E0E0E0')
+            .borderRadius(24)
+            .enabled(false)
           }
-          .width('80%')
-          .height(48)
-          .backgroundColor('#FF6B35')
-          .borderRadius(24)
-          .enabled(!this.isSaving && this.customMessage.trim().length > 0)
-          .onClick(() => this.saveCard())
         }
         .width('100%')
         .layoutWeight(1)
@@ -317,7 +400,7 @@ struct GiftCardMakerPage {
                   .alignSelf(ItemAlign.Start)
                   .margin({ bottom: 8 })
                 
-                TextInput({ placeholder: '输入收件人姓名' })
+                TextInput({ placeholder: '输入收件人姓名', text: this.receiverName })
                   .fontSize(16)
                   .backgroundColor('#F8F9FA')
                   .borderRadius(8)
@@ -338,7 +421,7 @@ struct GiftCardMakerPage {
                   .alignSelf(ItemAlign.Start)
                   .margin({ bottom: 8 })
                 
-                TextArea({ placeholder: '写下你的祝福语...' })
+                TextArea({ placeholder: '写下你的祝福语...', text: this.customMessage })
                   .fontSize(16)
                   .backgroundColor('#F8F9FA')
                   .borderRadius(8)

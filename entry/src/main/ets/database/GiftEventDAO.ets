@@ -23,6 +23,15 @@ interface GiftEventStats {
   mostGiftedContact: string;
 }
 
+interface GiftEventTypeStats {
+  giveEvents: number;
+  receiveEvents: number;
+  giveSpent: number;
+  receiveSpent: number;
+  giveAverageCost: number;
+  receiveAverageCost: number;
+}
+
 export class GiftEventDAO {
   private dbManager: NewDatabaseManager;
 
@@ -42,6 +51,7 @@ export class GiftEventDAO {
       id: id,
       contact_id: event.contactId,
       contact_name: event.contactName,
+      record_type: event.recordType || 'give', // 默认为送礼
       occasion: event.occasion,
       date: event.date,
       gift_idea: event.giftIdea,
@@ -224,6 +234,7 @@ export class GiftEventDAO {
 
     if (updates.contactId !== undefined) valueBucket.contact_id = updates.contactId;
     if (updates.contactName !== undefined) valueBucket.contact_name = updates.contactName;
+    if (updates.recordType !== undefined) valueBucket.record_type = updates.recordType;
     if (updates.occasion !== undefined) valueBucket.occasion = updates.occasion;
     if (updates.date !== undefined) valueBucket.date = updates.date;
     if (updates.giftIdea !== undefined) valueBucket.gift_idea = updates.giftIdea;
@@ -303,6 +314,52 @@ export class GiftEventDAO {
       averageCost,
       mostFrequentOccasion,
       mostGiftedContact
+    };
+  }
+
+  // 获取按类型分别统计的数据
+  async getGiftEventTypeStats(): Promise<GiftEventTypeStats> {
+    const rdbStore = this.dbManager.getRdbStore();
+    if (!rdbStore) throw new Error('数据库未初始化');
+
+    // 送礼统计
+    const giveStatsResult = await rdbStore.querySql(
+      'SELECT COUNT(*) as count, SUM(COALESCE(actual_cost, budget)) as spent FROM gift_events WHERE record_type = ?',
+      ['give']
+    );
+    
+    let giveEvents = 0;
+    let giveSpent = 0;
+    if (giveStatsResult.goToFirstRow()) {
+      giveEvents = giveStatsResult.getLong(0);
+      giveSpent = giveStatsResult.getDouble(1);
+    }
+    giveStatsResult.close();
+
+    // 收礼统计
+    const receiveStatsResult = await rdbStore.querySql(
+      'SELECT COUNT(*) as count, SUM(COALESCE(actual_cost, budget)) as spent FROM gift_events WHERE record_type = ?',
+      ['receive']
+    );
+    
+    let receiveEvents = 0;
+    let receiveSpent = 0;
+    if (receiveStatsResult.goToFirstRow()) {
+      receiveEvents = receiveStatsResult.getLong(0);
+      receiveSpent = receiveStatsResult.getDouble(1);
+    }
+    receiveStatsResult.close();
+
+    const giveAverageCost = giveEvents > 0 ? giveSpent / giveEvents : 0;
+    const receiveAverageCost = receiveEvents > 0 ? receiveSpent / receiveEvents : 0;
+
+    return {
+      giveEvents,
+      receiveEvents,
+      giveSpent,
+      receiveSpent,
+      giveAverageCost,
+      receiveAverageCost
     };
   }
 
@@ -395,6 +452,7 @@ export class GiftEventDAO {
       id: resultSet.getString(resultSet.getColumnIndex('id')),
       contactId: resultSet.getString(resultSet.getColumnIndex('contact_id')),
       contactName: resultSet.getString(resultSet.getColumnIndex('contact_name')),
+      recordType: (resultSet.getString(resultSet.getColumnIndex('record_type')) || 'give') as 'give' | 'receive',
       occasion: resultSet.getString(resultSet.getColumnIndex('occasion')),
       date: resultSet.getString(resultSet.getColumnIndex('date')),
       giftIdea: resultSet.getString(resultSet.getColumnIndex('gift_idea')),

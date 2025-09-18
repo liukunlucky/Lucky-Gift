@@ -49,27 +49,17 @@ struct HolidayGuidePage {
           }
         })
 
-        Text(this.showDetail ? this.selectedHoliday?.name : '💝 节日礼物指南')
+        Text(this.showDetail ? this.selectedHoliday?.name : '节日礼物指南')
           .fontSize(18)
           .fontWeight(FontWeight.Medium)
           .fontColor('#333333')
           .layoutWeight(1)
           .textAlign(TextAlign.Center)
-
-        Button() {
-          Text('搜索')
-            .fontSize(14)
-            .fontColor('#FF6B35')
-        }
-        .width(60)
-        .height(32)
-        .backgroundColor(Color.Transparent)
-        .onClick(() => {
-          console.info('搜索节日');
-        })
+        Blank().width(40)
       }
       .width('100%')
       .height(56)
+      .justifyContent(FlexAlign.SpaceBetween)
       .padding({ left: 16, right: 16 })
       .backgroundColor(Color.White)
 
@@ -125,11 +115,6 @@ struct HolidayGuidePage {
             }
             .layoutWeight(1)
             .alignItems(HorizontalAlign.Start)
-
-            Image($r('app.media.ic_arrow_right'))
-              .width(16)
-              .height(16)
-              .fillColor('#CCCCCC')
           }
           .width('100%')
           .padding(20)
@@ -143,7 +128,7 @@ struct HolidayGuidePage {
           })
         })
       }
-      .width('100%')
+      .width('90%')
     }
     .layoutWeight(1)
   }
@@ -305,6 +290,7 @@ struct HolidayGuidePage {
             })
         }
         .width('100%')
+        .visibility(Visibility.None)
         .padding({ left: 16, right: 16, bottom: 20 })
       }
       .width('100%')

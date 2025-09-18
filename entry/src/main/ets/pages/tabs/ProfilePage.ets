@@ -8,6 +8,8 @@ import fs from '@ohos.file.fs';
 import picker from '@ohos.file.picker';
 import { BusinessError } from '@ohos.base';
 import common from '@ohos.app.ability.common';
+import promptAction from '@ohos.promptAction';
+import bundleManager from '@ohos.bundle.bundleManager';
 
 // 菜单项接口定义
 interface MenuItem {
@@ -20,6 +22,14 @@ interface MenuItem {
 }
 
 interface DataMenuItem {
+  id: string;
+  title: string;
+  description: string;
+  icon: Resource;
+  color: string;
+}
+
+interface OtherMenuItem {
   id: string;
   title: string;
   description: string;
@@ -48,18 +58,28 @@ export struct ProfilePage {
   @State favoriteInspirations: Inspiration[] = [];
   @State totalGiftEvents: number = 0;
   @State totalSpent: number = 0;
+  @State giveEvents: number = 0;
+  @State receiveEvents: number = 0;
+  @State giveSpent: number = 0;
+  @State receiveSpent: number = 0;
   @State isLoading: boolean = true;
   @State showExportDialog: boolean = false;
   @State showImportDialog: boolean = false;
   @State exportProgress: number = 0;
   @State importProgress: number = 0;
   @State userLevel: string = 'LV1';
+  @State showAboutSheet: boolean = false;
+  @State showFeedbackSheet: boolean = false;
+  @State feedbackText: string = '';
+  @State versionName: string = '';
 
   private dbManager: NewDatabaseManager | null = null;
   private contactDAO: ContactDAO | null = null;
   private inspirationDAO: InspirationDAO | null = null;
   private giftEventDAO: GiftEventDAO | null = null;
-  
+  @StorageProp('refreshProfilePage') @Watch('onRefreshProfile') refreshProfile: number = -1;
+
+
   // 功能菜单配置
   private menuItems: MenuItem[] = [
     {
@@ -88,8 +108,8 @@ export struct ProfilePage {
     },
     {
       id: 'statistics',
-      title: '送礼统计',
-      description: '查看送礼数据分析',
+      title: '礼物统计',
+      description: '查看收送礼数据分析',
       icon: $r('app.media.icon_tj'),
       color: '#2196F3',
       count: 0
@@ -101,7 +121,7 @@ export struct ProfilePage {
     {
       id: 'export',
       title: '导出数据',
-      description: '备份所有送礼记录',
+      description: '备份所有礼物记录',
       icon: $r('app.media.icon_dc'),
       color: '#9C27B0'
     },
@@ -121,6 +141,38 @@ export struct ProfilePage {
     }
   ];
 
+  // 其他菜单
+  private otherMenuItems: OtherMenuItem[] = [
+    {
+      id: 'check_update',
+      title: '检查更新',
+      description: '查看是否有新版本',
+      icon: $r('app.media.ic_update'),
+      color: '#4CAF50'
+    },
+    {
+      id: 'feedback',
+      title: '问题反馈',
+      description: '遇到问题？告诉我们',
+      icon: $r('app.media.ic_feedback'),
+      color: '#FF9800'
+    },
+    {
+      id: 'rate',
+      title: '给个好评',
+      description: '为应用评分支持',
+      icon: $r('app.media.ic_star'),
+      color: '#E91E63'
+    },
+    {
+      id: 'about',
+      title: '关于应用',
+      description: '版本信息和开发者',
+      icon: $r('app.media.ic_info'),
+      color: '#2196F3'
+    }
+  ];
+
   async aboutToAppear() {
     // 初始化数据库
     const context = getContext(this) as common.UIAbilityContext;
@@ -133,6 +185,18 @@ export struct ProfilePage {
     this.giftEventDAO = new GiftEventDAO(this.dbManager);
     
     this.loadData();
+    bundleManager.getBundleInfoForSelf(bundleManager.BundleFlag.GET_BUNDLE_INFO_WITH_APPLICATION).then((bundleInfo) => {
+      this.versionName = bundleInfo.versionName;
+    }).catch((error: BusinessError) => {
+      console.error("get bundleInfo failed,error is " + error)
+    })
+  }
+
+  onRefreshProfile() {
+    if (this.refreshProfile >= 0) {
+      this.loadData();
+      AppStorage.setOrCreate('refreshProfile', -1);
+    }
   }
 
   async loadData() {
@@ -154,6 +218,13 @@ export struct ProfilePage {
       const stats = await this.giftEventDAO.getGiftEventStats();
       this.totalGiftEvents = stats.totalEvents;
       this.totalSpent = stats.totalSpent;
+      
+      // 加载分类统计数据
+      const typeStats = await this.giftEventDAO.getGiftEventTypeStats();
+      this.giveEvents = typeStats.giveEvents;
+      this.receiveEvents = typeStats.receiveEvents;
+      this.giveSpent = typeStats.giveSpent;
+      this.receiveSpent = typeStats.receiveSpent;
       
       // 更新菜单计数
       this.updateMenuCounts();
@@ -236,6 +307,67 @@ export struct ProfilePage {
         this.showClearDataConfirmation();
         break;
     }
+  }
+
+  // 处理数据菜单点击
+  handleDataMenuClick(itemId: string) {
+    this.handleDataOperation(itemId);
+  }
+
+  // 处理其他菜单点击
+  handleOtherMenuClick(itemId: string) {
+    switch (itemId) {
+      case 'check_update':
+        this.checkForUpdates();
+        break;
+      case 'feedback':
+        this.openFeedback();
+        break;
+      case 'rate':
+        this.showRateDialog();
+        break;
+      case 'about':
+        this.showAboutDialog();
+        break;
+    }
+  }
+
+  // 检查更新
+  private checkForUpdates() {
+    // 这里可以实现检查更新的逻辑
+    AlertDialog.show({
+      title: '检查更新',
+      message: '当前已是最新版本',
+      primaryButton: {
+        value: '确定',
+        action: () => {
+        }
+      }
+    });
+    console.info('检查更新功能');
+  }
+
+  // 打开反馈
+  private openFeedback() {
+    // 这里可以实现反馈功能
+    this.showFeedbackSheet = true;
+    console.info('问题反馈功能');
+  }
+
+  // 显示评分对话框
+  private showRateDialog() {
+    // 显示感谢toast
+    promptAction.showToast({
+      message: '感谢您的支持～',
+      duration: 2000
+    });
+  }
+
+  // 显示关于对话框
+  private showAboutDialog() {
+    // 这里可以实现关于应用的对话框
+    this.showAboutSheet = true;
+    console.info('关于应用功能');
   }
 
   // 导出数据
@@ -402,122 +534,6 @@ export struct ProfilePage {
 
   build() {
     Column() {
-      // 顶部个人信息卡片
-      Column() {
-        Row() {
-          // 头像
-          Image($r('app.media.ic_mine'))
-            .width(50)
-            .height(50)
-            .borderRadius(25)
-            .margin({ right: 16 })
-            .backgroundColor('#FFFFFF')
-            .padding(10)
-            .shadow({
-              radius: 4,
-              color: 'rgba(0,0,0,0.1)',
-              offsetX: 0,
-              offsetY: 2
-            })
-          
-          Column() {
-            Text('我的送礼智库')
-              .fontSize(18)
-              .fontWeight(FontWeight.Bold)
-              .fontColor(Color.White)
-            
-            Text('记录每一份心意')
-              .fontSize(14)
-              .fontColor('#FFE0D6')
-              .margin({ top: 4 })
-          }
-          .alignItems(HorizontalAlign.Start)
-          .margin({ left: 16 })
-          
-          Blank()
-          Text(this.userLevel)
-            .fontSize(14)
-            .fontWeight(FontWeight.Bold)
-            .fontColor($r('app.color.brand_color'))
-            .backgroundColor('#FFFFFF')
-            .padding({
-              left: 12,
-              right: 12,
-              top: 6,
-              bottom: 6
-            })
-            .borderRadius(12)
-            .shadow({
-              radius: 2,
-              color: 'rgba(0,0,0,0.1)',
-              offsetX: 0,
-              offsetY: 1
-            })
-        }
-        .width('100%')
-        .margin({ bottom: 20 })
-        
-        // 统计数据
-        Row() {
-          Column() {
-            Text(this.contacts.length.toString())
-              .fontSize(20)
-              .fontWeight(FontWeight.Bold)
-              .fontColor(Color.White)
-            
-            Text('联系人')
-              .fontSize(12)
-              .fontColor('#FFE0D6')
-              .margin({ top: 2 })
-          }
-          .layoutWeight(1)
-          
-          Column() {
-            Text(this.totalGiftEvents.toString())
-              .fontSize(20)
-              .fontWeight(FontWeight.Bold)
-              .fontColor(Color.White)
-            
-            Text('送礼记录')
-              .fontSize(12)
-              .fontColor('#FFE0D6')
-              .margin({ top: 2 })
-          }
-          .layoutWeight(1)
-          
-          Column() {
-            Text(`¥${this.formatAmount(this.totalSpent)}`)
-              .fontSize(20)
-              .fontWeight(FontWeight.Bold)
-              .fontColor(Color.White)
-            
-            Text('总花费')
-              .fontSize(12)
-              .fontColor('#FFE0D6')
-              .margin({ top: 2 })
-          }
-          .layoutWeight(1)
-          
-          Column() {
-            Text(this.favoriteInspirations.length.toString())
-              .fontSize(20)
-              .fontWeight(FontWeight.Bold)
-              .fontColor(Color.White)
-            
-            Text('收藏灵感')
-              .fontSize(12)
-              .fontColor('#FFE0D6')
-              .margin({ top: 2 })
-          }
-          .layoutWeight(1)
-        }
-        .width('100%')
-      }
-      .width('90%')
-      .padding(20)
-      .backgroundColor('#FF6B35')
-      .borderRadius(20).margin({top: 50})
-
       if (this.isLoading) {
         // 加载状态
         Column() {
@@ -532,200 +548,434 @@ export struct ProfilePage {
             .margin({ top: 12 })
         }
         .width('100%')
-        .height('60%')
+        .height('100%')
         .justifyContent(FlexAlign.Center)
         .alignItems(HorizontalAlign.Center)
       } else {
         Scroll() {
           Column() {
-            // 功能菜单
+            // 顶部个人信息卡片
             Column() {
-              Text('我的功能')
-                .fontSize(16)
-                .fontWeight(FontWeight.Medium)
-                .margin({ bottom: 16 })
-                .alignSelf(ItemAlign.Start)
+              Row() {
+                // 头像
+                Image($r('app.media.ic_mine'))
+                  .width(50)
+                  .height(50)
+                  .borderRadius(25)
+                  .margin({ right: 16 })
+                  .backgroundColor('#FFFFFF')
+                  .padding(10)
+                  .shadow({
+                    radius: 4,
+                    color: 'rgba(0,0,0,0.1)',
+                    offsetX: 0,
+                    offsetY: 2
+                  })
+                
+                Column() {
+                  Text('我的礼物智库')
+                    .fontSize(18)
+                    .fontWeight(FontWeight.Bold)
+                    .fontColor(Color.White)
+                  
+                  Text('记录每一份心意')
+                    .fontSize(14)
+                    .fontColor('#FFE0D6')
+                    .margin({ top: 4 })
+                }
+                .alignItems(HorizontalAlign.Start)
+                .margin({ left: 16 })
+                
+                Blank()
+                Text(this.userLevel)
+                  .fontSize(14)
+                  .fontWeight(FontWeight.Bold)
+                  .fontColor($r('app.color.brand_color'))
+                  .backgroundColor('#FFFFFF')
+                  .padding({
+                    left: 12,
+                    right: 12,
+                    top: 6,
+                    bottom: 6
+                  })
+                  .borderRadius(12)
+                  .shadow({
+                    radius: 2,
+                    color: 'rgba(0,0,0,0.1)',
+                    offsetX: 0,
+                    offsetY: 1
+                  })
+              }
+              .width('100%')
+              .margin({ bottom: 20 })
               
-              ForEach(this.menuItems, (item: MenuItem) => {
+              // 统计数据
+              Column({ space: 16 }) {
+                // 第一行：联系人和总记录
                 Row() {
-                  Row({space : 10}) {
-                    Image(item.icon)
-                      .width(24)
-                      .height(24)
-                      .fillColor('#2C3E50')
-
-                    Column() {
-                      Text(item.title)
-                        .fontSize(15)
-                        .fontWeight(FontWeight.Medium)
-                        .fontColor('#333333')
-                      
-                      Text(item.description)
-                        .fontSize(12)
-                        .fontColor('#666666')
-                        .margin({ top: 2 })
-                    }
-                    .alignItems(HorizontalAlign.Start)
+                  Column() {
+                    Text(this.contacts.length.toString())
+                      .fontSize(20)
+                      .fontWeight(FontWeight.Bold)
+                      .fontColor(Color.White)
+                    
+                    Text('联系人')
+                      .fontSize(12)
+                      .fontColor('#FFE0D6')
+                      .margin({ top: 2 })
                   }
                   .layoutWeight(1)
                   
-                  Row() {
-                    if (item.count !== undefined && item.count > 0) {
-                      Text(item.count.toString())
-                        .fontSize(14)
-                        .fontColor('#666666')
-                        .margin({ right: 8 })
-                    }
+                  Column() {
+                    Text(this.totalGiftEvents.toString())
+                      .fontSize(20)
+                      .fontWeight(FontWeight.Bold)
+                      .fontColor(Color.White)
                     
-                    Image($r('app.media.ic_arrow_right'))
-                      .width(16)
-                      .height(16)
-                      .fillColor('#CCCCCC')
+                    Text('礼物记录')
+                      .fontSize(12)
+                      .fontColor('#FFE0D6')
+                      .margin({ top: 2 })
                   }
+                  .layoutWeight(1)
                 }
                 .width('100%')
-                .height(60)
-                .padding({ left: 16, right: 16 })
-                .backgroundColor(Color.White)
-                .borderRadius(12)
-                .margin({ bottom: 8 })
-                .onClick(() => {
-                  this.navigateToFeature(item.id);
-                })
+                
+                // 第二行：送礼和收礼统计
+                Row() {
+                  Column() {
+                    Text(this.giveEvents.toString())
+                      .fontSize(18)
+                      .fontWeight(FontWeight.Bold)
+                      .fontColor(Color.White)
+                    
+                    Text('礼物次数')
+                      .fontSize(11)
+                      .fontColor('#FFE0D6')
+                      .margin({ top: 2 })
+                  }
+                  .layoutWeight(1)
+                  
+                  Column() {
+                    Text(this.receiveEvents.toString())
+                      .fontSize(18)
+                      .fontWeight(FontWeight.Bold)
+                      .fontColor(Color.White)
+                    
+                    Text('收礼次数')
+                      .fontSize(11)
+                      .fontColor('#FFE0D6')
+                      .margin({ top: 2 })
+                  }
+                  .layoutWeight(1)
+                  
+                  Column() {
+                    Text(`¥${this.formatAmount(this.giveSpent)}`)
+                      .fontSize(18)
+                      .fontWeight(FontWeight.Bold)
+                      .fontColor(Color.White)
+                    
+                    Text('礼物花费')
+                      .fontSize(11)
+                      .fontColor('#FFE0D6')
+                      .margin({ top: 2 })
+                  }
+                  .layoutWeight(1)
+                  
+                  Column() {
+                    Text(`¥${this.formatAmount(this.receiveSpent)}`)
+                      .fontSize(18)
+                      .fontWeight(FontWeight.Bold)
+                      .fontColor(Color.White)
+                    
+                    Text('收礼价值')
+                      .fontSize(11)
+                      .fontColor('#FFE0D6')
+                      .margin({ top: 2 })
+                  }
+                  .layoutWeight(1)
+                }
+                .width('100%')
+              }
+              .width('100%')
+            }
+            .width('90%')
+            .padding({left: 20, right: 20, bottom: 20, top: 40})
+            .backgroundColor('#FF6B35')
+            .borderRadius(20)
+            .margin({ top: 20, bottom: 16 })
+
+            // 功能菜单
+            Column() {
+              // 功能设置卡片（包含标题）
+              Column() {
+                // 分组标题
+                Text('我的功能')
+                  .fontSize(18)
+                  .fontWeight(FontWeight.Bold)
+                  .fontColor($r('app.color.primary_text_color'))
+                  .alignSelf(ItemAlign.Start)
+                  .margin({ left: 16, top: 16, bottom: 8 })
+
+                ForEach(this.menuItems, (item: MenuItem, index: number) => {
+                  Column() {
+                    Row() {
+                      Image(item.icon)
+                        .width(20)
+                        .height(20)
+                        .fillColor($r('app.color.primary_text_color'))
+                        .margin({ right: 12 })
+
+                      Column() {
+                        Text(item.title)
+                          .fontSize(16)
+                          .fontColor($r('app.color.primary_text_color'))
+                          .fontWeight(FontWeight.Medium)
+
+                        Text(item.description)
+                          .fontSize(14)
+                          .fontColor($r('app.color.secondary_text_color'))
+                          .margin({ top: 2 })
+                      }
+                      .alignItems(HorizontalAlign.Start)
+                      .layoutWeight(1)
+
+                      Row() {
+                        if (item.count !== undefined && item.count > 0) {
+                          Text(item.count.toString())
+                            .fontSize(14)
+                            .fontColor($r('app.color.secondary_text_color'))
+                            .margin({ right: 8 })
+                        }
+                        
+                        Image($r('app.media.ic_arrow_right'))
+                          .width(20)
+                          .height(20)
+                          .fillColor($r('app.color.tertiary_text_color'))
+                      }
+                    }
+                    .width('100%')
+                    .padding({
+                      left: 16,
+                      right: 16,
+                      top: 16,
+                      bottom: 16
+                    })
+                    .onClick(() => {
+                      this.navigateToFeature(item.id);
+                    })
+
+                    // 分隔线（最后一项不显示）
+                    if (index < this.menuItems.length - 1) {
+                      Divider()
+                        .color($r('app.color.divider_color'))
+                        .strokeWidth(0.5)
+                        .margin({ left: 48, right: 16 })
+                    }
+                  }
+                }, (item: MenuItem) => item.id)
+              }
+              .width('100%')
+              .backgroundColor($r('app.color.card_background_color'))
+              .borderRadius(12)
+              .shadow({
+                radius: 2,
+                color: $r('app.color.shadow_color'),
+                offsetX: 0,
+                offsetY: 1
               })
             }
             .width('100%')
-            .padding(16)
-            .margin({ top: 8 })
+            .margin({ top: 24 })
+            .padding({ left: 24, right: 24 })
 
             // 数据管理
             Column() {
-              Text('数据管理')
-                .fontSize(16)
-                .fontWeight(FontWeight.Medium)
-                .margin({ bottom: 16 })
-                .alignSelf(ItemAlign.Start)
-              
-              ForEach(this.dataMenuItems, (item: DataMenuItem) => {
-                Row() {
-                  Row({space : 10}) {
-                    Image(item.icon)
-                      .width(24)
-                      .height(24)
-                      .fillColor('#2C3E50')
-                    
-                    Column() {
-                      Text(item.title)
-                        .fontSize(15)
-                        .fontWeight(FontWeight.Medium)
-                        .fontColor('#333333')
-                      
-                      Text(item.description)
-                        .fontSize(12)
-                        .fontColor('#666666')
-                        .margin({ top: 2 })
+              // 数据管理卡片（包含标题）
+              Column() {
+                // 分组标题
+                Text('数据管理')
+                  .fontSize(18)
+                  .fontWeight(FontWeight.Bold)
+                  .fontColor($r('app.color.primary_text_color'))
+                  .alignSelf(ItemAlign.Start)
+                  .margin({ left: 16, top: 16, bottom: 8 })
+
+                ForEach(this.dataMenuItems, (item: DataMenuItem, index: number) => {
+                  Column() {
+                    Row() {
+                      Image(item.icon)
+                        .width(20)
+                        .height(20)
+                        .fillColor($r('app.color.primary_text_color'))
+                        .margin({ right: 12 })
+
+                      Column() {
+                        Text(item.title)
+                          .fontSize(16)
+                          .fontColor($r('app.color.primary_text_color'))
+                          .fontWeight(FontWeight.Medium)
+
+                        Text(item.description)
+                          .fontSize(14)
+                          .fontColor($r('app.color.secondary_text_color'))
+                          .margin({ top: 2 })
+                      }
+                      .alignItems(HorizontalAlign.Start)
+                      .layoutWeight(1)
+
+                      Row() {
+                        Image($r('app.media.ic_arrow_right'))
+                          .width(20)
+                          .height(20)
+                          .fillColor($r('app.color.tertiary_text_color'))
+                      }
                     }
-                    .alignItems(HorizontalAlign.Start)
+                    .width('100%')
+                    .padding({
+                      left: 16,
+                      right: 16,
+                      top: 16,
+                      bottom: 16
+                    })
+                    .onClick(() => {
+                       this.handleDataMenuClick(item.id);
+                     })
+
+                    // 分隔线（最后一项不显示）
+                    if (index < this.dataMenuItems.length - 1) {
+                      Divider()
+                        .color($r('app.color.divider_color'))
+                        .strokeWidth(0.5)
+                        .margin({ left: 48, right: 16 })
+                    }
                   }
-                  .layoutWeight(1)
-                  
-                  Image($r('app.media.ic_arrow_right'))
-                    .width(16)
-                    .height(16)
-                    .fillColor('#CCCCCC')
-                }
-                .width('100%')
-                .height(60)
-                .padding({ left: 16, right: 16 })
-                .backgroundColor(Color.White)
-                .borderRadius(12)
-                .margin({ bottom: 8 })
-                .onClick(() => {
-                  this.handleDataOperation(item.id);
-                })
+                }, (item: DataMenuItem) => item.id)
+              }
+              .width('100%')
+              .backgroundColor($r('app.color.card_background_color'))
+              .borderRadius(12)
+              .shadow({
+                radius: 2,
+                color: $r('app.color.shadow_color'),
+                offsetX: 0,
+                offsetY: 1
               })
             }
             .width('100%')
-            .padding(16)
+            .margin({ top: 24 })
+            .padding({ left: 24, right: 24 })
             .bindSheet($$this.showImportDialog, this.buildImportDialog(), {
               height: 300,
               dragBar: true
             })
 
-            // 最近联系人
-            if (this.contacts.length > 0) {
+            // 其他
+            Column() {
+              // 其他设置卡片（包含标题）
               Column() {
-                Row() {
-                  Text('最近联系人')
-                    .fontSize(16)
-                    .fontWeight(FontWeight.Medium)
-                  
-                  Blank()
-                  
-                  Text('查看全部')
-                    .fontSize(12)
-                    .fontColor('#FF6B35')
-                    .onClick(() => {
-                      this.navigateToFeature('relationships');
-                    })
-                }
-                .width('100%')
-                .margin({ bottom: 16 })
-                
-                Row() {
-                  ForEach(this.contacts.slice(0, 4), (contact: Contact) => {
-                    Column() {
-                      if (contact.avatar) {
-                         Text(contact.avatar)
-                           .fontSize(30)
-                           .width(50)
-                           .height(50)
-                           .borderRadius(25)
-                           .backgroundColor('#F0F0F0')
-                           .textAlign(TextAlign.Center)
-                       } else {
-                         Image($r('app.media.icon_mine'))
-                           .width(40)
-                           .height(40)
-                           .fillColor('#FFFFFF')
-                           .borderRadius(25)
-                           .backgroundColor('#F0F0F0')
-                       }
-                      
-                      Text(contact.name)
-                        .fontSize(12)
-                        .fontColor('#333333')
-                        .margin({ top: 8 }) // 增加顶部间距
-                        .maxLines(1)
-                        .textOverflow({ overflow: TextOverflow.Ellipsis })
+                // 分组标题
+                Text('其他')
+                  .fontSize(18)
+                  .fontWeight(FontWeight.Bold)
+                  .fontColor($r('app.color.primary_text_color'))
+                  .alignSelf(ItemAlign.Start)
+                  .margin({ left: 16, top: 16, bottom: 8 })
+
+                ForEach(this.otherMenuItems, (item: OtherMenuItem, index: number) => {
+                  Column() {
+                    Row() {
+                      Image(item.icon)
+                        .width(20)
+                        .height(20)
+                        .fillColor($r('app.color.primary_text_color'))
+                        .margin({ right: 12 })
+
+                      Column() {
+                        Text(item.title)
+                          .fontSize(16)
+                          .fontColor($r('app.color.primary_text_color'))
+                          .fontWeight(FontWeight.Medium)
+
+                        Text(item.description)
+                          .fontSize(14)
+                          .fontColor($r('app.color.secondary_text_color'))
+                          .margin({ top: 2 })
+                      }
+                      .alignItems(HorizontalAlign.Start)
+                      .layoutWeight(1)
+
+                      Row() {
+                        Image($r('app.media.ic_arrow_right'))
+                          .width(20)
+                          .height(20)
+                          .fillColor($r('app.color.tertiary_text_color'))
+                      }
                     }
-                    .width(60)
-                    .margin({ right: 16 }) // 增加右边距
-                    .onClick(() => {
-                      router.pushUrl({
-                        url: 'pages/profile/ContactFormPage',
-                        params: { contact: contact, isEdit: true }
-                      });
+                    .width('100%')
+                    .padding({
+                      left: 16,
+                      right: 16,
+                      top: 16,
+                      bottom: 16
                     })
-                  })
-                }
-                .width('100%')
+                    .onClick(() => {
+                      this.handleOtherMenuClick(item.id);
+                    })
+
+                    // 分隔线（最后一项不显示）
+                    if (index < this.otherMenuItems.length - 1) {
+                      Divider()
+                        .color($r('app.color.divider_color'))
+                        .strokeWidth(0.5)
+                        .margin({ left: 48, right: 16 })
+                    }
+                  }
+                }, (item: OtherMenuItem) => item.id)
               }
               .width('100%')
-              .padding(16)
-              .backgroundColor(Color.White)
+              .backgroundColor($r('app.color.card_background_color'))
               .borderRadius(12)
-              .margin({ bottom: 20 })
+              .shadow({
+                radius: 2,
+                color: $r('app.color.shadow_color'),
+                offsetX: 0,
+                offsetY: 1
+              })
+              .bindSheet($$this.showAboutSheet, this.AboutSheet(), {
+                height: 400,
+                dragBar: true,
+                showClose: false,
+                backgroundColor: $r('app.color.surface_color'),
+                onDisappear: () => {
+                  // 移除状态重置，避免与深色模式切换冲突
+                }
+              })
             }
+            .width('100%')
+            .margin({ top: 24, bottom: 24 })
+            .padding({ left: 24, right: 24 })
+            .bindSheet($$this.showFeedbackSheet, this.FeedbackSheet(), {
+              height: 350,
+              dragBar: true,
+              showClose: false,
+              backgroundColor: $r('app.color.surface_color'),
+              onDisappear: () => {
+                // 移除状态重置，避免与深色模式切换冲突
+              }
+            })
+
           }
         }
-        .layoutWeight(1)
+        .width('100%')
+        .height('100%')
+        .edgeEffect(EdgeEffect.Spring)
         .scrollBar(BarState.Off)
       }
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#F8F9FA')
+    .backgroundColor($r('app.color.background_color'))
     .bindSheet($$this.showExportDialog, this.buildExportDialog(), {
       height: 300,
       dragBar: true
@@ -755,7 +1005,7 @@ export struct ProfilePage {
               .alignSelf(ItemAlign.Start)
               .margin({ bottom: 4 })
             
-            Text(`• ${this.totalGiftEvents} 条送礼记录`)
+            Text(`• ${this.totalGiftEvents} 条礼物记录`)
               .fontSize(14)
               .fontColor('#666666')
               .alignSelf(ItemAlign.Start)
@@ -888,5 +1138,132 @@ export struct ProfilePage {
     }
     .width('100%')
     .padding(24)
+  }
+
+  @Builder
+  FeedbackSheet() {
+    Column() {
+      // Sheet标题
+      Text('问题反馈')
+        .fontSize(20)
+        .fontWeight(FontWeight.Bold)
+        .fontColor($r('app.color.primary_text_color'))
+        .margin({ top: 20, bottom: 20 })
+
+      // 输入提示
+      Text('请描述您遇到的问题或建议')
+        .fontSize(14)
+        .fontColor($r('app.color.secondary_text_color'))
+        .margin({ bottom: 16 })
+        .alignSelf(ItemAlign.Start)
+
+      // 输入框
+      TextArea({
+        placeholder: '请输入您的问题或建议...',
+        text: this.feedbackText
+      })
+        .width('100%')
+        .height(120)
+        .fontSize(14)
+        .fontColor($r('app.color.primary_text_color'))
+        .backgroundColor($r('app.color.input_background_color'))
+        .borderRadius(8)
+        .padding(12)
+        .maxLength(100)
+        .onChange((value: string) => {
+          this.feedbackText = value;
+        })
+        .margin({ bottom: 8 })
+
+      // 字数统计
+      Text(`${this.feedbackText.length}/100`)
+        .fontSize(12)
+        .fontColor($r('app.color.tertiary_text_color'))
+        .alignSelf(ItemAlign.End)
+        .margin({ bottom: 24 })
+
+      // 提交按钮
+      Button('提交反馈')
+        .width('100%')
+        .height(44)
+        .fontSize(16)
+        .fontColor('#FFFFFF')
+        .backgroundColor($r('app.color.brand_color'))
+        .borderRadius(8)
+        .enabled(this.feedbackText.trim().length > 0)
+        .opacity(this.feedbackText.trim().length > 0 ? 1 : 0.5)
+        .onClick(() => {
+          if (this.feedbackText.trim().length > 0) {
+            promptAction.showToast({
+              message: '感谢您的反馈',
+              duration: 2000
+            });
+            this.feedbackText = '';
+            this.showFeedbackSheet = false;
+          }
+        })
+
+      Blank()
+    }
+    .width('100%')
+    .height('100%')
+    .padding({ left: 24, right: 24 })
+    .justifyContent(FlexAlign.Start)
+    .alignItems(HorizontalAlign.Center)
+  }
+
+  @Builder
+  AboutSheet() {
+    Column() {
+      // Sheet标题
+      Text('关于App')
+        .fontSize(20)
+        .fontWeight(FontWeight.Bold)
+        .fontColor($r('app.color.primary_text_color'))
+        .margin({ top: 20, bottom: 20 })
+
+      // 应用图标
+      Image($r('app.media.startIcon'))
+        .width(80)
+        .height(80)
+        .borderRadius(16)
+        .margin({ bottom: 16 })
+
+      // 应用信息
+      Column() {
+        Text('送什么礼')
+          .fontSize(18)
+          .fontWeight(FontWeight.Bold)
+          .fontColor($r('app.color.primary_text_color'))
+          .margin({ bottom: 8 })
+
+        Text($r('app.string.version', '版本号', this.versionName))
+          .fontSize(14)
+          .fontColor($r('app.color.secondary_text_color'))
+          .margin({ bottom: 8 })
+
+        Text('您的贴心智能礼物宝库')
+          .fontSize(14)
+          .fontColor($r('app.color.primary_text_color'))
+          .textAlign(TextAlign.Center)
+          .margin({ bottom: 16 })
+
+      }
+      .width('100%')
+      .alignItems(HorizontalAlign.Center)
+
+      Blank()
+
+      // 版权信息
+      Text('© 2025 送什么礼团队')
+        .fontSize(12)
+        .fontColor($r('app.color.tertiary_text_color'))
+        .margin({ bottom: 20 })
+    }
+    .width('100%')
+    .height('100%')
+    .padding({ left: 24, right: 24 })
+    .justifyContent(FlexAlign.Start)
+    .alignItems(HorizontalAlign.Center)
   }
 }

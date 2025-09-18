@@ -13,6 +13,7 @@ import {
   TagCategory,
   getTagInfo
 } from '../model/GiftEnums';
+import { promptAction } from '@kit.ArkUI';
 
 @Entry
 @Component
@@ -96,6 +97,9 @@ struct InspirationDetailPage {
         this.isFavorite = true;
         // 暂时不支持收藏计数功能
       }
+      
+      // 触发ProfilePage刷新，更新收藏数量显示
+      AppStorage.setOrCreate('refreshProfilePage', Date.now());
     } catch (error) {
       console.error('切换收藏状态失败:', error);
     }
@@ -117,8 +121,12 @@ struct InspirationDetailPage {
 
   // 分享灵感
   shareInspiration() {
+
     if (!this.inspiration) return;
-    
+    promptAction.showToast({
+      message: '功能正在开发中，敬请期待～',
+      duration: 2000
+    });
     // 这里可以实现分享功能
     console.log('分享灵感:', this.inspiration.title);
   }
@@ -157,12 +165,19 @@ struct InspirationDetailPage {
     Column() {
       // 顶部导航栏
       Row() {
-        Text('←')
-          .fontSize(24)
-          .fontColor('#333333')
-          .onClick(() => {
-            this.navigateBack();
-          })
+        Row() {
+          Image($r('app.media.icon_back'))
+            .width(24)
+            .height(24)
+            .fillColor('#333333')
+        }
+        .justifyContent(FlexAlign.Start)
+        .width(56)
+        .height(56)
+        .backgroundColor(Color.Transparent)
+        .onClick(() => {
+          this.navigateBack()
+        })
         
         Text('灵感详情')
           .fontSize(18)
@@ -173,8 +188,8 @@ struct InspirationDetailPage {
         
         Row() {
           Image($r('app.media.icon_share'))
-            .width(24)
-            .height(24)
+            .width(20)
+            .height(20)
             .fillColor('#666666')
             .margin({ right: 16 })
             .onClick(() => {
@@ -182,8 +197,8 @@ struct InspirationDetailPage {
             })
           
           Image(this.isFavorite ? $r('app.media.icon_ax_full') : $r('app.media.icon_ax'))
-            .width(24)
-            .height(24)
+            .width(20)
+            .height(20)
             .fillColor(this.isFavorite ? '#FF6B35' : '#515151')
             .onClick(() => {
               this.toggleFavorite();
@@ -338,8 +353,291 @@ struct InspirationDetailPage {
               .backgroundColor(Color.White)
               .margin({ bottom: 8 })
 
-              // 详细内容
+              // 详细介绍
               if (this.inspiration.detailedDescription) {
+                Column() {
+                  Text('详细介绍')
+                    .fontSize(16)
+                    .fontWeight(FontWeight.Medium)
+                    .fontColor('#333333')
+                    .margin({ bottom: 12 })
+                    .alignSelf(ItemAlign.Start)
+                  
+                  Text(this.inspiration.detailedDescription)
+                    .fontSize(14)
+                    .fontColor('#666666')
+                    .lineHeight(22)
+                    .width('100%')
+                    .textAlign(TextAlign.Start)
+                    .backgroundColor('#F8F9FA')
+                    .padding(16)
+                    .borderRadius(8)
+                }
+                .width('100%')
+                .padding(16)
+                .backgroundColor(Color.White)
+                .margin({ bottom: 8 })
+              }
+
+               // 材料清单
+               if (this.inspiration.materials && this.inspiration.materials.length > 0) {
+                 Column() {
+                   Text('所需材料')
+                     .fontSize(16)
+                     .fontWeight(FontWeight.Medium)
+                     .fontColor('#333333')
+                     .margin({ bottom: 12 })
+                     .alignSelf(ItemAlign.Start)
+                   
+                   Column({ space: 8 }) {
+                     ForEach(this.inspiration.materials, (material: string, index: number) => {
+                       Row({ space: 8 }) {
+                         Text('•')
+                           .fontSize(14)
+                           .fontColor('#007AFF')
+                           .fontWeight(FontWeight.Bold)
+                         
+                         Text(material)
+                           .fontSize(14)
+                           .fontColor('#666666')
+                           .layoutWeight(1)
+                       }
+                       .width('100%')
+                       .alignItems(VerticalAlign.Top)
+                     }, (material: string, index: number) => `material_${index}`)
+                   }
+                   .width('100%')
+                   .backgroundColor('#F8F9FA')
+                   .padding(16)
+                   .borderRadius(8)
+                 }
+                 .width('100%')
+                 .padding(16)
+                 .backgroundColor(Color.White)
+                 .margin({ bottom: 8 })
+               }
+
+               // 制作步骤
+               if (this.inspiration.steps && this.inspiration.steps.length > 0) {
+                 Column() {
+                   Text('制作步骤')
+                     .fontSize(16)
+                     .fontWeight(FontWeight.Medium)
+                     .fontColor('#333333')
+                     .margin({ bottom: 12 })
+                     .alignSelf(ItemAlign.Start)
+                   
+                   Column({ space: 12 }) {
+                     ForEach(this.inspiration.steps, (step: string, index: number) => {
+                       Row({ space: 12 }) {
+                         Text((index + 1).toString())
+                           .fontSize(14)
+                           .fontColor(Color.White)
+                           .fontWeight(FontWeight.Bold)
+                           .width(24)
+                           .height(24)
+                           .textAlign(TextAlign.Center)
+                           .backgroundColor('#007AFF')
+                           .borderRadius(12)
+                         
+                         Text(step)
+                           .fontSize(14)
+                           .fontColor('#666666')
+                           .lineHeight(20)
+                           .layoutWeight(1)
+                       }
+                       .width('100%')
+                       .alignItems(VerticalAlign.Top)
+                     }, (step: string, index: number) => `step_${index}`)
+                   }
+                   .width('100%')
+                   .backgroundColor('#F8F9FA')
+                   .padding(16)
+                   .borderRadius(8)
+                 }
+                 .width('100%')
+                 .padding(16)
+                 .backgroundColor(Color.White)
+                 .margin({ bottom: 8 })
+               }
+
+               // 小贴士
+               if (this.inspiration.tips && this.inspiration.tips.length > 0) {
+                 Column() {
+                   Row({ space: 8 }) {
+                     Image($r('app.media.icon_xts'))
+                       .width(16)
+                       .height(16)
+                       .fillColor('#FFA726')
+                     
+                     Text('小贴士')
+                       .fontSize(16)
+                       .fontWeight(FontWeight.Medium)
+                       .fontColor('#333333')
+                   }
+                   .margin({ bottom: 12 })
+                   .alignSelf(ItemAlign.Start)
+                   
+                   Column({ space: 8 }) {
+                     ForEach(this.inspiration.tips, (tip: string, index: number) => {
+                       Row({ space: 8 }) {
+                         Image($r('app.media.icon_xts'))
+                           .width(14)
+                           .height(14)
+                           .fillColor('#FFA726')
+                         
+                         Text(tip)
+                           .fontSize(14)
+                           .fontColor('#666666')
+                           .lineHeight(20)
+                           .layoutWeight(1)
+                       }
+                       .width('100%')
+                       .alignItems(VerticalAlign.Top)
+                     }, (tip: string, index: number) => `tip_${index}`)
+                   }
+                   .width('100%')
+                   .backgroundColor('#FFF8E1')
+                   .padding(16)
+                   .borderRadius(8)
+                 }
+                 .width('100%')
+                 .padding(16)
+                 .backgroundColor(Color.White)
+                 .margin({ bottom: 8 })
+               }
+
+               // 注意事项
+               if (this.inspiration.precautions && this.inspiration.precautions.length > 0) {
+                 Column() {
+                   Row({ space: 8 }) {
+                     Image($r('app.media.ic_warning'))
+                       .width(16)
+                       .height(16)
+                       .fillColor('#F44336')
+                     
+                     Text('注意事项')
+                       .fontSize(16)
+                       .fontWeight(FontWeight.Medium)
+                       .fontColor('#333333')
+                   }
+                   .margin({ bottom: 12 })
+                   .alignSelf(ItemAlign.Start)
+                   
+                   Column({ space: 8 }) {
+                     ForEach(this.inspiration.precautions, (precaution: string, index: number) => {
+                       Row({ space: 8 }) {
+                         Image($r('app.media.ic_warning'))
+                           .width(14)
+                           .height(14)
+                           .fillColor('#F44336')
+                         
+                         Text(precaution)
+                           .fontSize(14)
+                           .fontColor('#666666')
+                           .lineHeight(20)
+                           .layoutWeight(1)
+                       }
+                       .width('100%')
+                       .alignItems(VerticalAlign.Top)
+                     }, (precaution: string, index: number) => `precaution_${index}`)
+                   }
+                   .width('100%')
+                   .backgroundColor('#FFEBEE')
+                   .padding(16)
+                   .borderRadius(8)
+                 }
+                 .width('100%')
+                 .padding(16)
+                 .backgroundColor(Color.White)
+                 .margin({ bottom: 8 })
+               }
+
+               // 包装建议
+               if (this.inspiration.giftWrapIdeas && this.inspiration.giftWrapIdeas.length > 0) {
+                 Column() {
+                   Row({ space: 8 }) {
+                     Image($r('app.media.icon_bz'))
+                       .width(16)
+                       .height(16)
+                       .fillColor('#9C27B0')
+                     
+                     Text('包装建议')
+                       .fontSize(16)
+                       .fontWeight(FontWeight.Medium)
+                       .fontColor('#333333')
+                   }
+                   .margin({ bottom: 12 })
+                   .alignSelf(ItemAlign.Start)
+                   
+                   Column({ space: 8 }) {
+                     ForEach(this.inspiration.giftWrapIdeas, (idea: string, index: number) => {
+                       Row({ space: 8 }) {
+                         Image($r('app.media.icon_bz'))
+                           .width(14)
+                           .height(14)
+                           .fillColor('#9C27B0')
+                         
+                         Text(idea)
+                           .fontSize(14)
+                           .fontColor('#666666')
+                           .lineHeight(20)
+                           .layoutWeight(1)
+                       }
+                       .width('100%')
+                       .alignItems(VerticalAlign.Top)
+                     }, (idea: string, index: number) => `wrap_${index}`)
+                   }
+                   .width('100%')
+                   .backgroundColor('#F3E5F5')
+                   .padding(16)
+                   .borderRadius(8)
+                 }
+                 .width('100%')
+                 .padding(16)
+                 .backgroundColor(Color.White)
+                 .margin({ bottom: 8 })
+               }
+
+               // 个性化建议
+               if (this.inspiration.personalizedTips && this.inspiration.personalizedTips.length > 0) {
+                 Column() {
+                   Text('✨ 个性化建议')
+                     .fontSize(16)
+                     .fontWeight(FontWeight.Medium)
+                     .fontColor('#333333')
+                     .margin({ bottom: 12 })
+                     .alignSelf(ItemAlign.Start)
+                   
+                   Column({ space: 8 }) {
+                     ForEach(this.inspiration.personalizedTips, (tip: string, index: number) => {
+                       Row({ space: 8 }) {
+                         Text('✨')
+                           .fontSize(14)
+                         
+                         Text(tip)
+                           .fontSize(14)
+                           .fontColor('#666666')
+                           .lineHeight(20)
+                           .layoutWeight(1)
+                       }
+                       .width('100%')
+                       .alignItems(VerticalAlign.Top)
+                     }, (tip: string, index: number) => `personal_${index}`)
+                   }
+                   .width('100%')
+                   .backgroundColor('#E8F5E8')
+                   .padding(16)
+                   .borderRadius(8)
+                 }
+                 .width('100%')
+                 .padding(16)
+                 .backgroundColor(Color.White)
+                 .margin({ bottom: 8 })
+               }
+    
+                   // 详细内容
+                   if (this.inspiration.detailedDescription) {
                 Column() {
                   Text('实施指南')
                     .fontSize(16)

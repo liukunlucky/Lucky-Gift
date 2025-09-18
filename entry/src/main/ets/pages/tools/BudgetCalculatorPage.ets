@@ -1,152 +1,199 @@
 import router from '@ohos.router';
+import promptAction from '@ohos.promptAction';
 
-interface BudgetItem {
+interface PersonBudget {
   id: string;
   name: string;
-  amount: number;
-  category: string;
-}
-
-interface BudgetCategory {
-  name: string;
-  color: string;
-  icon: string;
+  budget: number;
+  allocatedAmount: number;
 }
 
 @Entry
 @Component
 struct BudgetCalculatorPage {
-  @State totalBudget: number = 0;
-  @State budgetItems: BudgetItem[] = [];
-  @State currentItemName: string = '';
-  @State currentItemAmount: number = 0;
-  @State selectedCategory: string = '礼物';
-  @State showAddDialog: boolean = false;
-  @State editingItemId: string = '';
-  
-  // 预算分类
-  private categories: BudgetCategory[] = [
-    { name: '礼物', color: '#FF6B35', icon: '🎁' },
-    { name: '包装', color: '#4CAF50', icon: '📦' },
-    { name: '卡片', color: '#2196F3', icon: '💌' },
-    { name: '运费', color: '#9C27B0', icon: '🚚' },
-    { name: '其他', color: '#607D8B', icon: '📝' }
-  ];
+  @State private totalBudget: number = 0;
+  @State private peopleCount: number = 1;
+  @State private people: PersonBudget[] = [];
+  @State private currentPersonName: string = '';
+  @State private showEditPersonDialog: boolean = false;
+  @State private showAddPersonDialog: boolean = false;
+  @State private editingPersonId: string = '';
+
   
   aboutToAppear() {
-    this.loadSampleData();
+    this.initializePeople();
   }
   
-  loadSampleData() {
-    // 加载示例数据
-    this.totalBudget = 1000;
-    this.budgetItems = [
-      {
-        id: '1',
-        name: '生日礼物',
-        amount: 300,
-        category: '礼物'
-      },
-      {
-        id: '2',
-        name: '礼品包装',
-        amount: 50,
-        category: '包装'
-      },
-      {
-        id: '3',
-        name: '贺卡制作',
-        amount: 20,
-        category: '卡片'
-      }
-    ];
+  initializePeople() {
+    // 初始化一个人的预算分配
+    this.people = [{
+      id: '1',
+      name: '成员1',
+      budget: 0,
+      allocatedAmount: 0
+    }];
   }
   
-  getTotalSpent(): number {
-    return this.budgetItems.reduce((total, item) => total + item.amount, 0);
+
+  
+  // 增加人数
+  increasePeopleCount() {
+    if (this.peopleCount >= 20) {
+      promptAction.showToast({
+        message: '最多支持20人',
+        duration: 2000
+      });
+      return;
+    }
+    this.peopleCount++;
+    this.updatePeopleList();
   }
   
-  getRemainingBudget(): number {
-    return this.totalBudget - this.getTotalSpent();
+  // 减少人数
+  decreasePeopleCount() {
+    if (this.peopleCount <= 1) {
+      promptAction.showToast({
+        message: '至少需要1人',
+        duration: 2000
+      });
+      return;
+    }
+    this.peopleCount--;
+    this.updatePeopleList();
   }
   
-  getBudgetProgress(): number {
-    if (this.totalBudget === 0) return 0;
-    return (this.getTotalSpent() / this.totalBudget) * 100;
+  // 更新人员列表
+  private updatePeopleList(): void {
+    // 调整人员列表
+    while (this.people.length < this.peopleCount) {
+      const newPerson: PersonBudget = {
+        id: Date.now().toString() + this.people.length,
+        name: `成员${this.people.length + 1}`,
+        budget: 0,
+        allocatedAmount: 0
+      };
+      this.people.push(newPerson);
+    }
+    
+    // 移除多余的人员
+    while (this.people.length > this.peopleCount) {
+      this.people.pop();
+    }
+    
+    }
+  
+  // 更新人员预算
+  updatePersonBudget(personId: string, amount: number) {
+    const person = this.people.find(p => p.id === personId);
+    if (person) {
+      person.budget = amount;
+    }
   }
   
-  getCategoryTotal(categoryName: string): number {
-    return this.budgetItems
-      .filter(item => item.category === categoryName)
-      .reduce((total, item) => total + item.amount, 0);
-  }
-  
-  getCategoryColor(categoryName: string): string {
-    const category = this.categories.find(c => c.name === categoryName);
-    return category ? category.color : '#999999';
-  }
-  
-  getCategoryIcon(categoryName: string): string {
-    const category = this.categories.find(c => c.name === categoryName);
-    return category ? category.icon : '📝';
-  }
-  
-  showAddItemDialog() {
-    this.currentItemName = '';
-    this.currentItemAmount = 0;
-    this.selectedCategory = '礼物';
-    this.editingItemId = '';
-    this.showAddDialog = true;
-  }
-  
-  showEditItemDialog(item: BudgetItem) {
-    this.currentItemName = item.name;
-    this.currentItemAmount = item.amount;
-    this.selectedCategory = item.category;
-    this.editingItemId = item.id;
-    this.showAddDialog = true;
-  }
-  
-  saveItem() {
-    if (!this.currentItemName.trim() || this.currentItemAmount <= 0) {
+  // 保存人员信息
+  savePerson() {
+    if (this.currentPersonName.trim() === '') {
+      promptAction.showToast({
+        message: '请输入成员名称',
+        duration: 2000
+      });
       return;
     }
     
-    if (this.editingItemId) {
-      // 编辑现有项目
-      const index = this.budgetItems.findIndex(item => item.id === this.editingItemId);
-      if (index > -1) {
-        this.budgetItems[index] = {
-          id: this.budgetItems[index].id,
-          name: this.currentItemName,
-          amount: this.currentItemAmount,
-          category: this.selectedCategory
-        };
+    if (this.editingPersonId) {
+      // 编辑现有人员 - 使用响应式更新方法
+      const updatedPeople: PersonBudget[] = [];
+      for (const person of this.people) {
+        if (person.id === this.editingPersonId) {
+          const updatedPerson: PersonBudget = {
+            id: person.id,
+            name: this.currentPersonName,
+            budget: person.budget,
+            allocatedAmount: person.allocatedAmount
+          };
+          updatedPeople.push(updatedPerson);
+        } else {
+          updatedPeople.push(person);
+        }
       }
+      this.people = updatedPeople;
+      this.showEditPersonDialog = false;
     } else {
-      // 添加新项目
-      const newItem: BudgetItem = {
+      // 添加新人员
+      const newPerson: PersonBudget = {
         id: Date.now().toString(),
-        name: this.currentItemName,
-        amount: this.currentItemAmount,
-        category: this.selectedCategory
+        name: this.currentPersonName,
+        budget: 0,
+        allocatedAmount: 0
       };
-      this.budgetItems.push(newItem);
+      this.people.push(newPerson);
+      this.peopleCount = this.people.length;
+      this.showAddPersonDialog = false;
     }
     
-    this.showAddDialog = false;
+    this.currentPersonName = '';
+    this.editingPersonId = '';
   }
   
-  deleteItem(itemId: string) {
-    const index = this.budgetItems.findIndex(item => item.id === itemId);
+  // 删除人员
+  deletePerson(personId: string) {
+    const index = this.people.findIndex(person => person.id === personId);
     if (index > -1) {
-      this.budgetItems.splice(index, 1);
+      this.people.splice(index, 1);
+      this.peopleCount = this.people.length;
     }
   }
   
+  // 更新人员分配金额
+  updatePersonAllocation(personId: string, amount: number) {
+    const updatedPeople: PersonBudget[] = [];
+    for (const person of this.people) {
+      if (person.id === personId) {
+        const updatedPerson: PersonBudget = {
+          id: person.id,
+          name: person.name,
+          budget: person.budget,
+          allocatedAmount: amount
+        };
+        updatedPeople.push(updatedPerson);
+      } else {
+        updatedPeople.push(person);
+      }
+    }
+    this.people = updatedPeople;
+  }
+  
+
+
+  // 显示编辑人员对话框
+  private showEditDialog(person: PersonBudget): void {
+    this.currentPersonName = person.name;
+    this.editingPersonId = person.id;
+    this.showEditPersonDialog = true;
+  }
+  
+  // 重置预算
   resetBudget() {
-    this.budgetItems = [];
     this.totalBudget = 0;
+    this.peopleCount = 1;
+    this.people = [];
+    this.initializePeople();
+  }
+
+  // 获取总分配金额
+  getTotalAllocated(): number {
+    return this.people.reduce((total, person) => total + person.allocatedAmount, 0);
+  }
+
+  // 获取剩余预算
+  getRemainingBudget(): number {
+    return this.totalBudget - this.getTotalAllocated();
+  }
+
+  // 获取分配进度
+  getAllocationProgress(): number {
+    if (this.totalBudget === 0) return 0;
+    return (this.getTotalAllocated() / this.totalBudget) * 100;
   }
   
   goBack() {
@@ -158,16 +205,17 @@ struct BudgetCalculatorPage {
       // 顶部导航栏
       Row() {
         Button() {
-          Text('←')
-              .fontSize(20)
-              .fontColor('#333333')
+          Image($r('app.media.icon_back'))
             .width(24)
             .height(24)
+            .fillColor('#333333')
         }
         .width(40)
         .height(40)
         .backgroundColor(Color.Transparent)
-        .onClick(() => this.goBack())
+        .onClick(() => {
+          this.goBack()
+        })
         
         Text('预算计算器')
           .fontSize(18)
@@ -175,18 +223,18 @@ struct BudgetCalculatorPage {
           .fontColor('#333333')
           .layoutWeight(1)
           .textAlign(TextAlign.Center)
-        
+
         Button() {
-          Text('🔄')
-              .fontSize(16)
-              .fontColor('#999999')
-            .width(20)
-            .height(20)
+          Text('重置')
+            .fontSize(14)
+            .fontColor('#FF4444')
         }
         .width(40)
         .height(40)
         .backgroundColor(Color.Transparent)
-        .onClick(() => this.resetBudget())
+        .onClick(() => {
+          this.resetBudget();
+        })
       }
       .width('100%')
       .height(56)
@@ -197,7 +245,7 @@ struct BudgetCalculatorPage {
         Column() {
           // 总预算设置
           Column() {
-            Text('总预算')
+            Text('总预算设置')
               .fontSize(18)
               .fontWeight(FontWeight.Medium)
               .fontColor('#333333')
@@ -210,7 +258,7 @@ struct BudgetCalculatorPage {
                 .fontColor('#FF6B35')
                 .fontWeight(FontWeight.Bold)
               
-              TextInput({ placeholder: '0' })
+              TextInput({ placeholder: '点击输入总预算金额' })
                 .type(InputType.Number)
                 .fontSize(24)
                 .fontWeight(FontWeight.Bold)
@@ -218,9 +266,11 @@ struct BudgetCalculatorPage {
                 .backgroundColor(Color.Transparent)
                 .border({ width: 0 })
                 .layoutWeight(1)
+                .placeholderColor('#FFB399')
+                .placeholderFont({ size: 20 })
                 .onChange((value: string) => {
-                  this.totalBudget = parseFloat(value) || 0;
-                })
+              this.totalBudget = parseFloat(value) || 0;
+            })
             }
             .width('100%')
             .height(60)
@@ -228,6 +278,93 @@ struct BudgetCalculatorPage {
             .borderRadius(12)
             .padding({ left: 20, right: 20 })
             .alignItems(VerticalAlign.Center)
+          }
+          .width('100%')
+          .backgroundColor('#FFFFFF')
+          .borderRadius(12)
+          .padding(16)
+          .margin({ bottom: 16 })
+          
+          // 人数设置
+          Column() {
+            Text('参与人数')
+              .fontSize(18)
+              .fontWeight(FontWeight.Medium)
+              .fontColor('#333333')
+              .alignSelf(ItemAlign.Start)
+              .margin({ bottom: 16 })
+            
+            Row() {
+              Button() {
+                Text('-')
+                  .fontSize(20)
+                  .fontColor('#FF6B35')
+                  .fontWeight(FontWeight.Bold)
+              }
+              .width(40)
+              .height(40)
+              .backgroundColor('#FFF5F0')
+              .borderRadius(8)
+              .onClick(() => {
+                if (this.peopleCount > 1) {
+                  this.peopleCount--;
+                  this.updatePeopleList();
+                } else {
+                  promptAction.showToast({
+                    message: '至少需要1个人参与预算分配',
+                    duration: 2000
+                  });
+                }
+              })
+              
+              Text(this.peopleCount.toString())
+                .fontSize(20)
+                .fontWeight(FontWeight.Medium)
+                .fontColor('#333333')
+                .layoutWeight(1)
+                .textAlign(TextAlign.Center)
+              
+              Button() {
+                Text('+')
+                  .fontSize(20)
+                  .fontColor('#FF6B35')
+                  .fontWeight(FontWeight.Bold)
+              }
+              .width(40)
+              .height(40)
+              .backgroundColor('#FFF5F0')
+              .borderRadius(8)
+              .onClick(() => {
+                if (this.peopleCount < 10) {
+                  this.peopleCount++;
+                  this.updatePeopleList();
+                }
+              })
+            }
+            .width('100%')
+            .justifyContent(FlexAlign.SpaceBetween)
+            .alignItems(VerticalAlign.Center)
+            
+            // 预算概览
+            Row() {
+              Column() {
+                Text('总预算')
+                  .fontSize(12)
+                  .fontColor('#666666')
+                  .margin({ bottom: 4 })
+                
+                Text(`¥${this.totalBudget.toFixed(2)}`)
+                  .fontSize(16)
+                  .fontWeight(FontWeight.Medium)
+                  .fontColor('#333333')
+              }
+              .alignItems(HorizontalAlign.Start)
+              .layoutWeight(1)
+              
+
+            }
+            .width('100%')
+            .padding(10)
           }
           .width('100%')
           .backgroundColor('#FFFFFF')
@@ -244,47 +381,95 @@ struct BudgetCalculatorPage {
               .alignSelf(ItemAlign.Start)
               .margin({ bottom: 16 })
             
-            // 进度条
+            // 总体统计
+            Row() {
+              Column() {
+                Text('总预算')
+                  .fontSize(12)
+                  .fontColor('#999999')
+                  .margin({ bottom: 4 })
+                
+                Text(`¥${this.totalBudget}`)
+                  .fontSize(18)
+                  .fontWeight(FontWeight.Bold)
+                  .fontColor('#333333')
+              }
+              .layoutWeight(1)
+              .alignItems(HorizontalAlign.Center)
+              
+              Column() {
+                Text('已分配')
+                  .fontSize(12)
+                  .fontColor('#999999')
+                  .margin({ bottom: 4 })
+                
+                Text(`¥${this.getTotalAllocated()}`)
+                  .fontSize(18)
+                  .fontWeight(FontWeight.Bold)
+                  .fontColor('#2196F3')
+              }
+              .layoutWeight(1)
+              .alignItems(HorizontalAlign.Center)
+              
+              Column() {
+                Text('剩余')
+                  .fontSize(12)
+                  .fontColor('#999999')
+                  .margin({ bottom: 4 })
+                
+                Text(`¥${this.getRemainingBudget()}`)
+                  .fontSize(18)
+                  .fontWeight(FontWeight.Bold)
+                  .fontColor(this.getRemainingBudget() >= 0 ? '#4CAF50' : '#F44336')
+              }
+              .layoutWeight(1)
+              .alignItems(HorizontalAlign.Center)
+            }
+            .width('100%')
+            .margin({ bottom: 16 })
+            
+            // 分配进度条
             Column() {
               Row() {
-                Text('已使用')
+                Text('分配进度')
                   .fontSize(14)
                   .fontColor('#666666')
                 
                 Blank()
                 
-                Text(`¥${this.getTotalSpent()}`)
-                  .fontSize(16)
-                  .fontWeight(FontWeight.Medium)
-                  .fontColor('#FF6B35')
+                Text(`${this.getAllocationProgress().toFixed(1)}%`)
+                  .fontSize(14)
+                  .fontColor('#666666')
               }
               .width('100%')
               .margin({ bottom: 8 })
               
+              if (this.getTotalAllocated() > this.totalBudget) {
+                Row() {
+                  Image($r('app.media.ic_warning'))
+                    .width(14)
+                    .height(14)
+                    .fillColor('#F44336')
+                    .margin({ right: 4 })
+                  
+                  Text('分配金额超出预算')
+                    .fontSize(12)
+                    .fontColor('#F44336')
+                }
+                .alignItems(VerticalAlign.Center)
+                .margin({ top: 4 })
+              }
+              
               Progress({
-                value: this.getTotalSpent(),
+                value: this.getTotalAllocated(),
                 total: this.totalBudget || 1,
                 type: ProgressType.Linear
               })
                 .width('100%')
                 .height(8)
-                .color('#FF6B35')
+                .color(this.getTotalAllocated() > this.totalBudget ? '#F44336' : '#2196F3')
                 .backgroundColor('#F0F0F0')
                 .borderRadius(4)
-              
-              Row() {
-                Text(`剩余: ¥${this.getRemainingBudget()}`)
-                  .fontSize(14)
-                  .fontColor(this.getRemainingBudget() >= 0 ? '#4CAF50' : '#F44336')
-                
-                Blank()
-                
-                Text(`${this.getBudgetProgress().toFixed(1)}%`)
-                  .fontSize(14)
-                  .fontColor('#666666')
-              }
-              .width('100%')
-              .margin({ top: 8 })
             }
             .width('100%')
             .padding(16)
@@ -297,48 +482,29 @@ struct BudgetCalculatorPage {
           .padding(16)
           .margin({ bottom: 16 })
           
-          // 分类统计
+          // 人员分配
           Column() {
             Row() {
-              Text('分类统计')
+              Text('人员分配')
                 .fontSize(18)
                 .fontWeight(FontWeight.Medium)
                 .fontColor('#333333')
-              
-              Blank()
-              
-              Button() {
-                Row() {
-                  Image($r('app.media.ic_add'))
-                    .width(16)
-                    .height(16)
-                    .fillColor('#FF6B35')
-                    .margin({ right: 4 })
-                  
-                  Text('添加')
-                    .fontSize(14)
-                    .fontColor('#FF6B35')
-                }
-              }
-              .backgroundColor(Color.Transparent)
-              .onClick(() => this.showAddItemDialog())
             }
             .width('100%')
             .margin({ bottom: 16 })
             
-            if (this.budgetItems.length === 0) {
+            if (this.people.length === 0) {
               Column() {
-                Image($r('app.media.ic_empty'))
-                  .width(60)
-                  .height(60)
-                  .fillColor('#CCCCCC')
+                Text('👥')
+                  .fontSize(60)
+                  .fontColor('#CCCCCC')
                 
-                Text('还没有预算项目')
+                Text('还没有参与人员')
                   .fontSize(16)
                   .fontColor('#999999')
                   .margin({ top: 16 })
                 
-                Text('点击上方添加按钮开始规划预算')
+                Text('设置人数或添加人员开始分配预算')
                   .fontSize(14)
                   .fontColor('#CCCCCC')
                   .margin({ top: 8 })
@@ -348,105 +514,78 @@ struct BudgetCalculatorPage {
               .justifyContent(FlexAlign.Center)
               .alignItems(HorizontalAlign.Center)
             } else {
-              // 分类汇总
+              // 人员列表
               Column() {
-                ForEach(this.categories, (category: BudgetCategory) => {
-                  if (this.getCategoryTotal(category.name) > 0) {
+                ForEach(this.people, (person: PersonBudget, index: number) => {
+                  Column() {
                     Row() {
-                      Text(category.icon)
+                      Text('👤')
                         .fontSize(20)
                         .margin({ right: 12 })
                       
                       Column() {
-                        Text(category.name)
+                        Text(person.name)
                           .fontSize(16)
-                          .fontColor('#333333')
-                        
-                        Text(`¥${this.getCategoryTotal(category.name)}`)
-                          .fontSize(14)
-                          .fontColor(category.color)
                           .fontWeight(FontWeight.Medium)
-                          .margin({ top: 2 })
+                          .fontColor('#333333')
+                          .alignSelf(ItemAlign.Start)
                       }
-                      .alignItems(HorizontalAlign.Start)
                       .layoutWeight(1)
+                      .alignItems(HorizontalAlign.Start)
+
+                      Image($r('app.media.icon_edit'))
+                        .width(18)
+                        .height(18)
+                        .fillColor('#333333')
+                        .visibility(Visibility.None)
+                        .onClick(() => this.showEditDialog(person))
+                        .margin({ right: 4 })
                       
-                      Text(`${((this.getCategoryTotal(category.name) / this.getTotalSpent()) * 100).toFixed(1)}%`)
-                        .fontSize(14)
-                        .fontColor('#666666')
+                      if (this.people.length > 1) {
+                        Image($r('app.media.icon_delete'))
+                          .width(22)
+                          .height(22)
+                          .fillColor(Color.Red)
+                          .margin({ left: 4 })
+                          .onClick(() => this.deletePerson(person.id))
+                       }
                     }
                     .width('100%')
-                    .padding({ top: 12, bottom: 12 })
                     .alignItems(VerticalAlign.Center)
-                  }
-                })
-              }
-              .width('100%')
-              .margin({ bottom: 16 })
-              
-              // 详细列表
-              Column() {
-                Text('详细列表')
-                  .fontSize(16)
-                  .fontWeight(FontWeight.Medium)
-                  .fontColor('#333333')
-                  .alignSelf(ItemAlign.Start)
-                  .margin({ bottom: 12 })
-                
-                ForEach(this.budgetItems, (item: BudgetItem) => {
-                  Row() {
-                    Text(this.getCategoryIcon(item.category))
-                      .fontSize(16)
-                      .margin({ right: 12 })
-                    
+                    .margin({ bottom: 12 })
+
+                    // 分配金额滑动条
                     Column() {
-                      Text(item.name)
-                        .fontSize(16)
-                        .fontColor('#333333')
-                        .alignSelf(ItemAlign.Start)
-                      
-                      Text(item.category)
-                        .fontSize(12)
-                        .fontColor('#999999')
-                        .alignSelf(ItemAlign.Start)
-                        .margin({ top: 2 })
+                      TextInput({
+                        text: person.allocatedAmount.toString(),
+                        placeholder: '¥ 请输入分配金额'
+                      })
+                        .width('100%')
+                        .height(48)
+                        .type(InputType.Number)
+                        .fontSize(18)
+                        .fontWeight(FontWeight.Medium)
+                        .fontColor('#FF6B35')
+                        .backgroundColor('#FFF5F0')
+                        .borderRadius(10)
+                        .padding({ left: 16, right: 16 })
+                        .placeholderColor('#FFB399')
+                        .placeholderFont({ size: 16 })
+                        .border({ width: 0 })
+                        .onChange((value: string) => {
+                          const amount = parseFloat(value) || 0;
+                          this.updatePersonAllocation(person.id, amount);
+                        })
                     }
-                    .layoutWeight(1)
+                    .width('100%')
                     .alignItems(HorizontalAlign.Start)
-                    
-                    Text(`¥${item.amount}`)
-                      .fontSize(16)
-                      .fontWeight(FontWeight.Medium)
-                      .fontColor(this.getCategoryColor(item.category))
-                      .margin({ right: 12 })
-                    
-                    Button() {
-                      Text('✏️')
-                        .fontSize(16)
-                        .width(16)
-                        .height(16)
-                    }
-                    .width(32)
-                    .height(32)
-                    .backgroundColor(Color.Transparent)
-                    .onClick(() => this.showEditItemDialog(item))
-                    
-                    Button() {
-                      Text('🗑️')
-                        .fontSize(16)
-                        .width(16)
-                        .height(16)
-                    }
-                    .width(32)
-                    .height(32)
-                    .backgroundColor(Color.Transparent)
-                    .onClick(() => this.deleteItem(item.id))
                   }
                   .width('100%')
-                  .padding({ top: 12, bottom: 12 })
-                  .alignItems(VerticalAlign.Center)
-                  .border({ width: { bottom: 1 }, color: '#F0F0F0' })
-                })
+                  .padding(16)
+                  .backgroundColor('#F8F9FA')
+                  .borderRadius(8)
+                  .margin({ bottom: 12 })
+                }, (person: PersonBudget) => person.id)
               }
             }
           }
@@ -460,8 +599,8 @@ struct BudgetCalculatorPage {
       .layoutWeight(1)
       .scrollBar(BarState.Off)
       
-      // 添加/编辑对话框
-      if (this.showAddDialog) {
+      // 添加/编辑人员对话框
+      if (this.showEditPersonDialog) {
         Stack() {
           // 背景遮罩
           Rect()
@@ -469,90 +608,37 @@ struct BudgetCalculatorPage {
             .height('100%')
             .fill('#80000000')
             .onClick(() => {
-              this.showAddDialog = false;
+              this.showEditPersonDialog = false;
             })
           
           // 对话框内容
           Column() {
-            Text(this.editingItemId ? '编辑项目' : '添加项目')
+            Text(this.editingPersonId ? '编辑人员' : '添加人员')
               .fontSize(18)
               .fontWeight(FontWeight.Medium)
               .fontColor('#333333')
               .margin({ bottom: 20 })
             
-            // 项目名称
+            // 人员姓名
             Column() {
-              Text('项目名称')
+              Text('姓名')
                 .fontSize(14)
                 .fontColor('#666666')
                 .alignSelf(ItemAlign.Start)
                 .margin({ bottom: 8 })
               
-              TextInput({ placeholder: '输入项目名称' })
+              TextInput({ placeholder: '点击输入姓名', text: this.currentPersonName })
                 .fontSize(16)
-                .backgroundColor('#F8F9FA')
+                .backgroundColor('#FFFFFF')
                 .borderRadius(8)
-                .padding({ left: 16, right: 16 })
+                .borderWidth(2)
+                .borderColor('#FF6B35')
+                .padding({ left: 16, right: 16, top: 12, bottom: 12 })
+                .placeholderColor('#CCCCCC')
+                .placeholderFont({ size: 14 })
                 .onChange((value: string) => {
-                  this.currentItemName = value;
+                  this.currentPersonName = value;
                 })
-            }
-            .width('100%')
-            .alignItems(HorizontalAlign.Start)
-            .margin({ bottom: 16 })
-            
-            // 金额
-            Column() {
-              Text('金额')
-                .fontSize(14)
-                .fontColor('#666666')
-                .alignSelf(ItemAlign.Start)
-                .margin({ bottom: 8 })
-              
-              TextInput({ placeholder: '0' })
-                .type(InputType.Number)
-                .fontSize(16)
-                .backgroundColor('#F8F9FA')
-                .borderRadius(8)
-                .padding({ left: 16, right: 16 })
-                .onChange((value: string) => {
-                  this.currentItemAmount = parseFloat(value) || 0;
-                })
-            }
-            .width('100%')
-            .alignItems(HorizontalAlign.Start)
-            .margin({ bottom: 16 })
-            
-            // 分类选择
-            Column() {
-              Text('分类')
-                .fontSize(14)
-                .fontColor('#666666')
-                .alignSelf(ItemAlign.Start)
-                .margin({ bottom: 8 })
-              
-              Flex({ wrap: FlexWrap.Wrap }) {
-                ForEach(this.categories, (category: BudgetCategory) => {
-                  Button() {
-                    Row() {
-                      Text(category.icon)
-                        .fontSize(16)
-                        .margin({ right: 6 })
-                      
-                      Text(category.name)
-                        .fontSize(14)
-                        .fontColor(this.selectedCategory === category.name ? '#FFFFFF' : '#666666')
-                    }
-                  }
-                  .backgroundColor(this.selectedCategory === category.name ? category.color : '#F5F5F5')
-                  .borderRadius(16)
-                  .padding({ left: 12, right: 12, top: 6, bottom: 6 })
-                  .margin({ right: 8, bottom: 8 })
-                  .onClick(() => {
-                    this.selectedCategory = category.name;
-                  })
-                })
-              }
             }
             .width('100%')
             .alignItems(HorizontalAlign.Start)
@@ -568,7 +654,7 @@ struct BudgetCalculatorPage {
                 .layoutWeight(1)
                 .margin({ right: 8 })
                 .onClick(() => {
-                  this.showAddDialog = false;
+                  this.showEditPersonDialog = false;
                 })
               
               Button('保存')
@@ -578,7 +664,7 @@ struct BudgetCalculatorPage {
                 .borderRadius(8)
                 .layoutWeight(1)
                 .margin({ left: 8 })
-                .onClick(() => this.saveItem())
+                .onClick(() => this.savePerson())
             }
             .width('100%')
           }

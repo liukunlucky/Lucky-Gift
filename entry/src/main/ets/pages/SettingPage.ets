@@ -265,7 +265,7 @@ struct SettingPage {
         .margin({ top: 20, bottom: 20 })
 
       // 应用图标
-      Image($r('app.media.startIcon'))
+      Image($r('app.media.layered_image'))
         .width(80)
         .height(80)
         .borderRadius(16)

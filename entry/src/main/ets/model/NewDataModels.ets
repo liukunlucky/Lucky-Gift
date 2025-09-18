@@ -39,6 +39,7 @@ export interface GiftEvent {
   id?: string;
   contactId: string;
   contactName: string;
+  recordType: 'give' | 'receive'; // 记录类型：'give'送礼 或 'receive'收礼
   occasion: string; // 场合：生日、纪念日、节日等
   date: string;
   giftIdea: string; // 礼物创意描述
@@ -84,7 +85,9 @@ export interface Inspiration {
   title: string;
   description: string;
   detailedDescription?: string;
-  images: string[]; // 本地示例图片路径
+  images: Resource[]; // 本地示例图片资源
+  stepImages?: Resource[]; // 步骤图片
+  resultImages?: Resource[]; // 成果展示图片
   tags: string[];
   targetAudience: string[]; // 适合对象：父母、恋人等
   occasions: string[]; // 适合场合：生日、纪念日等
@@ -96,6 +99,18 @@ export interface Inspiration {
   materials?: string[]; // 所需材料
   steps?: string[]; // 制作步骤
   tips?: string[]; // 小贴士
+  precautions?: string[]; // 注意事项
+  alternatives?: string[]; // 替代方案
+  inspiration?: string; // 创意来源
+  personalizedTips?: string[]; // 个性化建议
+  seasonality?: string; // 季节性建议
+  giftWrapIdeas?: string[]; // 包装建议
+  presentationTips?: string[]; // 赠送技巧
+  followUpSuggestions?: string[]; // 后续建议
+  relatedInspirations?: string[]; // 相关灵感ID
+  viewCount?: number; // 浏览次数
+  favoriteCount?: number; // 收藏次数
+  rating?: number; // 评分
   isRecommended: boolean;
   createdAt?: string;
 }

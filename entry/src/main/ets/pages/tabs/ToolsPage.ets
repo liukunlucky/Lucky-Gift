@@ -11,7 +11,7 @@ interface BannerItem {
   description: string;
   backgroundColor: string;
   textColor: string;
-  icon: string;
+  icon: Resource;
   actionText?: string;
   actionType?: string;
 }
@@ -55,7 +55,7 @@ export struct ToolsPage {
   private toolMenus: ToolMenu[] = [
     {
       id: 'record',
-      title: '快速记录',
+      title: '备忘',
       description: '记录送礼想法',
       icon: $r('app.media.icon_record'),
       color: '#4CAF50'
@@ -131,46 +131,46 @@ export struct ToolsPage {
     return [
       {
         id: '1',
-        title: '🎁 智能礼物推荐',
+        title: '智能礼物推荐',
         subtitle: '让AI帮你选礼物',
         description: '基于收礼人的喜好和场合，为你推荐最合适的礼物',
         backgroundColor: '#FF6B35',
         textColor: '#FFFFFF',
-        icon: '🤖',
+        icon: $r('app.media.icon_gift_new'),
         actionText: '立即体验',
         actionType: 'recommendation'
       },
       {
         id: '2',
-        title: '💝 节日礼物指南',
+        title: '节日礼物指南',
         subtitle: '不同节日送什么',
         description: '情人节、生日、纪念日...每个节日都有专属推荐',
         backgroundColor: '#E91E63',
         textColor: '#FFFFFF',
-        icon: '📅',
+        icon: $r('app.media.icon_rl_new'),
         actionText: '查看指南',
         actionType: 'guide'
       },
       {
         id: '3',
-        title: '💰 预算优化助手',
+        title: '预算优化助手',
         subtitle: '花最少的钱送最好的礼',
         description: '根据你的预算，找到性价比最高的礼物选择',
         backgroundColor: '#2196F3',
         textColor: '#FFFFFF',
-        icon: '💡',
+        icon: $r('app.media.icon_money_new'),
         actionText: '开始优化',
         actionType: 'budget'
       },
       {
         id: '4',
-        title: '🎨 个性化定制',
-        subtitle: '独一无二的心意',
-        description: '定制专属礼物，让你的心意更加特别',
+        title: '场景分类',
+        subtitle: '按场合选择礼物',
+        description: '生日、情人节、毕业典礼...不同场景的专属礼物推荐',
         backgroundColor: '#9C27B0',
         textColor: '#FFFFFF',
-        icon: '✨',
-        actionText: '开始定制',
+        icon: $r('app.media.icon_dz'),
+        actionText: '选择场景',
         actionType: 'customize'
       }
     ];
@@ -363,6 +363,94 @@ export struct ToolsPage {
             .alignItems(HorizontalAlign.Center)
           } else {
             Column() {
+
+              // 轮播图
+              Column() {
+                Swiper() {
+                  ForEach(this.bannerItems, (banner: BannerItem) => {
+                    Column() {
+                      Row() {
+                        Column() {
+                          Text(banner.title)
+                            .fontSize(18)
+                            .fontWeight(FontWeight.Bold)
+                            .fontColor(banner.textColor)
+                            .margin({ bottom: 4 })
+
+                          Text(banner.subtitle)
+                            .fontSize(14)
+                            .fontColor(banner.textColor)
+                            .opacity(0.9)
+                            .margin({ bottom: 8 })
+
+                          Text(banner.description)
+                            .fontSize(12)
+                            .fontColor(banner.textColor)
+                            .opacity(0.8)
+                            .maxLines(2)
+                            .textOverflow({ overflow: TextOverflow.Ellipsis })
+                            .margin({ bottom: 12 })
+
+                          if (banner.actionText) {
+                            Text(banner.actionText)
+                              .fontSize(12)
+                              .height(32)
+                              .backgroundColor(Color.White)
+                              .fontColor(banner.backgroundColor)
+                              .borderRadius(16)
+                              .padding({
+                                left: 16,
+                                right: 16,
+                                top: 6,
+                                bottom: 6
+                              })
+                              .textAlign(TextAlign.Center)
+                          }
+                        }
+                        .layoutWeight(1)
+                        .alignItems(HorizontalAlign.Start)
+
+                        Image(banner.icon)
+                          .width(60).height(60)
+                          .margin({ left: 16 })
+                      }
+                      .width('100%')
+                      .height('100%')
+                      .padding(20)
+                      .justifyContent(FlexAlign.SpaceBetween)
+                      .alignItems(VerticalAlign.Center)
+                    }
+                    .width('100%')
+                    .height(160)
+                    .backgroundColor(banner.backgroundColor)
+                    .borderRadius(12)
+                    .onClick(() => {
+                      this.handleBannerAction(banner.actionType || '');
+                    })
+                  })
+                }
+                .width('100%')
+                .height(160)
+                .autoPlay(true)
+                .interval(4000)
+                .indicator(true)
+                .loop(true)
+                .duration(300)
+                .itemSpace(0)
+                .indicatorStyle({
+                  bottom: 12,
+                  right: 12,
+                  color: Color.White,
+                  selectedColor: '#FFD700'
+                })
+                .onChange((index: number) => {
+                  this.currentBannerIndex = index;
+                })
+              }
+              .width('100%')
+              .padding({top: 16, bottom: 16, left: 20, right: 20})
+              .margin({ bottom: 8 })
+
               // 工具菜单
               Column() {
                 Text('实用工具')
@@ -419,175 +507,6 @@ export struct ToolsPage {
               .backgroundColor('#F8F9FA')
               .margin({ top: 12 })
 
-              // 轮播图
-              Column() {
-                Swiper() {
-                  ForEach(this.bannerItems, (banner: BannerItem) => {
-                    Column() {
-                      Row() {
-                        Column() {
-                          Text(banner.title)
-                            .fontSize(18)
-                            .fontWeight(FontWeight.Bold)
-                            .fontColor(banner.textColor)
-                            .margin({ bottom: 4 })
-
-                          Text(banner.subtitle)
-                            .fontSize(14)
-                            .fontColor(banner.textColor)
-                            .opacity(0.9)
-                            .margin({ bottom: 8 })
-
-                          Text(banner.description)
-                            .fontSize(12)
-                            .fontColor(banner.textColor)
-                            .opacity(0.8)
-                            .maxLines(2)
-                            .textOverflow({ overflow: TextOverflow.Ellipsis })
-                            .margin({ bottom: 12 })
-
-                          if (banner.actionText) {
-                            Text(banner.actionText)
-                              .fontSize(12)
-                              .height(32)
-                              .backgroundColor(Color.White)
-                              .fontColor(banner.backgroundColor)
-                              .borderRadius(16)
-                              .padding({
-                                left: 16,
-                                right: 16,
-                                top: 6,
-                                bottom: 6
-                              })
-                              .textAlign(TextAlign.Center)
-                          }
-                        }
-                        .layoutWeight(1)
-                        .alignItems(HorizontalAlign.Start)
-
-                        Text(banner.icon)
-                          .fontSize(48)
-                          .margin({ left: 16 })
-                      }
-                      .width('100%')
-                      .height('100%')
-                      .padding(20)
-                      .justifyContent(FlexAlign.SpaceBetween)
-                      .alignItems(VerticalAlign.Center)
-                    }
-                    .width('100%')
-                    .height(160)
-                    .backgroundColor(banner.backgroundColor)
-                    .borderRadius(12)
-                    .onClick(() => {
-                      this.handleBannerAction(banner.actionType || '');
-                    })
-                  })
-                }
-                .width('100%')
-                .height(160)
-                .autoPlay(true)
-                .interval(4000)
-                .indicator(true)
-                .loop(true)
-                .duration(300)
-                .itemSpace(0)
-                .indicatorStyle({
-                  bottom: 12,
-                  right: 12,
-                  color: Color.White,
-                  selectedColor: '#FFD700'
-                })
-                .onChange((index: number) => {
-                  this.currentBannerIndex = index;
-                })
-              }
-              .width('100%')
-              .padding({top: 16, bottom: 16, left: 20, right: 20})
-              .margin({ bottom: 8 })
-
-
-              // 热门礼物推荐
-              Column() {
-                Row() {
-                  Text('热门礼物推荐')
-                    .fontSize(16)
-                    .fontWeight(FontWeight.Medium)
-                }
-                .width('100%')
-                .margin({ bottom: 16 })
-
-                ForEach(this.giftRecommendations, (gift: GiftRecommendation) => {
-                  Row() {
-                    Column() {
-                      Text(gift.title)
-                        .fontSize(14)
-                        .fontWeight(FontWeight.Medium)
-                        .fontColor('#333333')
-                        .margin({ bottom: 4 })
-
-                      Row() {
-                        Text(gift.category)
-                          .fontSize(12)
-                          .fontColor('#666666')
-
-                        Text('·')
-                          .fontSize(12)
-                          .fontColor('#CCCCCC')
-                          .margin({ left: 8, right: 8 })
-
-                        Text(gift.priceRange)
-                          .fontSize(12)
-                          .fontColor('#FF6B35')
-                      }
-                      .margin({ bottom: 8 })
-
-                      Row() {
-                        ForEach(gift.tags.slice(0, 3), (tag: string) => {
-                          Text(tag)
-                            .fontSize(10)
-                            .fontColor('#666666')
-                            .backgroundColor('#F0F0F0')
-                            .borderRadius(8)
-                            .padding({
-                              left: 6,
-                              right: 6,
-                              top: 2,
-                              bottom: 2
-                            })
-                            .margin({ right: 4 })
-                        })
-                      }
-                    }
-                    .layoutWeight(1)
-                    .alignItems(HorizontalAlign.Start)
-
-                    Column() {
-                      Text(`${gift.popularity}%`)
-                        .fontSize(16)
-                        .fontWeight(FontWeight.Bold)
-                        .fontColor('#FF6B35')
-
-                      Text('热度')
-                        .fontSize(10)
-                        .fontColor('#666666')
-                    }
-                    .alignItems(HorizontalAlign.Center)
-                  }
-                  .width('100%')
-                  .padding({ top: 12, bottom: 12 })
-                  .border({ width: { bottom: 1 }, color: '#F0F0F0' })
-                  .onClick(() => {
-                    this.navigateToGiftDetail(gift.id);
-                  })
-                })
-              }
-              .width('100%')
-              .padding(16)
-              .backgroundColor(Color.White)
-              .borderRadius(12)
-              .margin({ bottom: 8 })
-
             }
           }
         }
@@ -621,7 +540,9 @@ export struct ToolsPage {
         });
         break;
       case 'customize':
-        console.info('个性化定制');
+        router.pushUrl({
+          url: 'pages/ScenarioPage'
+        });
         break;
       default:
         break;

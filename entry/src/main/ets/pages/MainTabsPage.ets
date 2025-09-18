@@ -62,6 +62,9 @@ struct MainTabsPage {
       if (index === 1) {
         this.recordPageRefreshKey++;
       }
+      if (index == 3) {
+        AppStorage.setOrCreate('refreshProfilePage', Date.now());
+      }
     })
     .animationDuration(300)
     .scrollable(false)

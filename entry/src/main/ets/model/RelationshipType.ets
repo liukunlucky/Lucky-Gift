@@ -18,14 +18,24 @@ export const RelationshipTypeNames: Record<RelationshipType, string> = {
   [RelationshipType.OTHER]: '其他'
 };
 
-// 关系类型颜色映射
+// 关系类型颜色映射 - 浅色系列，参考首页灵感标签颜色
 export const RelationshipTypeColors: Record<RelationshipType, string> = {
-  [RelationshipType.FAMILY]: '#FF6B6B',    // 红色 - 家人
-  [RelationshipType.FRIEND]: '#4ECDC4',    // 青色 - 朋友
-  [RelationshipType.RELATIVE]: '#45B7D1',  // 蓝色 - 亲戚
-  [RelationshipType.COLLEAGUE]: '#96CEB4', // 绿色 - 同事
-  [RelationshipType.CLASSMATE]: '#FECA57', // 黄色 - 同学
-  [RelationshipType.OTHER]: '#A0A0A0'      // 灰色 - 其他
+  [RelationshipType.FAMILY]: '#FFE5E5',    // 浅粉色 - 家人（温馨感）
+  [RelationshipType.FRIEND]: '#FFF5F0',    // 浅橙色 - 朋友（温暖感）
+  [RelationshipType.RELATIVE]: '#F0F8FF',  // 浅蓝色 - 亲戚（清新感）
+  [RelationshipType.COLLEAGUE]: '#F5F5F5', // 浅灰色 - 同事（专业感）
+  [RelationshipType.CLASSMATE]: '#F0FFF0', // 浅绿色 - 同学（活力感）
+  [RelationshipType.OTHER]: '#F8F8F8'      // 极浅灰色 - 其他（中性色）
+};
+
+// 关系类型前景文字颜色映射 - 与浅色背景形成良好对比度
+export const RelationshipTypeTextColors: Record<RelationshipType, string> = {
+  [RelationshipType.FAMILY]: '#D63384',    // 深粉色 - 与浅粉色背景对比
+  [RelationshipType.FRIEND]: '#FD7E14',    // 深橙色 - 与浅橙色背景对比
+  [RelationshipType.RELATIVE]: '#0D6EFD',  // 深蓝色 - 与浅蓝色背景对比
+  [RelationshipType.COLLEAGUE]: '#6C757D', // 深灰色 - 与浅灰色背景对比
+  [RelationshipType.CLASSMATE]: '#198754', // 深绿色 - 与浅绿色背景对比
+  [RelationshipType.OTHER]: '#6C757D'      // 深灰色 - 与极浅灰色背景对比
 };
 
 // 关系类型选项接口
@@ -52,7 +62,12 @@ export function getRelationshipTypeName(type: RelationshipType): string {
   return RelationshipTypeNames[type] || '其他';
 }
 
-// 根据关系类型获取颜色
+// 根据关系类型获取背景颜色
 export function getRelationshipTypeColor(type: RelationshipType): string {
   return RelationshipTypeColors[type] || '#A0A0A0';
+}
+
+// 根据关系类型获取前景文字颜色
+export function getRelationshipTypeTextColor(type: RelationshipType): string {
+  return RelationshipTypeTextColors[type] || '#6C757D';
 }

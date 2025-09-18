@@ -116,45 +116,36 @@ struct ScenarioPage {
     .backgroundColor('#F5F5F5')
   }
 
+  goBack() {
+    router.back();
+  }
+
   @Builder
   buildHeader() {
     Row() {
-      if (this.selectedScenario) {
-        Button('← 返回')
-          .fontSize(16)
-          .backgroundColor(Color.Transparent)
-          .fontColor('#333333')
-          .onClick(() => {
-            this.selectedScenario = undefined;
-            this.scenarioGifts = [];
-          })
+      Button() {
+        Image($r('app.media.icon_back'))
+          .width(24)
+          .height(24)
+          .fillColor('#333333')
       }
+      .width(40)
+      .height(40)
+      .backgroundColor(Color.Transparent)
+      .onClick(() => {
+        this.goBack()
+      })
       
       Text(this.selectedScenario ? this.getScenarioName(this.selectedScenario) : '场景分类')
-        .fontSize(20)
-        .fontWeight(FontWeight.Bold)
+        .fontSize(18)
+        .fontWeight(FontWeight.Medium)
         .fontColor('#333333')
         .layoutWeight(1)
-        .textAlign(this.selectedScenario ? TextAlign.Center : TextAlign.Start)
-        .margin({ left: this.selectedScenario ? 0 : 16 })
-      
-      if (this.selectedScenario) {
-        Button('筛选')
-          .fontSize(14)
-          .backgroundColor('#4CAF50')
-          .fontColor(Color.White)
-          .borderRadius(15)
-          .padding({ left: 12, right: 12, top: 6, bottom: 6 })
-          .onClick(() => {
-            // 跳转到推荐页面并传入场景参数
-            router.pushUrl({
-              url: 'pages/GiftRecommendationPage',
-              params: { scenario: this.selectedScenario }
-            });
-          })
-      }
+        .textAlign(TextAlign.Center)
+      Blank().width(40)
     }
     .width('100%')
+    .justifyContent(FlexAlign.SpaceBetween)
     .padding({ left: 16, right: 16, top: 12, bottom: 12 })
     .backgroundColor(Color.White)
   }
@@ -163,7 +154,7 @@ struct ScenarioPage {
   buildScenarioGrid() {
     Column() {
       Text('选择送礼场景')
-        .fontSize(18)
+        .fontSize(14)
         .fontWeight(FontWeight.Medium)
         .fontColor('#666666')
         .margin({ top: 20, bottom: 20 })

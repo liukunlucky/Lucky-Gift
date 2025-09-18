@@ -31,6 +31,11 @@ interface QuickFilter {
   value: string;
 }
 
+// Select组件选项接口
+interface SelectOption {
+  value: string;
+}
+
 // 分类导航项接口
 interface CategoryNavigationItem {
   label: string;
@@ -80,8 +85,6 @@ export struct BrowsePage {
   
   // 新增：多维度搜索状态
   @State searchConditions: SearchCondition[] = [];
-  @State activeDropdownId: string = '';
-  @State showDropdown: boolean = false;
   
 
   
@@ -168,15 +171,24 @@ export struct BrowsePage {
           { label: '不限', value: '' },
           { label: RecipientTypeNames[RecipientType.FATHER], value: RecipientType.FATHER },
           { label: RecipientTypeNames[RecipientType.MOTHER], value: RecipientType.MOTHER },
+          { label: RecipientTypeNames[RecipientType.GRANDFATHER], value: RecipientType.GRANDFATHER },
+          { label: RecipientTypeNames[RecipientType.GRANDMOTHER], value: RecipientType.GRANDMOTHER },
           { label: RecipientTypeNames[RecipientType.ELDER_RELATIVE], value: RecipientType.ELDER_RELATIVE },
           { label: RecipientTypeNames[RecipientType.BOYFRIEND], value: RecipientType.BOYFRIEND },
           { label: RecipientTypeNames[RecipientType.GIRLFRIEND], value: RecipientType.GIRLFRIEND },
+          { label: RecipientTypeNames[RecipientType.HUSBAND], value: RecipientType.HUSBAND },
+          { label: RecipientTypeNames[RecipientType.WIFE], value: RecipientType.WIFE },
           { label: RecipientTypeNames[RecipientType.BESTIE], value: RecipientType.BESTIE },
           { label: RecipientTypeNames[RecipientType.FRIEND], value: RecipientType.FRIEND },
           { label: RecipientTypeNames[RecipientType.COLLEAGUE], value: RecipientType.COLLEAGUE },
           { label: RecipientTypeNames[RecipientType.BOSS], value: RecipientType.BOSS },
           { label: RecipientTypeNames[RecipientType.TEACHER], value: RecipientType.TEACHER },
-          { label: RecipientTypeNames[RecipientType.CHILD], value: RecipientType.CHILD }
+          { label: RecipientTypeNames[RecipientType.CHILD], value: RecipientType.CHILD },
+          { label: RecipientTypeNames[RecipientType.SIBLING], value: RecipientType.SIBLING },
+          { label: RecipientTypeNames[RecipientType.CLASSMATE], value: RecipientType.CLASSMATE },
+          { label: RecipientTypeNames[RecipientType.NEIGHBOR], value: RecipientType.NEIGHBOR },
+          { label: RecipientTypeNames[RecipientType.CLIENT], value: RecipientType.CLIENT },
+          { label: RecipientTypeNames[RecipientType.OTHER], value: RecipientType.OTHER }
         ]
       },
       {
@@ -187,14 +199,26 @@ export struct BrowsePage {
           { label: '不限', value: '' },
           { label: OccasionTypeNames[OccasionType.BIRTHDAY], value: OccasionType.BIRTHDAY },
           { label: OccasionTypeNames[OccasionType.ANNIVERSARY], value: OccasionType.ANNIVERSARY },
+          { label: OccasionTypeNames[OccasionType.WEDDING_ANNIVERSARY], value: OccasionType.WEDDING_ANNIVERSARY },
           { label: OccasionTypeNames[OccasionType.VALENTINE_DAY], value: OccasionType.VALENTINE_DAY },
           { label: OccasionTypeNames[OccasionType.CHRISTMAS], value: OccasionType.CHRISTMAS },
+          { label: OccasionTypeNames[OccasionType.NEW_YEAR], value: OccasionType.NEW_YEAR },
           { label: OccasionTypeNames[OccasionType.SPRING_FESTIVAL], value: OccasionType.SPRING_FESTIVAL },
           { label: OccasionTypeNames[OccasionType.MOTHERS_DAY], value: OccasionType.MOTHERS_DAY },
           { label: OccasionTypeNames[OccasionType.FATHERS_DAY], value: OccasionType.FATHERS_DAY },
+          { label: OccasionTypeNames[OccasionType.TEACHERS_DAY], value: OccasionType.TEACHERS_DAY },
           { label: OccasionTypeNames[OccasionType.GRADUATION], value: OccasionType.GRADUATION },
           { label: OccasionTypeNames[OccasionType.PROMOTION], value: OccasionType.PROMOTION },
-          { label: OccasionTypeNames[OccasionType.THANK_YOU], value: OccasionType.THANK_YOU }
+          { label: OccasionTypeNames[OccasionType.NEW_JOB], value: OccasionType.NEW_JOB },
+          { label: OccasionTypeNames[OccasionType.HOUSEWARMING], value: OccasionType.HOUSEWARMING },
+          { label: OccasionTypeNames[OccasionType.WEDDING], value: OccasionType.WEDDING },
+          { label: OccasionTypeNames[OccasionType.BABY_SHOWER], value: OccasionType.BABY_SHOWER },
+          { label: OccasionTypeNames[OccasionType.GET_WELL], value: OccasionType.GET_WELL },
+          { label: OccasionTypeNames[OccasionType.APOLOGY], value: OccasionType.APOLOGY },
+          { label: OccasionTypeNames[OccasionType.THANK_YOU], value: OccasionType.THANK_YOU },
+          { label: OccasionTypeNames[OccasionType.ENCOURAGEMENT], value: OccasionType.ENCOURAGEMENT },
+          { label: OccasionTypeNames[OccasionType.JUST_BECAUSE], value: OccasionType.JUST_BECAUSE },
+          { label: OccasionTypeNames[OccasionType.OTHER], value: OccasionType.OTHER }
         ]
       },
       {
@@ -227,7 +251,13 @@ export struct BrowsePage {
           { label: GiftTypeNames[GiftType.BOOKS_STATIONERY], value: GiftType.BOOKS_STATIONERY },
           { label: GiftTypeNames[GiftType.CLOTHING_ACCESSORIES], value: GiftType.CLOTHING_ACCESSORIES },
           { label: GiftTypeNames[GiftType.FOOD_BEVERAGE], value: GiftType.FOOD_BEVERAGE },
-          { label: GiftTypeNames[GiftType.HOME_DECOR], value: GiftType.HOME_DECOR }
+          { label: GiftTypeNames[GiftType.HOME_DECOR], value: GiftType.HOME_DECOR },
+          { label: GiftTypeNames[GiftType.SPORTS_FITNESS], value: GiftType.SPORTS_FITNESS },
+          { label: GiftTypeNames[GiftType.TRAVEL_OUTDOOR], value: GiftType.TRAVEL_OUTDOOR },
+          { label: GiftTypeNames[GiftType.JEWELRY], value: GiftType.JEWELRY },
+          { label: GiftTypeNames[GiftType.FLOWERS_PLANTS], value: GiftType.FLOWERS_PLANTS },
+          { label: GiftTypeNames[GiftType.COLLECTIBLES], value: GiftType.COLLECTIBLES },
+          { label: GiftTypeNames[GiftType.OTHER], value: GiftType.OTHER }
         ]
       }
     ];
@@ -288,27 +318,24 @@ export struct BrowsePage {
       if (condition.selectedValue && condition.selectedValue !== '') {
         switch (condition.type) {
           case 'audience':
-            // 将枚举值转换为中文名称进行匹配
-            const recipientName = RecipientTypeNames[condition.selectedValue as RecipientType];
-            result = result.filter(item => item.targetAudience.includes(recipientName));
+            // 直接用枚举值在tags字段中匹配
+            const recipientType = condition.selectedValue as RecipientType;
+            result = result.filter(item => item.tags.includes(recipientType));
             break;
           case 'occasion':
-            // 将枚举值转换为中文名称进行匹配
-            const occasionName = OccasionTypeNames[condition.selectedValue as OccasionType];
-            result = result.filter(item => item.occasions.includes(occasionName));
+            // 直接用枚举值在tags字段中匹配
+            const occasionType = condition.selectedValue as OccasionType;
+            result = result.filter(item => item.tags.includes(occasionType));
             break;
           case 'budget':
-            const budget = parseInt(condition.selectedValue!);
-            if (budget === 9999) {
-              result = result.filter(item => item.budgetRange.max >= 1000);
-            } else {
-              result = result.filter(item => item.budgetRange.max <= budget);
-            }
+            // 直接用枚举值在tags字段中匹配
+            const budgetRangeType = condition.selectedValue as BudgetRangeEnum;
+            result = result.filter(item => item.tags.includes(budgetRangeType));
             break;
           case 'type':
-            // 将枚举值转换为中文名称进行匹配
-            const giftTypeName = GiftTypeNames[condition.selectedValue as GiftType];
-            result = result.filter(item => item.giftType === giftTypeName);
+            // 直接用枚举值在tags字段中匹配
+            const giftType = condition.selectedValue as GiftType;
+            result = result.filter(item => item.tags.includes(giftType));
             break;
         }
       }
@@ -339,16 +366,7 @@ export struct BrowsePage {
     this.filteredInspirations = result;
   }
   
-  // 显示/隐藏下拉框
-  toggleDropdown(conditionId: string) {
-    if (this.activeDropdownId === conditionId && this.showDropdown) {
-      this.showDropdown = false;
-      this.activeDropdownId = '';
-    } else {
-      this.activeDropdownId = conditionId;
-      this.showDropdown = true;
-    }
-  }
+
   
   // 选择搜索条件
   selectSearchOption(conditionId: string, option: SearchOption) {
@@ -373,8 +391,6 @@ export struct BrowsePage {
       }
       this.searchConditions = newConditions;
     }
-    this.showDropdown = false;
-    this.activeDropdownId = '';
     this.applyFilters();
   }
   
@@ -396,8 +412,6 @@ export struct BrowsePage {
     this.searchConditions = newConditions;
     this.selectedFilters = [];
     this.searchKeyword = '';
-    this.showDropdown = false;
-    this.activeDropdownId = '';
     this.applyFilters();
   }
 
@@ -514,55 +528,41 @@ export struct BrowsePage {
         .padding({ left: 16, right: 16, top: 12, bottom: 12 })
         .backgroundColor(Color.White)
         
-        // 多维度搜索条件栏
-        Row() {
-          ForEach(this.searchConditions, (condition: SearchCondition) => {
-            Button() {
-              Row() {
-                Text(condition.selectedLabel || condition.label)
-                  .fontSize(14)
-                  .fontColor(condition.selectedValue ? Color.White : '#333333')
-                  .maxLines(1)
-                  .textOverflow({ overflow: TextOverflow.Ellipsis })
-                
-                Text(this.activeDropdownId === condition.id ? '▲' : '▼')
-                   .fontSize(10)
-                   .fontColor(condition.selectedValue ? Color.White : '#666666')
-                   .margin({ left: 4 })
-                   .animation({
-                     duration: 200,
-                     curve: Curve.EaseInOut
-                   })
-              }
-            }
-            .layoutWeight(1)
-            .height(36)
-            .backgroundColor(condition.selectedValue ? '#FF6B35' : (this.activeDropdownId === condition.id ? '#FFE5D6' : '#F8F9FA'))
-            .borderRadius(18)
-            .margin({ right: condition.id === 'type' ? 0 : 8 })
-            .border({
-              width: this.activeDropdownId === condition.id ? 1 : 0,
-              color: '#FF6B35'
-            })
-            .shadow({
-              radius: this.activeDropdownId === condition.id ? 4 : 0,
-              color: '#1A000000',
-              offsetX: 0,
-              offsetY: 2
-            })
-            .scale({ x: this.activeDropdownId === condition.id ? 1.02 : 1, y: this.activeDropdownId === condition.id ? 1.02 : 1 })
-            .animation({
-              duration: 200,
-              curve: Curve.EaseInOut
-            })
-            .onClick(() => {
-              this.toggleDropdown(condition.id);
-            })
-          })
+        // 多维度搜索条件栏 - 使用Select组件
+        Scroll() {
+          Row({ space: 8 }) {
+            ForEach(this.searchConditions, (condition: SearchCondition) => {
+              Select(condition.options.map((option: SearchOption) => {
+                const selectOption: SelectOption = { value: option.label };
+                return selectOption;
+              }))
+                .selected(condition.options.findIndex(option => option.value === condition.selectedValue))
+                .value(condition.selectedLabel || condition.label)
+                .font({ size: 12 })
+                .fontColor('#333333')
+                .selectedOptionFont({ size: 12 })
+                .optionFont({ size: 12 })
+                .backgroundColor('#F8F8F8')
+                .borderRadius(16)
+                .padding({ left: 12, right: 12, top: 6, bottom: 6 })
+                .height(28)
+                .optionHeight(300)
+                .constraintSize({ minWidth: 60 })
+                .border({
+                  width: 1,
+                  color: condition.selectedValue ? '#4CAF50' : '#E0E0E0'
+                })
+                .onSelect((index: number) => {
+                  this.selectSearchOption(condition.id, condition.options[index]);
+                })
+            }, (condition: SearchCondition) => condition.id)
+          }
+          .padding({ left: 16, right: 16 })
         }
+        .scrollable(ScrollDirection.Horizontal)
+        .scrollBar(BarState.Off)
         .width('100%')
-        .padding({ left: 16, right: 16, bottom: 12 })
-        .backgroundColor(Color.White)
+        .padding({ top: 12, bottom: 12 })
 
         if (this.isLoading) {
           // 加载状态
@@ -640,114 +640,7 @@ export struct BrowsePage {
       .height('100%')
       .backgroundColor('#F8F9FA')
       
-      // 下拉框 - 在搜索条件栏下方展开
-      if (this.showDropdown) {
-        Column() {
-          // 占位空间 - 搜索栏和条件栏的高度
-          Column()
-            .width('100%')
-            .height(104) // 搜索栏40+padding24 + 条件栏36+padding12 = 112，调整为104
-          
-          // 下拉选项列表
-          Column() {
-            Scroll() {
-              Column() {
-                ForEach(this.searchConditions.find(c => c.id === this.activeDropdownId)?.options || [], (option: SearchOption, index: number) => {
-                  Row() {
-                    Text(option.label)
-                      .fontSize(16)
-                      .fontColor('#333333')
-                      .layoutWeight(1)
-                      .textAlign(TextAlign.Start)
-                    
-                    if (this.searchConditions.find(c => c.id === this.activeDropdownId)?.selectedValue === option.value) {
-                       Text('✓')
-                         .fontSize(18)
-                         .fontColor('#FF6B35')
-                         .fontWeight(FontWeight.Bold)
-                     }
-                  }
-                  .width('100%')
-                  .height(48)
-                  .padding({ left: 20, right: 20 })
-                  .backgroundColor(this.searchConditions.find(c => c.id === this.activeDropdownId)?.selectedValue === option.value ? '#FFF5F0' : Color.White)
-                  .onClick(() => {
-                    this.selectSearchOption(this.activeDropdownId, option);
-                  })
-                  .stateStyles({
-                    pressed: {
-                      .backgroundColor('#F0F0F0')
-                    },
-                    normal: {
-                      .backgroundColor(this.searchConditions.find(c => c.id === this.activeDropdownId)?.selectedValue === option.value ? '#FFF5F0' : Color.White)
-                    }
-                  })
-                  .animation({
-                    duration: 150,
-                    curve: Curve.EaseInOut
-                  })
-                  
-                  if (index < (this.searchConditions.find(c => c.id === this.activeDropdownId)?.options || []).length - 1) {
-                    Divider()
-                      .height(1)
-                      .color('#F5F5F5')
-                      .margin({ left: 20, right: 20 })
-                  }
-                })
-              }
-              .width('100%')
-            }
-            .width('100%')
-            .height('100%')
-            .scrollable(ScrollDirection.Vertical)
-            .scrollBar(BarState.Auto)
-            .scrollBarColor('#E0E0E0')
-            .scrollBarWidth(4)
-            .edgeEffect(EdgeEffect.Spring)
-          }
-           .width('92%')
-           .height(Math.min(240, ((this.searchConditions.find(c => c.id === this.activeDropdownId)?.options || []).length * 48) + 20))
-           .backgroundColor(Color.White)
-           .borderRadius(12)
-           .shadow({ 
-             radius: 16, 
-             color: '#15000000', 
-             offsetX: 0, 
-             offsetY: 6,
-             fill: true
-           })
-           .margin({ left: 16, right: 16 })
-           .border({
-             width: 1,
-             color: '#F0F0F0'
-           })
-           .scale({ x: 1, y: 1 })
-           .opacity(1)
-           .animation({
-             duration: 250,
-             curve: Curve.EaseOut
-           })
-          
-          // 剩余空间 - 点击关闭下拉框
-          Column()
-            .width('100%')
-            .layoutWeight(1)
-            .backgroundColor('rgba(0, 0, 0, 0.1)')
-            .onClick(() => {
-              this.showDropdown = false;
-              this.activeDropdownId = '';
-            })
-        }
-        .width('100%')
-        .height('100%')
-        .justifyContent(FlexAlign.Start)
-        .alignItems(HorizontalAlign.Start)
-        .backgroundColor('rgba(0, 0, 0, 0.05)')
-        .animation({
-          duration: 200,
-          curve: Curve.EaseInOut
-        })
-      }
+
     }
      .width('100%')
      .height('100%')
@@ -793,26 +686,27 @@ export struct BrowsePage {
               .backgroundColor(inspiration.difficulty === 'easy' ? '#E8F5E8' : inspiration.difficulty === 'medium' ? '#FFF3E0' : '#FFEBEE')
               .borderRadius(10)
               .padding({ left: 8, right: 8, top: 4, bottom: 4 })
+              .margin(2) // 与TagComponent保持一致的margin
           }
           .margin({ top: 8 })
         }
         .layoutWeight(1)
         .alignItems(HorizontalAlign.Start)
         
-        // 缩略图
+        // 缩略图 - 横图比例
         if (inspiration.images && inspiration.images.length > 0) {
           Image(inspiration.images[0])
-            .width(80)
+            .width(120)
             .height(80)
             .borderRadius(8)
             .objectFit(ImageFit.Cover)
         } else {
           Column() {
             Image($r('app.media.ic_gift_placeholder'))
-              .width(60)
-              .height(60)
+              .width(80)
+              .height(53)
           }
-          .width(80)
+          .width(120)
           .height(80)
           .backgroundColor('#F0F0F0')
           .borderRadius(8)

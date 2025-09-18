@@ -89,6 +89,7 @@ export class NewDatabaseManager {
         id TEXT PRIMARY KEY,
         contact_id TEXT NOT NULL,
         contact_name TEXT NOT NULL,
+        record_type TEXT NOT NULL DEFAULT 'give', -- 'give'送礼 或 'receive'收礼
         occasion TEXT NOT NULL,
         date TEXT NOT NULL,
         gift_idea TEXT NOT NULL,
@@ -176,6 +177,18 @@ export class NewDatabaseManager {
         theme_mode TEXT NOT NULL DEFAULT 'auto',
         language TEXT NOT NULL DEFAULT 'zh-CN',
         privacy_mode INTEGER NOT NULL DEFAULT 0
+      )`,
+
+      // 备忘表
+      `CREATE TABLE IF NOT EXISTS quick_records (
+        id TEXT PRIMARY KEY,
+        type TEXT NOT NULL,
+        title TEXT NOT NULL,
+        content TEXT NOT NULL,
+        date TEXT NOT NULL,
+        tags TEXT NOT NULL DEFAULT '[]',
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
       )`
     ];
 

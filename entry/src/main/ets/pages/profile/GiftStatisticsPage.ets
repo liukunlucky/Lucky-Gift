@@ -69,6 +69,13 @@ struct GiftStatisticsPage {
   @State categoryData: CategoryData[] = [];
   @State topContacts: TopContact[] = [];
   
+  // 分类统计数据
+  @State giveEvents: number = 0;
+  @State receiveEvents: number = 0;
+  @State giveSpent: number = 0;
+  @State receiveSpent: number = 0;
+  @State availableYears: number[] = [];
+  
   private dbManager = new NewDatabaseManager();
   private contactDAO = new ContactDAO(this.dbManager);
   private giftEventDAO = new GiftEventDAO(this.dbManager);
@@ -94,6 +101,16 @@ struct GiftStatisticsPage {
       // 加载数据
       this.contacts = await this.contactDAO.getAllContacts();
       this.giftEvents = await this.giftEventDAO.getAllGiftEvents();
+      
+      // 加载分类统计数据
+      const typeStats = await this.giftEventDAO.getGiftEventTypeStats();
+      this.giveEvents = typeStats.giveEvents;
+      this.receiveEvents = typeStats.receiveEvents;
+      this.giveSpent = typeStats.giveSpent;
+      this.receiveSpent = typeStats.receiveSpent;
+      
+      // 初始化可用年份
+      this.initAvailableYears();
       
       // 计算统计数据
       this.calculateStatistics();
@@ -123,8 +140,8 @@ struct GiftStatisticsPage {
     // 分类统计
     this.calculateCategoryData(yearEvents);
     
-    // 联系人统计
-    this.calculateTopContacts(yearEvents);
+    // 联系人统计 - 使用所有时间的数据
+    this.calculateTopContacts(this.giftEvents);
   }
   
   calculateMonthlyData(events: GiftEvent[]) {
@@ -264,13 +281,10 @@ struct GiftStatisticsPage {
           .layoutWeight(1)
           .textAlign(TextAlign.Center)
         
-        // 年份选择
-        Text(`${this.selectedYear}年`)
-          .fontSize(14)
-          .fontColor('#FF6B35')
-          .onClick(() => {
-            // 这里可以添加年份选择器
-          })
+        // 占位空间，保持布局平衡
+        Row()
+          .width(40)
+          .height(40)
       }
       .width('100%')
       .height(56)
@@ -298,7 +312,7 @@ struct GiftStatisticsPage {
         Column() {
           // Tab切换
           Row() {
-            ForEach(['overview', 'monthly', 'category', 'contacts'], (tab: string) => {
+            ForEach(['overview', 'monthly', 'category'], (tab: string) => {
               Text(this.getTabName(tab))
                 .fontSize(14)
                 .fontColor(this.selectedTab === tab ? Color.White : '#666666')
@@ -323,14 +337,11 @@ struct GiftStatisticsPage {
                 this.buildMonthlyContent()
               } else if (this.selectedTab === 'category') {
                 this.buildCategoryContent()
-              } else if (this.selectedTab === 'contacts') {
-                this.buildContactsContent()
               }
             }
             .width('100%')
             .padding({ bottom: 20 })
           }
-          .layoutWeight(1)
           .scrollBar(BarState.Off)
           .margin({ top: 8 })
         }
@@ -345,10 +356,42 @@ struct GiftStatisticsPage {
   @Builder
   buildOverviewContent() {
     Column() {
+      // 年份选择器
+      Row() {
+        Text('统计年份')
+          .fontSize(16)
+          .fontWeight(FontWeight.Medium)
+          .fontColor('#333333')
+        
+        Blank()
+        
+        Select(this.availableYears.map(year => {
+          const option: SelectOption = { value: year.toString() };
+          return option;
+        }))
+          .selected(this.availableYears.findIndex(year => year === this.selectedYear))
+          .value(`${this.selectedYear}年`)
+          .font({ size: 16, weight: FontWeight.Medium })
+          .fontColor('#FF6B35')
+          .selectedOptionFont({ size: 16, weight: FontWeight.Medium })
+          .optionFont({ size: 16, weight: FontWeight.Normal })
+          .backgroundColor('#FFF8F5')
+          .borderRadius(8)
+          .padding({ left: 12, right: 12, top: 8, bottom: 8 })
+          .onSelect((index: number) => {
+            if (index >= 0 && index < this.availableYears.length) {
+              this.selectedYear = this.availableYears[index];
+              this.calculateStatistics();
+            }
+          })
+      }
+      .width('100%')
+      .padding({ left: 16, right: 16, top: 16, bottom: 8 })
+      
       // 总览卡片
       Row() {
         Column() {
-          Text(this.totalGifts.toString())
+          Text(this.giveEvents.toString())
             .fontSize(24)
             .fontWeight(FontWeight.Bold)
             .fontColor('#FF6B35')
@@ -361,12 +404,12 @@ struct GiftStatisticsPage {
         .layoutWeight(1)
         
         Column() {
-          Text(`¥${this.formatAmount(this.totalAmount)}`)
+          Text(this.receiveEvents.toString())
             .fontSize(24)
             .fontWeight(FontWeight.Bold)
             .fontColor('#32CD32')
           
-          Text('总花费')
+          Text('收礼次数')
             .fontSize(12)
             .fontColor('#666666')
             .margin({ top: 4 })
@@ -374,12 +417,12 @@ struct GiftStatisticsPage {
         .layoutWeight(1)
         
         Column() {
-          Text(`¥${this.formatAmount(this.averageAmount)}`)
+          Text(`¥${this.formatAmount(this.giveSpent)}`)
             .fontSize(24)
             .fontWeight(FontWeight.Bold)
             .fontColor('#FFA500')
           
-          Text('平均花费')
+          Text('总花费金额')
             .fontSize(12)
             .fontColor('#666666')
             .margin({ top: 4 })
@@ -390,7 +433,7 @@ struct GiftStatisticsPage {
       .padding(20)
       .backgroundColor(Color.White)
       .borderRadius(12)
-      .margin({ top: 16, left: 16, right: 16 })
+      .margin({ top: 8, left: 16, right: 16 })
       
       // 月度趋势预览
       Column() {
@@ -399,15 +442,7 @@ struct GiftStatisticsPage {
             .fontSize(16)
             .fontWeight(FontWeight.Medium)
             .fontColor('#333333')
-          
-          Blank()
-          
-          Text('查看详情')
-            .fontSize(12)
-            .fontColor('#FF6B35')
-            .onClick(() => {
-              this.selectedTab = 'monthly';
-            })
+
         }
         .width('100%')
         .margin({ bottom: 16 })
@@ -448,15 +483,6 @@ struct GiftStatisticsPage {
             .fontSize(16)
             .fontWeight(FontWeight.Medium)
             .fontColor('#333333')
-          
-          Blank()
-          
-          Text('查看详情')
-            .fontSize(12)
-            .fontColor('#FF6B35')
-            .onClick(() => {
-              this.selectedTab = 'category';
-            })
         }
         .width('100%')
         .margin({ bottom: 16 })
@@ -498,7 +524,7 @@ struct GiftStatisticsPage {
     Column() {
       // 月度图表
       Column() {
-        Text('月度送礼统计')
+        Text('月度礼物统计')
           .fontSize(16)
           .fontWeight(FontWeight.Medium)
           .fontColor('#333333')
@@ -655,12 +681,24 @@ struct GiftStatisticsPage {
   buildContactsContent() {
     Column() {
       Column() {
-        Text('送礼对象排行')
-          .fontSize(16)
-          .fontWeight(FontWeight.Medium)
-          .fontColor('#333333')
-          .alignSelf(ItemAlign.Start)
-          .margin({ bottom: 16 })
+        Row() {
+          Text('礼物对象排行')
+            .fontSize(16)
+            .fontWeight(FontWeight.Medium)
+            .fontColor('#333333')
+          
+          Blank()
+          
+          Text('全部时间')
+            .fontSize(12)
+            .fontColor('#999999')
+            .backgroundColor('#F5F5F5')
+            .padding({ left: 8, right: 8, top: 4, bottom: 4 })
+            .borderRadius(10)
+        }
+        .width('100%')
+        .alignItems(VerticalAlign.Center)
+        .margin({ bottom: 16 })
         
         ForEach(this.topContacts, (item: TopContact, index: number) => {
           Row() {
@@ -699,7 +737,7 @@ struct GiftStatisticsPage {
                 .fontWeight(FontWeight.Medium)
                 .alignSelf(ItemAlign.Start)
               
-              Text(`${item.giftCount}次送礼`)
+              Text(`${item.giftCount}次礼物`)
                 .fontSize(12)
                 .fontColor('#666666')
                 .alignSelf(ItemAlign.Start)
@@ -763,4 +801,24 @@ struct GiftStatisticsPage {
       default: return '总览';
     }
   }
+  
+  // 初始化可用年份
+  initAvailableYears() {
+    const currentYear = new Date().getFullYear();
+    const years: number[] = [];
+    
+    // 获取数据中的年份范围
+    const eventYears = this.giftEvents.map(event => new Date(event.date).getFullYear());
+    const minYear = eventYears.length > 0 ? Math.min(...eventYears) : currentYear;
+    const maxYear = Math.max(currentYear, eventYears.length > 0 ? Math.max(...eventYears) : currentYear);
+    
+    // 生成年份列表
+    for (let year = maxYear; year >= minYear; year--) {
+      years.push(year);
+    }
+    
+    this.availableYears = years;
+  }
+  
+
 }

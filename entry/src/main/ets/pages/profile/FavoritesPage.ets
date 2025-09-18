@@ -2,6 +2,19 @@ import router from '@ohos.router';
 import { Inspiration } from '../../model/NewDataModels';
 import { InspirationDAO } from '../../database/InspirationDAO';
 import { NewDatabaseManager } from '../../database/NewDatabaseManager';
+import { 
+  RecipientType, 
+  OccasionType, 
+  BudgetRange as BudgetRangeEnum, 
+  GiftType,
+  TagInfo,
+  TagCategory,
+  getTagInfo,
+  RecipientTypeNames,
+  OccasionTypeNames,
+  GiftTypeNames
+} from '../../model/GiftEnums';
+import { TagComponent } from '../../components/TagComponent';
 
 @Entry
 @Component
@@ -15,13 +28,29 @@ struct FavoritesPage {
   
   private dbManager: NewDatabaseManager = new NewDatabaseManager();
   private inspirationDAO: InspirationDAO | null = null;
-  private categories: string[] = ['全部', '生日礼物', '节日礼物', '纪念日', '表达感谢', '道歉礼物', '惊喜礼物'];
+  private categories: string[] = [
+    '全部',
+    // 场合类型
+    '生日', '纪念日', '情人节', '圣诞节', '新年', '母亲节', '父亲节', '毕业典礼', '婚礼', '升职加薪', '乔迁新居', '道歉', '感谢', '康复祝福',
+    // 收礼人类型  
+    '父亲', '母亲', '爷爷/外公', '奶奶/外婆', '其他长辈', '男朋友', '女朋友', '丈夫', '妻子', '闺蜜', '朋友', '同事', '领导', '老师', '小朋友', '兄弟姐妹',
+    // 礼物类型
+    'DIY手作', '体验服务', '日用实物', '创意新奇', '科技数码', '美妆护肤', '书籍文具', '服装配饰', '食品饮料', '家居装饰', '运动健身', '旅行户外', '珠宝首饰', '鲜花植物'
+  ];
   
-  async aboutToAppear() {
+  // async aboutToAppear() {
+  //   // 初始化数据库
+  //   await this.dbManager.initDatabase(getContext(this));
+  //   this.inspirationDAO = new InspirationDAO(this.dbManager);
+  //
+  //   this.loadFavorites();
+  // }
+
+  async onPageShow() {
     // 初始化数据库
     await this.dbManager.initDatabase(getContext(this));
     this.inspirationDAO = new InspirationDAO(this.dbManager);
-    
+
     this.loadFavorites();
   }
   
@@ -48,10 +77,28 @@ struct FavoritesPage {
     
     // 分类筛选
     if (this.selectedCategory !== '全部') {
-      filtered = filtered.filter(item => 
-        item.tags.includes(this.selectedCategory) || 
-        item.occasions.includes(this.selectedCategory)
-      );
+      // 将显示名称转换为对应的枚举值进行匹配
+      const enumValue = this.getEnumValueByDisplayName(this.selectedCategory);
+      
+      filtered = filtered.filter(item => {
+        // 检查targetAudience（收礼人类型）
+        if (item.targetAudience && item.targetAudience.includes(enumValue)) {
+          return true;
+        }
+        // 检查occasions（场合类型）
+        if (item.occasions && item.occasions.includes(enumValue)) {
+          return true;
+        }
+        // 检查giftType（礼物类型）
+        if (item.giftType === enumValue) {
+          return true;
+        }
+        // 检查tags（标签）- 可能包含显示名称
+        if (item.tags && item.tags.includes(this.selectedCategory)) {
+          return true;
+        }
+        return false;
+      });
     }
     
     // 搜索筛选
@@ -67,6 +114,45 @@ struct FavoritesPage {
     return filtered;
   }
   
+  // 根据显示名称获取对应的枚举值
+  private getEnumValueByDisplayName(displayName: string): string {
+    // 检查收礼人类型
+    const recipientEntries = Object.entries(RecipientTypeNames);
+    for (let i = 0; i < recipientEntries.length; i++) {
+      const entry = recipientEntries[i];
+      const enumKey = entry[0];
+      const displayValue = entry[1];
+      if (displayValue === displayName) {
+        return enumKey;
+      }
+    }
+    
+    // 检查场合类型
+    const occasionEntries = Object.entries(OccasionTypeNames);
+    for (let i = 0; i < occasionEntries.length; i++) {
+      const entry = occasionEntries[i];
+      const enumKey = entry[0];
+      const displayValue = entry[1];
+      if (displayValue === displayName) {
+        return enumKey;
+      }
+    }
+    
+    // 检查礼物类型
+    const giftTypeEntries = Object.entries(GiftTypeNames);
+    for (let i = 0; i < giftTypeEntries.length; i++) {
+      const entry = giftTypeEntries[i];
+      const enumKey = entry[0];
+      const displayValue = entry[1];
+      if (displayValue === displayName) {
+        return enumKey;
+      }
+    }
+    
+    // 如果没有找到对应的枚举值，返回原始显示名称
+    return displayName;
+  }
+  
   async toggleFavorite(inspiration: Inspiration) {
     if (!inspiration.id || !this.inspirationDAO) return;
     
@@ -79,6 +165,9 @@ struct FavoritesPage {
       if (index > -1) {
         this.favorites.splice(index, 1);
       }
+      
+      // 触发ProfilePage刷新，更新收藏数量显示
+      AppStorage.setOrCreate('refreshProfilePage', Date.now());
     } catch (error) {
       console.error('取消收藏失败:', error);
     }
@@ -117,9 +206,110 @@ struct FavoritesPage {
     };
     return colorMap[category] || '#607D8B';
   }
+
+  // 将标签字符串转换为TagInfo对象，处理枚举值转换为中文名称
+  private createTagInfo(tag: string): TagInfo {
+    // 首先检查是否是枚举值，如果是则直接使用getTagInfo
+    // 检查是否是RecipientType枚举值
+    if (tag === RecipientType.BOYFRIEND || tag === RecipientType.GIRLFRIEND || 
+        tag === RecipientType.FATHER || tag === RecipientType.MOTHER || 
+        tag === RecipientType.FRIEND || tag === RecipientType.COLLEAGUE || 
+        tag === RecipientType.GRANDFATHER || tag === RecipientType.GRANDMOTHER ||
+        tag === RecipientType.HUSBAND || tag === RecipientType.WIFE ||
+        tag === RecipientType.BESTIE || tag === RecipientType.BOSS ||
+        tag === RecipientType.TEACHER || tag === RecipientType.SIBLING ||
+        tag === RecipientType.CLASSMATE || tag === RecipientType.NEIGHBOR ||
+        tag === RecipientType.CLIENT || tag === RecipientType.OTHER) {
+      const tagInfo = getTagInfo(TagCategory.RECIPIENT, tag);
+      if (tagInfo) return tagInfo;
+    }
+    
+    // 检查是否是OccasionType枚举值
+    if (tag === OccasionType.BIRTHDAY || tag === OccasionType.VALENTINE_DAY || 
+        tag === OccasionType.ANNIVERSARY || tag === OccasionType.CHRISTMAS || 
+        tag === OccasionType.NEW_YEAR || tag === OccasionType.MOTHERS_DAY || 
+        tag === OccasionType.FATHERS_DAY || tag === OccasionType.GRADUATION || 
+        tag === OccasionType.WEDDING || tag === OccasionType.PROMOTION || 
+        tag === OccasionType.HOUSEWARMING || tag === OccasionType.APOLOGY || 
+        tag === OccasionType.THANK_YOU || tag === OccasionType.GET_WELL) {
+      const tagInfo = getTagInfo(TagCategory.OCCASION, tag);
+      if (tagInfo) return tagInfo;
+    }
+    
+    // 检查是否是GiftType枚举值
+    if (tag === GiftType.JEWELRY || tag === GiftType.BOOKS_STATIONERY || 
+        tag === GiftType.FOOD_BEVERAGE || tag === GiftType.TRAVEL_OUTDOOR || 
+        tag === GiftType.DIY_HANDMADE || tag === GiftType.EXPERIENCE || 
+        tag === GiftType.HOME_DECOR || tag === GiftType.SPORTS_FITNESS || 
+        tag === GiftType.CREATIVE_NOVEL) {
+      const tagInfo = getTagInfo(TagCategory.GIFT_TYPE, tag);
+      if (tagInfo) return tagInfo;
+    }
+    
+    // 检查是否是BudgetRangeEnum枚举值
+    if (tag === BudgetRangeEnum.UNDER_50 || tag === BudgetRangeEnum.RANGE_50_100 || 
+        tag === BudgetRangeEnum.RANGE_100_200 || tag === BudgetRangeEnum.RANGE_200_500 || 
+        tag === BudgetRangeEnum.RANGE_500_1000 || tag === BudgetRangeEnum.RANGE_1000_2000 || 
+        tag === BudgetRangeEnum.OVER_2000) {
+      const tagInfo = getTagInfo(TagCategory.BUDGET, tag);
+      if (tagInfo) return tagInfo;
+    }
+    
+    // 如果不是枚举值，尝试按字符串查找
+    let tagInfo = getTagInfo(TagCategory.GIFT_TYPE, tag);
+    if (!tagInfo) {
+      tagInfo = getTagInfo(TagCategory.RECIPIENT, tag);
+    }
+    if (!tagInfo) {
+      tagInfo = getTagInfo(TagCategory.OCCASION, tag);
+    }
+    if (!tagInfo) {
+      tagInfo = getTagInfo(TagCategory.BUDGET, tag);
+    }
+    
+    // 如果找不到匹配的标签，创建一个默认的TagInfo
+    if (!tagInfo) {
+      const defaultTagInfo: TagInfo = {
+        category: TagCategory.GIFT_TYPE,
+        value: tag,
+        label: tag,
+        color: '#B2BEC3' // 默认灰色
+      };
+      return defaultTagInfo;
+    }
+    
+    return tagInfo;
+  }
   
   goBack() {
     router.back();
+  }
+
+  // 构建左滑操作按钮
+  @Builder
+  buildSwipeAction(inspiration: Inspiration) {
+    Row() {
+      Button() {
+        Column() {
+          Image($r('app.media.icon_ax_full'))
+            .width(24)
+            .height(24)
+            .fillColor('#FF6B35')
+          Text('取消收藏')
+            .fontSize(12)
+            .fontColor('#FF6B35')
+            .margin({ top: 4 })
+        }
+      }
+      .width(80)
+      .backgroundColor(Color.Transparent)
+      .height('100%')
+      .borderRadius(0)
+      .onClick(() => {
+        this.showDeleteConfirmDialog(inspiration);
+      })
+    }
+    .height('100%')
   }
   
   build() {
@@ -258,19 +448,13 @@ struct FavoritesPage {
               Text(`共 ${this.getFilteredFavorites().length} 个收藏`)
                 .fontSize(14)
                 .fontColor('#666666')
-              
-              Blank()
-              
-              Text(`总计 ${this.favorites.length} 个`)
-                .fontSize(12)
-                .fontColor('#999999')
             }
             .width('100%')
-            .padding({ left: 16, right: 16, bottom: 12 })
+            .padding({ left: 16, right: 16, bottom: 12, top: 12 })
             
-            Scroll() {
-              Column() {
-                ForEach(this.getFilteredFavorites(), (inspiration: Inspiration) => {
+            List({ space: 12 }) {
+              ForEach(this.getFilteredFavorites(), (inspiration: Inspiration) => {
+                ListItem() {
                   Row() {
                     // 左侧内容
                     Column() {
@@ -292,25 +476,20 @@ struct FavoritesPage {
                         .alignSelf(ItemAlign.Start)
                         .margin({ bottom: 8 })
                       
-                      // 标签和分类
+                      // 标签和分类 - 使用统一的TagComponent
                       Row() {
-                        Text(inspiration.tags.length > 0 ? inspiration.tags[0] : '其他')
-                          .fontSize(12)
-                          .fontColor('#FFFFFF')
-                          .padding({ left: 8, right: 8, top: 4, bottom: 4 })
-                          .backgroundColor(this.getCategoryColor(inspiration.tags.length > 0 ? inspiration.tags[0] : '其他'))
-                          .borderRadius(10)
-                        
-                        if (inspiration.tags.length > 0) {
-                          ForEach(inspiration.tags.slice(0, 2), (tag: string) => {
-                            Text(`#${tag}`)
-                              .fontSize(12)
-                              .fontColor('#666666')
-                              .margin({ left: 8 })
+                        // 显示前3个标签，使用TagComponent
+                        Flex({ wrap: FlexWrap.Wrap, justifyContent: FlexAlign.Start}) {
+                          ForEach(inspiration.tags.slice(0, 3), (tag: string) => {
+                            TagComponent({
+                              tagInfo: this.createTagInfo(tag),
+                              tagFontSize: 10,
+                              tagClickable: false,
+                              tagSelected: false
+                            }).margin({ right: 4, bottom: 4 })
                           })
                         }
-                        
-                        Blank()
+                        .layoutWeight(1)
                         
                         Text(`¥${inspiration.budgetRange.min}-${inspiration.budgetRange.max}`)
                           .fontSize(12)
@@ -323,42 +502,11 @@ struct FavoritesPage {
                     .layoutWeight(1)
                     .alignItems(HorizontalAlign.Start)
                     .padding({ right: 12 })
-                    
-                    // 右侧操作按钮
-                    Column() {
-                      Button() {
-                        Text('❤️')
-                  .fontSize(16)
-                          .width(20)
-                          .height(20)
-                          .fontColor('#FF6B35')
-                      }
-                      .width(36)
-                      .height(36)
-                      .backgroundColor('#FFF5F0')
-                      .borderRadius(18)
-                      .margin({ bottom: 8 })
-                      .onClick(() => this.showDeleteConfirmDialog(inspiration))
-                      
-                      Button() {
-                        Image($r('app.media.ic_arrow_right'))
-                          .width(16)
-                          .height(16)
-                          .fillColor('#999999')
-                      }
-                      .width(36)
-                      .height(36)
-                      .backgroundColor('#F5F5F5')
-                      .borderRadius(18)
-                      .onClick(() => this.navigateToDetail(inspiration))
-                    }
-                    .alignItems(HorizontalAlign.Center)
                   }
                   .width('100%')
                   .padding(16)
                   .backgroundColor('#FFFFFF')
                   .borderRadius(12)
-                  .margin({ bottom: 12 })
                   .alignItems(VerticalAlign.Top)
                   .shadow({
                     radius: 4,
@@ -366,10 +514,18 @@ struct FavoritesPage {
                     offsetX: 0,
                     offsetY: 2
                   })
+                  .onClick(() => this.navigateToDetail(inspiration))
+                }
+                .swipeAction({
+                  end: {
+                    builder: () => {
+                      this.buildSwipeAction(inspiration)
+                    }
+                  }
                 })
-              }
-              .padding({ left: 16, right: 16, bottom: 16 })
+              })
             }
+            .padding({ left: 16, right: 16, bottom: 16 })
             .layoutWeight(1)
             .scrollBar(BarState.Off)
           }
