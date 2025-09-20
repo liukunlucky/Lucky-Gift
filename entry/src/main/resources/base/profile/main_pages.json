@@ -4,6 +4,7 @@
     "pages/tabs/CreateGiftEventPage",
     "pages/browse/FilterPage",
     "pages/tools/GiftCardMakerPage",
+    "pages/tools/GiftCardPreviewPage",
     "pages/tools/BudgetCalculatorPage",
     "pages/tools/HolidayCountdownPage",
     "pages/tools/GiftChecklistPage",

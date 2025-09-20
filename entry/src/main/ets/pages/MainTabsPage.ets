@@ -1,3 +1,4 @@
+import { HomePage } from './tabs/HomePage';
 import { BrowsePage } from './tabs/BrowsePage';
 import { RecordPage } from './tabs/RecordPage';
 import { ToolsPage } from './tabs/ToolsPage';
@@ -24,7 +25,7 @@ struct MainTabsPage {
     if (params && params.targetTab !== undefined) {
       this.currentTabIndex = params.targetTab;
       // 如果目标是记录页面，触发刷新
-      if (params.targetTab === 1) {
+      if (params.targetTab === 2) {
         this.recordPageRefreshKey++;
       }
     }
@@ -32,37 +33,43 @@ struct MainTabsPage {
 
   build() {
     Tabs({ barPosition: BarPosition.End, controller: this.tabsController, index: this.currentTabIndex }) {
-      // 浏览Tab
+      // 首页Tab
+      TabContent() {
+        HomePage({ tabsController: this.tabsController })
+      }
+      .tabBar(this.buildTabBarItem(0, '首页', $r('app.media.icon_home')))
+
+      // 灵感Tab
       TabContent() {
         BrowsePage()
       }
-      .tabBar(this.buildTabBarItem(0, '浏览', $r('app.media.icon_home')))
+      .tabBar(this.buildTabBarItem(1, '灵感', $r('app.media.icon_insp')))
 
       // 记录Tab
       TabContent() {
         RecordPage({ refreshKey: this.recordPageRefreshKey })
       }
-      .tabBar(this.buildTabBarItem(1, '记录', $r('app.media.icon_record')))
+      .tabBar(this.buildTabBarItem(2, '记录', $r('app.media.icon_record')))
 
       // 工具Tab
       TabContent() {
         ToolsPage()
       }
-      .tabBar(this.buildTabBarItem(2, '工具', $r('app.media.icon_tools')))
+      .tabBar(this.buildTabBarItem(3, '工具', $r('app.media.icon_tools')))
 
       // 我的Tab
       TabContent() {
         ProfilePage()
       }
-      .tabBar(this.buildTabBarItem(3, '我的', $r('app.media.icon_mine')))
+      .tabBar(this.buildTabBarItem(4, '我的', $r('app.media.icon_mine')))
     }
     .onChange((index: number) => {
       this.currentTabIndex = index;
       // 当切换到记录页面时，触发数据刷新
-      if (index === 1) {
+      if (index === 2) {
         this.recordPageRefreshKey++;
       }
-      if (index == 3) {
+      if (index == 4) {
         AppStorage.setOrCreate('refreshProfilePage', Date.now());
       }
     })

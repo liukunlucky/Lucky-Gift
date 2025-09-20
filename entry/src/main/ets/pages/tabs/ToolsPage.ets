@@ -363,129 +363,55 @@ export struct ToolsPage {
             .alignItems(HorizontalAlign.Center)
           } else {
             Column() {
-
-              // 轮播图
-              Column() {
-                Swiper() {
-                  ForEach(this.bannerItems, (banner: BannerItem) => {
-                    Column() {
-                      Row() {
-                        Column() {
-                          Text(banner.title)
-                            .fontSize(18)
-                            .fontWeight(FontWeight.Bold)
-                            .fontColor(banner.textColor)
-                            .margin({ bottom: 4 })
-
-                          Text(banner.subtitle)
-                            .fontSize(14)
-                            .fontColor(banner.textColor)
-                            .opacity(0.9)
-                            .margin({ bottom: 8 })
-
-                          Text(banner.description)
-                            .fontSize(12)
-                            .fontColor(banner.textColor)
-                            .opacity(0.8)
-                            .maxLines(2)
-                            .textOverflow({ overflow: TextOverflow.Ellipsis })
-                            .margin({ bottom: 12 })
-
-                          if (banner.actionText) {
-                            Text(banner.actionText)
-                              .fontSize(12)
-                              .height(32)
-                              .backgroundColor(Color.White)
-                              .fontColor(banner.backgroundColor)
-                              .borderRadius(16)
-                              .padding({
-                                left: 16,
-                                right: 16,
-                                top: 6,
-                                bottom: 6
-                              })
-                              .textAlign(TextAlign.Center)
-                          }
-                        }
-                        .layoutWeight(1)
-                        .alignItems(HorizontalAlign.Start)
-
-                        Image(banner.icon)
-                          .width(60).height(60)
-                          .margin({ left: 16 })
-                      }
-                      .width('100%')
-                      .height('100%')
-                      .padding(20)
-                      .justifyContent(FlexAlign.SpaceBetween)
-                      .alignItems(VerticalAlign.Center)
-                    }
-                    .width('100%')
-                    .height(160)
-                    .backgroundColor(banner.backgroundColor)
-                    .borderRadius(12)
-                    .onClick(() => {
-                      this.handleBannerAction(banner.actionType || '');
-                    })
-                  })
-                }
-                .width('100%')
-                .height(160)
-                .autoPlay(true)
-                .interval(4000)
-                .indicator(true)
-                .loop(true)
-                .duration(300)
-                .itemSpace(0)
-                .indicatorStyle({
-                  bottom: 12,
-                  right: 12,
-                  color: Color.White,
-                  selectedColor: '#FFD700'
-                })
-                .onChange((index: number) => {
-                  this.currentBannerIndex = index;
-                })
-              }
-              .width('100%')
-              .padding({top: 16, bottom: 16, left: 20, right: 20})
-              .margin({ bottom: 8 })
-
-              // 工具菜单
+              // 工具菜单 - 6个大卡片布局
               Column() {
                 Text('实用工具')
-                  .fontSize(16)
-                  .fontWeight(FontWeight.Medium)
-                  .margin({ bottom: 20 })
+                  .fontSize(18)
+                  .fontWeight(FontWeight.Bold)
+                  .fontColor('#333333')
+                  .margin({ bottom: 24 })
                   .alignSelf(ItemAlign.Start)
 
                 Grid() {
                   ForEach(this.toolMenus, (tool: ToolMenu) => {
                     GridItem() {
                       Column() {
-                        Image(tool.icon)
-                          .width(24)
-                          .height(24)
-                          .fillColor('#000000')
-                        Blank().height(10)
+                        // 图标背景圆圈
+                        Column() {
+                          Image(tool.icon)
+                            .width(32)
+                            .height(32)
+                            .fillColor(Color.White)
+                        }
+                        .width(64)
+                        .height(64)
+                        .backgroundColor(tool.color)
+                        .borderRadius(32)
+                        .justifyContent(FlexAlign.Center)
+                        .alignItems(HorizontalAlign.Center)
+                        .margin({ bottom: 16 })
+
                         Text(tool.title)
-                          .fontSize(14)
+                          .fontSize(16)
                           .fontWeight(FontWeight.Medium)
                           .fontColor('#333333')
-                          .margin({ bottom: 6 })
+                          .margin({ bottom: 8 })
+
                         Text(tool.description)
-                          .fontSize(11)
+                          .fontSize(13)
                           .fontColor('#666666')
                           .textAlign(TextAlign.Center)
                           .maxLines(2)
+                          .textOverflow({ overflow: TextOverflow.Ellipsis })
                       }
                       .width('100%')
-                      .height(100)
+                      .height(160)
                       .justifyContent(FlexAlign.Center)
                       .alignItems(HorizontalAlign.Center)
                       .backgroundColor(Color.White)
-                      .borderRadius(12)
-                      .border({ width: 1, color: '#F0F0F0' })
+                      .borderRadius(16)
+                      .padding(20)
+                      .shadow({ radius: 8, color: '#1A000000', offsetX: 0, offsetY: 4 })
                       .onClick(() => {
                         this.navigateToTool(tool.id);
                       })
@@ -493,19 +419,12 @@ export struct ToolsPage {
                   })
                 }
                 .columnsTemplate('1fr 1fr')
-                .rowsGap(12)
-                .columnsGap(12)
-                .height(324)
+                .rowsGap(16)
+                .columnsGap(16)
+                .height(520) // 3行 * 160高度 + 2个间距 * 16
               }
               .width('100%')
-              .padding({
-                left: 20,
-                right: 20,
-                top: 20,
-                bottom: 20
-              })
-              .backgroundColor('#F8F9FA')
-              .margin({ top: 12 })
+              .padding(20)
 
             }
           }

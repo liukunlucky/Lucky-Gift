@@ -3,6 +3,7 @@ import { Contact, Inspiration, GiftEvent } from '../../model/NewDataModels';
 import { ContactDAO } from '../../database/ContactDAO';
 import { InspirationDAO } from '../../database/InspirationDAO';
 import { GiftEventDAO } from '../../database/GiftEventDAO';
+import { ReminderDAO } from '../../database/ReminderDAO';
 import { NewDatabaseManager } from '../../database/NewDatabaseManager';
 import fs from '@ohos.file.fs';
 import picker from '@ohos.file.picker';
@@ -77,6 +78,8 @@ export struct ProfilePage {
   private contactDAO: ContactDAO | null = null;
   private inspirationDAO: InspirationDAO | null = null;
   private giftEventDAO: GiftEventDAO | null = null;
+  private reminderDAO: ReminderDAO | null = null;
+  @State reminderCount: number = 0;
   @StorageProp('refreshProfilePage') @Watch('onRefreshProfile') refreshProfile: number = -1;
 
 
@@ -183,6 +186,7 @@ export struct ProfilePage {
     this.contactDAO = new ContactDAO(this.dbManager);
     this.inspirationDAO = new InspirationDAO(this.dbManager);
     this.giftEventDAO = new GiftEventDAO(this.dbManager);
+    this.reminderDAO = new ReminderDAO(this.dbManager);
     
     this.loadData();
     bundleManager.getBundleInfoForSelf(bundleManager.BundleFlag.GET_BUNDLE_INFO_WITH_APPLICATION).then((bundleInfo) => {
@@ -203,7 +207,7 @@ export struct ProfilePage {
     try {
       this.isLoading = true;
       
-      if (!this.contactDAO || !this.inspirationDAO || !this.giftEventDAO) {
+      if (!this.contactDAO || !this.inspirationDAO || !this.giftEventDAO || !this.reminderDAO) {
         console.error('数据库未初始化');
         return;
       }
@@ -213,6 +217,10 @@ export struct ProfilePage {
       
       // 加载收藏的灵感
       this.favoriteInspirations = await this.inspirationDAO.getFavoriteInspirations();
+      
+      // 加载提醒数据
+      const reminders = await this.reminderDAO.getAllReminders();
+      this.reminderCount = reminders.length;
       
       // 加载统计数据
       const stats = await this.giftEventDAO.getGiftEventStats();
@@ -246,8 +254,8 @@ export struct ProfilePage {
           item.count = this.favoriteInspirations.length;
           break;
         case 'reminders':
-          // 计算有提醒设置的联系人数量
-          item.count = this.contacts.filter(c => c.importantDates && c.importantDates.length > 0).length;
+          // 使用实际的数据库提醒记录数量
+          item.count = this.reminderCount;
           break;
         case 'statistics':
           item.count = this.totalGiftEvents;
@@ -649,7 +657,7 @@ export struct ProfilePage {
                       .fontWeight(FontWeight.Bold)
                       .fontColor(Color.White)
                     
-                    Text('礼物次数')
+                    Text('送礼次数')
                       .fontSize(11)
                       .fontColor('#FFE0D6')
                       .margin({ top: 2 })
@@ -675,7 +683,7 @@ export struct ProfilePage {
                       .fontWeight(FontWeight.Bold)
                       .fontColor(Color.White)
                     
-                    Text('礼物花费')
+                    Text('送礼花费')
                       .fontSize(11)
                       .fontColor('#FFE0D6')
                       .margin({ top: 2 })
@@ -741,7 +749,7 @@ export struct ProfilePage {
                       .layoutWeight(1)
 
                       Row() {
-                        if (item.count !== undefined && item.count > 0) {
+                        if (item.count !== undefined) {
                           Text(item.count.toString())
                             .fontSize(14)
                             .fontColor($r('app.color.secondary_text_color'))
@@ -865,6 +873,7 @@ export struct ProfilePage {
             .width('100%')
             .margin({ top: 24 })
             .padding({ left: 24, right: 24 })
+            .visibility(Visibility.None)
             .bindSheet($$this.showImportDialog, this.buildImportDialog(), {
               height: 300,
               dragBar: true
@@ -875,7 +884,7 @@ export struct ProfilePage {
               // 其他设置卡片（包含标题）
               Column() {
                 // 分组标题
-                Text('其他')
+                Text('设置')
                   .fontSize(18)
                   .fontWeight(FontWeight.Bold)
                   .fontColor($r('app.color.primary_text_color'))

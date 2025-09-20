@@ -290,7 +290,7 @@ export struct RecordPage {
       // 顶部工具栏
       Row() {
         Blank().width(40)
-        Text('收送礼记录')
+        Text('礼物记录')
           .fontSize(20)
           .fontWeight(FontWeight.Bold)
           .fontColor('#333333')
@@ -380,10 +380,10 @@ export struct RecordPage {
                 .height(20)
             }
             .width('100%')
-            .padding({ left: 16, right: 16, top: 8 })
+            .padding({ left: 12, right: 12, top: 8 })
           }
           .scrollBar(BarState.Off)
-          .padding({ left: 16, right: 16, top: 16, bottom: 76 })
+          .padding({ left: 12, right: 12, top: 16, bottom: 76 })
           .edgeEffect(EdgeEffect.Spring)
         }
       }
@@ -681,7 +681,7 @@ export struct RecordPage {
         .alignItems(VerticalAlign.Center)
         }
         .layoutWeight(1)
-        .padding(20)
+        .padding(16)
         
         // 右上角角标
         this.buildRecordTypeBadge(event.recordType)

@@ -242,16 +242,17 @@ struct HolidayCountdownPage {
       // 顶部导航栏
       Row() {
         Button() {
-          Text('←')
-              .fontSize(20)
-              .fontColor('#333333')
+          Image($r('app.media.icon_back'))
             .width(24)
             .height(24)
+            .fillColor('#333333')
         }
         .width(40)
         .height(40)
         .backgroundColor(Color.Transparent)
-        .onClick(() => this.goBack())
+        .onClick(() => {
+          this.goBack()
+        })
         
         Text('节日倒计时')
           .fontSize(18)
@@ -260,9 +261,7 @@ struct HolidayCountdownPage {
           .layoutWeight(1)
           .textAlign(TextAlign.Center)
         
-        Row()
-          .width(40)
-          .height(40)
+        Blank().width(40)
       }
       .width('100%')
       .height(56)

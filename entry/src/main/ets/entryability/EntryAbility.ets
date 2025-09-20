@@ -1,6 +1,6 @@
 import { AbilityConstant, ConfigurationConstant, UIAbility, Want } from '@kit.AbilityKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { window } from '@kit.ArkUI';
+import { font, window } from '@kit.ArkUI';
 import { WindowAbility } from './WindowAbility';
 import { NewDatabaseManager } from '../database/NewDatabaseManager';
 import { InspirationDataInitializer } from '../database/InspirationDataInitializer';
@@ -32,6 +32,10 @@ export default class EntryAbility extends UIAbility {
         return;
       }
       hilog.info(DOMAIN, 'testTag', 'Succeeded in loading the content.');
+      font.registerFont({
+        familyName: 'cjzj',
+        familySrc: $rawfile('font1.ttf')
+      })
     });
   }
 
