@@ -431,7 +431,6 @@ export struct ToolsPage {
         }
         .width('100%')
       }
-      .layoutWeight(1)
       .scrollable(ScrollDirection.Vertical)
       .scrollBar(BarState.Auto)
     }

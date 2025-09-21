@@ -406,7 +406,8 @@ struct RelationshipNetworkPage {
     .bindSheet($$this.showDeleteConfirmDialog, this.buildDeleteConfirmDialog(), {
       height: 200,
       dragBar: false,
-      backgroundColor: Color.White
+      backgroundColor: Color.White,
+      preferType:SheetType.CENTER
     })
   }
   

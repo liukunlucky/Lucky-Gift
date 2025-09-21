@@ -393,7 +393,8 @@ export struct RecordPage {
     .backgroundColor('#F8F9FA')
     .bindSheet($$this.showFilterDialog, this.buildFilterDialog(), {
       height: 400,
-      dragBar: true
+      dragBar: true,
+      preferType:SheetType.CENTER
     })
   }
 

@@ -100,7 +100,8 @@ struct QuickRecordPage {
         .bindSheet($$this.showEditDialog, this.buildEditDialog(), {
           height: 500,
           showClose: false,
-          dragBar: true
+          dragBar: true,
+          preferType:SheetType.CENTER
         })
       } else {
         List({ space: 12 }) {
@@ -118,7 +119,8 @@ struct QuickRecordPage {
         .bindSheet($$this.showEditDialog, this.buildEditDialog(), {
           height: 500,
           showClose: false,
-          dragBar: true
+          dragBar: true,
+          preferType:SheetType.CENTER
         })
       }
     }

@@ -84,7 +84,7 @@ export struct ProfilePage {
 
 
   // 功能菜单配置
-  private menuItems: MenuItem[] = [
+  @State private menuItems: MenuItem[] = [
     {
       id: 'relationships',
       title: '我的关系网络',
@@ -245,23 +245,38 @@ export struct ProfilePage {
 
   // 更新菜单计数
   updateMenuCounts() {
-    this.menuItems.forEach(item => {
+    // 创建新数组以触发@State更新
+    const updatedMenuItems = this.menuItems.map(item => {
+      const newItem: MenuItem = {
+        id: item.id,
+        title: item.title,
+        description: item.description,
+        icon: item.icon,
+        color: item.color,
+        count: item.count
+      };
+      
       switch (item.id) {
         case 'relationships':
-          item.count = this.contacts.length;
+          newItem.count = this.contacts.length;
           break;
         case 'favorites':
-          item.count = this.favoriteInspirations.length;
+          newItem.count = this.favoriteInspirations.length;
           break;
         case 'reminders':
           // 使用实际的数据库提醒记录数量
-          item.count = this.reminderCount;
+          newItem.count = this.reminderCount;
           break;
         case 'statistics':
-          item.count = this.totalGiftEvents;
+          newItem.count = this.totalGiftEvents;
           break;
       }
+      
+      return newItem;
     });
+    
+    // 重新赋值整个数组以触发UI更新
+    this.menuItems = updatedMenuItems;
   }
 
   // 导航到功能页面
@@ -958,7 +973,8 @@ export struct ProfilePage {
                 backgroundColor: $r('app.color.surface_color'),
                 onDisappear: () => {
                   // 移除状态重置，避免与深色模式切换冲突
-                }
+                },
+                preferType:SheetType.CENTER
               })
             }
             .width('100%')
@@ -971,7 +987,8 @@ export struct ProfilePage {
               backgroundColor: $r('app.color.surface_color'),
               onDisappear: () => {
                 // 移除状态重置，避免与深色模式切换冲突
-              }
+              },
+              preferType:SheetType.CENTER
             })
 
           }

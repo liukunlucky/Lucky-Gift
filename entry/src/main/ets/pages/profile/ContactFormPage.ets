@@ -295,7 +295,8 @@ struct ContactFormPage {
         backgroundColor: Color.White,
         onDisappear: () => {
           this.showRelationshipDropdown = false;
-        }
+        },
+        preferType:SheetType.CENTER
       })
 
       // 加载状态

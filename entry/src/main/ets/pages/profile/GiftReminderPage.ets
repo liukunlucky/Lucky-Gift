@@ -8,6 +8,7 @@ import reminderAgentManager from '@ohos.reminderAgentManager';
 import notificationManager from '@ohos.notificationManager';
 import { BusinessError } from '@ohos.base';
 import { common } from '@kit.AbilityKit';
+import promptAction from '@ohos.promptAction';
 
 interface ReminderItem {
   id: string;
@@ -284,7 +285,19 @@ struct GiftReminderPage {
   }
   
   async saveReminder() {
-    if (!this.selectedContactId || !this.reminderTitle || !this.reminderDate) {
+    // 表单验证
+    if (!this.selectedContactId) {
+      this.showToast('请选择联系人');
+      return;
+    }
+    
+    if (!this.reminderTitle || this.reminderTitle.trim() === '') {
+      this.showToast('请输入提醒标题');
+      return;
+    }
+    
+    if (!this.reminderDate) {
+      this.showToast('请选择提醒日期');
       return;
     }
     
@@ -372,6 +385,28 @@ struct GiftReminderPage {
     
     this.reminders = [...this.reminders];
     this.showAddDialog = false;
+  }
+  
+  private showToast(message: string) {
+    promptAction.showToast({
+      message: message,
+      duration: 2000
+    });
+  }
+  
+  showReminderDatePicker() {
+    DatePickerDialog.show({
+      start: new Date('1900-1-1'),
+      end: new Date('2100-12-31'),
+      selected: this.reminderDate ? new Date(this.reminderDate) : new Date(),
+      onAccept: (value: DatePickerResult) => {
+        // DatePickerResult的month是从0开始的索引，需要+1才是实际月份
+        const year = value.year!;
+        const month = value.month! + 1; // 修复月份索引问题
+        const day = value.day!;
+        this.reminderDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      }
+    });
   }
   
   getTypeIcon(type: string): Resource {
@@ -588,7 +623,8 @@ struct GiftReminderPage {
     .bindSheet($$this.showAddDialog, this.buildAddReminderDialog(), {
       height: 600,
       dragBar: true,
-      showClose: false
+      showClose: false,
+      preferType:SheetType.CENTER
     })
   }
   
@@ -676,11 +712,17 @@ struct GiftReminderPage {
         Column() {
           // 选择联系人
           Column() {
-            Text('选择联系人')
-              .fontSize(14)
-              .fontColor('#333333')
-              .alignSelf(ItemAlign.Start)
-              .margin({ bottom: 8 })
+            Row() {
+              Text('选择联系人')
+                .fontSize(14)
+                .fontColor('#333333')
+              Text('*')
+                .fontSize(14)
+                .fontColor('#FF4444')
+                .margin({ left: 2 })
+            }
+            .alignSelf(ItemAlign.Start)
+            .margin({ bottom: 8 })
             
             Select(this.contacts.map(c => {
               const option: SelectOption = { value: c.name, id: c.id };
@@ -701,11 +743,17 @@ struct GiftReminderPage {
           
           // 提醒标题
           Column() {
-            Text('提醒标题')
-              .fontSize(14)
-              .fontColor('#333333')
-              .alignSelf(ItemAlign.Start)
-              .margin({ bottom: 8 })
+            Row() {
+              Text('提醒标题')
+                .fontSize(14)
+                .fontColor('#333333')
+              Text('*')
+                .fontSize(14)
+                .fontColor('#FF4444')
+                .margin({ left: 2 })
+            }
+            .alignSelf(ItemAlign.Start)
+            .margin({ bottom: 8 })
             
             TextInput({ placeholder: '请输入提醒标题', text: this.reminderTitle })
               .fontSize(14)
@@ -744,21 +792,27 @@ struct GiftReminderPage {
           
           // 提醒日期
           Column() {
-            Text('提醒日期')
-              .fontSize(14)
-              .fontColor('#333333')
-              .alignSelf(ItemAlign.Start)
-              .margin({ bottom: 8 })
+            Row() {
+              Text('提醒日期')
+                .fontSize(14)
+                .fontColor('#333333')
+              Text('*')
+                .fontSize(14)
+                .fontColor('#FF4444')
+                .margin({ left: 2 })
+            }
+            .alignSelf(ItemAlign.Start)
+            .margin({ bottom: 8 })
             
-            DatePicker({
-              start: new Date('2024-01-01'),
-              end: new Date('2030-12-31'),
-              selected: this.reminderDate ? new Date(this.reminderDate) : new Date()
-            })
-              .onChange((value: DatePickerResult) => {
-                const month = value.month !== undefined ? value.month : 1;
-                const day = value.day !== undefined ? value.day : 1;
-                this.reminderDate = `${value.year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            Button(this.reminderDate || '请选择日期')
+              .width('100%')
+              .height(44)
+              .backgroundColor('#F8F9FA')
+              .fontColor(this.reminderDate ? '#333333' : '#999999')
+              .fontSize(14)
+              .borderRadius(8)
+              .onClick(() => {
+                this.showReminderDatePicker();
               })
           }
           .width('100%')

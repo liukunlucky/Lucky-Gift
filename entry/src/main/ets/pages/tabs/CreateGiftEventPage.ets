@@ -235,8 +235,11 @@ struct CreateGiftEventPage {
       end: new Date('2100-12-31'),
       selected: new Date(this.eventDate),
       onAccept: (value: DatePickerResult) => {
-        const selectedDate = new Date(value.year!, value.month!, value.day!);
-        this.eventDate = selectedDate.toISOString().split('T')[0];
+        // DatePickerResult的month是从0开始的索引，需要+1才是实际月份
+        const year = value.year!;
+        const month = value.month! + 1; // 修复月份索引问题
+        const day = value.day!;
+        this.eventDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
       }
     });
   }
@@ -247,12 +250,15 @@ struct CreateGiftEventPage {
   
   showReminderDatePicker() {
     DatePickerDialog.show({
-      start: new Date(),
+      start: new Date('1900-1-1'),
       end: new Date('2100-12-31'),
       selected: this.reminderDate ? new Date(this.reminderDate) : new Date(),
       onAccept: (value: DatePickerResult) => {
-        const selectedDate = new Date(value.year!, value.month!, value.day!);
-        this.reminderDate = selectedDate.toISOString().split('T')[0];
+        // DatePickerResult的month是从0开始的索引，需要+1才是实际月份
+        const year = value.year!;
+        const month = value.month! + 1; // 修复月份索引问题
+        const day = value.day!;
+        this.reminderDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
       }
     });
   }
@@ -336,7 +342,7 @@ struct CreateGiftEventPage {
       router.replaceUrl({
         url: 'pages/MainTabsPage',
         params: {
-          targetTab: 1 // 切换到记录tab
+          targetTab: 2 // 切换到记录tab
         }
       });
     } catch (error) {
@@ -1082,10 +1088,10 @@ struct CreateGiftEventPage {
                               .margin({ top: 4 })
                           }
                         }
-                        .width('100%')
+                        .type(ButtonType.Normal)
+                        .width(80)
                         .height(80)
                         .backgroundColor('#F8F9FA')
-                        .borderRadius(8)
                         .border({ width: 1, color: '#CCCCCC', style: BorderStyle.Dashed })
                         .onClick(() => this.selectImages())
                       }
@@ -1303,7 +1309,8 @@ struct CreateGiftEventPage {
     .bindSheet($$this.showOccasionDialog, this.occasionPickerSheet(), {
       height: 400,
       dragBar: true,
-      backgroundColor: '#FFFFFF'
+      backgroundColor: '#FFFFFF',
+      preferType:SheetType.CENTER
     })
 
 

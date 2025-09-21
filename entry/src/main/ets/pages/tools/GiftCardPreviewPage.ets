@@ -307,6 +307,7 @@ struct GiftCardPreviewPage {
         this.isShowingShareSheet = false;
         dismissSheetAction.dismiss();
       }),
+      preferType:SheetType.CENTER
     })
   }
 
