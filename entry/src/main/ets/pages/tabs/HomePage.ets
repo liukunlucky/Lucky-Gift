@@ -129,7 +129,7 @@ export struct HomePage {
       icon: $r('app.media.icon_tuijian'),
       action: () => {
         router.pushUrl({
-          url: 'pages/tools/SmartRecommendationPage'
+          url: 'pages/tools/SmartRecommendationQuestionPage'
         }).catch((error: Error) => {
           console.error('Failed to navigate to SmartRecommendationPage:', error);
         });
@@ -159,13 +159,58 @@ export struct HomePage {
       icon: $r('app.media.icon_changjing'),
       action: () => {
         router.pushUrl({
-          url: 'pages/ScenarioPage'
+          url: 'pages/ScenarioListPage'
         }).catch((error: Error) => {
-          console.error('Failed to navigate to ScenarioPage:', error);
+          console.error('Failed to navigate to ScenarioListPage:', error);
         });
       }
     };
     icons.push(scenario);
+
+    // 预算计算器
+    const budget: FunctionIcon = {
+      id: 'budget',
+      title: '预算计算器',
+      icon: $r('app.media.icon_jsq'),
+      action: () => {
+        router.pushUrl({
+          url: 'pages/tools/BudgetCalculatorPage'
+        }).catch((error: Error) => {
+          console.error('Failed to navigate to BudgetCalculatorPage:', error);
+        });
+      }
+    };
+    icons.push(budget);
+
+    // 节日倒计时
+    const countdown: FunctionIcon = {
+      id: 'countdown',
+      title: '节日倒计时',
+      icon: $r('app.media.icon_rl'),
+      action: () => {
+        router.pushUrl({
+          url: 'pages/tools/HolidayCountdownPage'
+        }).catch((error: Error) => {
+          console.error('Failed to navigate to HolidayCountdownPage:', error);
+        });
+      }
+    };
+    icons.push(countdown);
+
+    // 礼物清单检查
+    const checklist: FunctionIcon = {
+      id: 'checklist',
+      title: '礼物清单检查',
+      icon: $r('app.media.icon_check'),
+      action: () => {
+        router.pushUrl({
+          url: 'pages/tools/GiftChecklistPage'
+        }).catch((error: Error) => {
+          console.error('Failed to navigate to GiftChecklistPage:', error);
+        });
+      }
+    };
+    icons.push(checklist);
 
     return icons;
   }
@@ -263,6 +308,19 @@ export struct HomePage {
       }
       .width('100%')
       .justifyContent(FlexAlign.SpaceAround)
+
+      // 第三行3个图标
+      Row({ space: 20 }) {
+        ForEach(this.getFunctionIcons().slice(8, 11), (icon: FunctionIcon) => {
+          this.buildFunctionIcon(icon);
+        }, (icon: FunctionIcon) => icon.id)
+        
+        // 添加占位空间，保持与上一行对齐
+        Blank()
+          .width(70) // 与图标宽度相同
+      }
+      .width('100%')
+      .justifyContent(FlexAlign.SpaceAround)
     }
     .padding({left: 16, right: 16})
     .width('100%')
@@ -274,7 +332,7 @@ export struct HomePage {
       // 圆形背景
       Stack() {
         Circle({ width: 60, height: 60 })
-          .fill('#F34F40')
+          .fill('#FF6B35')
           .shadow({
             radius: 8,
             color: '#00000010',
@@ -292,7 +350,7 @@ export struct HomePage {
 
       // 功能名称
       Text(icon.title)
-        .fontSize(12)
+        .fontSize(11)
         .fontColor('#2C3E50')
         .textAlign(TextAlign.Center)
         .maxLines(1)

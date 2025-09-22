@@ -1,6 +1,7 @@
 import router from '@ohos.router';
 import { Inspiration } from '../model/NewDataModels';
 import { InspirationDAO } from '../database/InspirationDAO';
+import { MyInspirationDAO } from '../database/MyInspirationDAO';
 import { NewDatabaseManager } from '../database/NewDatabaseManager';
 import { MockData } from '../data/MockData';
 import { common } from '@kit.AbilityKit';
@@ -25,6 +26,7 @@ struct InspirationDetailPage {
   
   private dbManager = new NewDatabaseManager();
   private inspirationDAO: InspirationDAO = new InspirationDAO(this.dbManager);
+  private myInspirationDAO: MyInspirationDAO = new MyInspirationDAO(this.dbManager);
   private inspirationId: string = '';
 
   async aboutToAppear() {
@@ -45,22 +47,34 @@ struct InspirationDetailPage {
     try {
       this.isLoading = true;
       
-      // 先尝试从数据库加载灵感详情
-      this.inspiration = await this.inspirationDAO.getInspirationById(this.inspirationId);
+      let inspiration: Inspiration | null = null;
       
-      // 如果数据库中没有找到，尝试从模拟数据中查找
-      if (!this.inspiration) {
-        const mockInspirations = MockData.getAllInspirations();
-        this.inspiration = mockInspirations.find(item => item.id === this.inspirationId) || null;
+      // 检查是否是我的灵感ID（以"my_"开头）
+      if (this.inspirationId.startsWith('my_')) {
+        // 直接使用完整ID查找我的灵感（数据库中存储的就是包含"my_"前缀的ID）
+        if (this.myInspirationDAO) {
+          inspiration = await this.myInspirationDAO.getMyInspirationById(this.inspirationId);
+        }
+      } else {
+        // 系统灵感，先尝试从数据库加载灵感详情
+        inspiration = await this.inspirationDAO.getInspirationById(this.inspirationId);
+        
+        // 如果数据库中没有找到，尝试从模拟数据中查找
+        if (!inspiration) {
+          const mockInspirations = MockData.getAllInspirations();
+          inspiration = mockInspirations.find(item => item.id === this.inspirationId) || null;
+        }
       }
       
-      if (!this.inspiration) {
+      if (!inspiration) {
         console.error('未找到对应的灵感数据:', this.inspirationId);
         this.navigateBack();
         return;
       }
       
-      // 检查是否已收藏
+      this.inspiration = inspiration;
+      
+      // 检查是否已收藏（使用原始ID）
       this.isFavorite = await this.inspirationDAO.isFavorite(this.inspirationId);
 
       // 暂时不支持浏览计数功能
@@ -196,7 +210,7 @@ struct InspirationDetailPage {
               this.shareInspiration();
             })
           
-          Image(this.isFavorite ? $r('app.media.icon_ax_full') : $r('app.media.icon_ax'))
+          Image(this.isFavorite ? $r('app.media.icon_like_full') : $r('app.media.icon_like'))
             .width(20)
             .height(20)
             .fillColor(this.isFavorite ? '#FF6B35' : '#515151')

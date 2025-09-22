@@ -291,7 +291,7 @@ struct FavoritesPage {
     Row() {
       Button() {
         Column() {
-          Image($r('app.media.icon_ax_full'))
+          Image($r('app.media.icon_like_full'))
             .width(24)
             .height(24)
             .fillColor('#FF6B35')

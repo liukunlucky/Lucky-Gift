@@ -340,6 +340,46 @@ export function getGiftTypeColor(type: GiftType): string {
   return GiftTypeColors[type] || '#B2BEC3';
 }
 
+// 反向映射函数：根据显示名称获取枚举值
+export function getRecipientTypeByName(name: string): RecipientType | null {
+  const entries = Object.entries(RecipientTypeNames);
+  for (let i = 0; i < entries.length; i++) {
+    const entry = entries[i];
+    const enumValue = entry[0] as RecipientType;
+    const displayName = entry[1];
+    if (displayName === name) {
+      return enumValue;
+    }
+  }
+  return null;
+}
+
+export function getOccasionTypeByName(name: string): OccasionType | null {
+  const entries = Object.entries(OccasionTypeNames);
+  for (let i = 0; i < entries.length; i++) {
+    const entry = entries[i];
+    const enumValue = entry[0] as OccasionType;
+    const displayName = entry[1];
+    if (displayName === name) {
+      return enumValue;
+    }
+  }
+  return null;
+}
+
+export function getGiftTypeByName(name: string): GiftType | null {
+  const entries = Object.entries(GiftTypeNames);
+  for (let i = 0; i < entries.length; i++) {
+    const entry = entries[i];
+    const enumValue = entry[0] as GiftType;
+    const displayName = entry[1];
+    if (displayName === name) {
+      return enumValue;
+    }
+  }
+  return null;
+}
+
 // 标签类型枚举 - 用于区分不同的标签类别
 export enum TagCategory {
   RECIPIENT = 'recipient',   // 收礼人

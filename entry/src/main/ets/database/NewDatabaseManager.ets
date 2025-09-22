@@ -108,7 +108,36 @@ export class NewDatabaseManager {
         FOREIGN KEY (contact_id) REFERENCES contacts (id) ON DELETE CASCADE
       )`,
 
-
+      // 我的灵感表（用户自己创建的灵感）
+      `CREATE TABLE IF NOT EXISTS my_inspirations (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        description TEXT NOT NULL,
+        detailed_description TEXT,
+        images TEXT, -- JSON数组，存储图片路径
+        tags TEXT, -- JSON数组
+        target_audience TEXT, -- JSON数组
+        occasions TEXT, -- JSON数组
+        interests TEXT, -- JSON数组
+        budget_min REAL NOT NULL DEFAULT 0,
+        budget_max REAL NOT NULL DEFAULT 0,
+        budget_label TEXT NOT NULL DEFAULT '',
+        gift_type TEXT NOT NULL,
+        difficulty TEXT NOT NULL DEFAULT 'easy',
+        time_required TEXT,
+        materials TEXT, -- JSON数组
+        steps TEXT, -- JSON数组
+        tips TEXT, -- JSON数组
+        precautions TEXT, -- JSON数组
+        gift_wrap_ideas TEXT, -- JSON数组
+        presentation_tips TEXT, -- JSON数组
+        personalized_tips TEXT, -- JSON数组
+        view_count INTEGER NOT NULL DEFAULT 0,
+        favorite_count INTEGER NOT NULL DEFAULT 0,
+        rating REAL DEFAULT 0,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )`,
 
       // 收藏的灵感表
       `CREATE TABLE IF NOT EXISTS favorite_inspirations (

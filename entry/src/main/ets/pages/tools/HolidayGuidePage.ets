@@ -271,7 +271,7 @@ struct HolidayGuidePage {
             .margin({ right: 8 })
             .onClick(() => {
               router.pushUrl({
-                url: 'pages/tools/SmartRecommendationPage'
+                url: 'pages/tools/SmartRecommendationQuestionPage'
               });
             })
 

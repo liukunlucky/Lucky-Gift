@@ -1,6 +1,7 @@
 import router from '@ohos.router';
 import { Inspiration } from '../../model/NewDataModels';
 import { InspirationDAO } from '../../database/InspirationDAO';
+import { MyInspirationDAO } from '../../database/MyInspirationDAO';
 import { NewDatabaseManager } from '../../database/NewDatabaseManager';
 import { InspirationDataInitializer } from '../../database/InspirationDataInitializer';
 import { MockData } from '../../data/MockData';
@@ -86,10 +87,15 @@ export struct BrowsePage {
   // 新增：多维度搜索状态
   @State searchConditions: SearchCondition[] = [];
   
-
+  // 我的灵感相关状态
+  @State myInspirations: Inspiration[] = [];
+  @State filteredMyInspirations: Inspiration[] = [];
   
+  // 监听数据刷新通知
+  @StorageLink('refreshInspirationData') @Watch('onDataRefresh') refreshTrigger: number = 0;
   private dbManager: NewDatabaseManager | null = null;
   private inspirationDAO: InspirationDAO | null = null;
+  private myInspirationDAO: MyInspirationDAO | null = null;
   private dataInitializer: InspirationDataInitializer = new InspirationDataInitializer();
   
   // 热门标签配置（使用新枚举系统）
@@ -155,9 +161,28 @@ export struct BrowsePage {
     
     // 初始化DAO
     this.inspirationDAO = new InspirationDAO(this.dbManager);
+    this.myInspirationDAO = new MyInspirationDAO(this.dbManager);
     
     this.initializeSearchConditions();
     this.loadInspirations();
+    this.loadMyInspirations();
+  }
+
+  // 页面显示时刷新数据（从AddInspirationPage返回时会触发）
+  onPageShow() {
+    // 刷新我的灵感数据
+    this.loadMyInspirations().then(() => {
+      this.applyFilters();
+    });
+  }
+
+  // 监听数据刷新通知
+  onDataRefresh() {
+    if (this.refreshTrigger > 0) {
+      this.loadMyInspirations().then(() => {
+        this.applyFilters();
+      });
+    }
   }
   
   // 初始化搜索条件
@@ -299,8 +324,31 @@ export struct BrowsePage {
     return MockData.getAllInspirations();
   }
 
+  // 加载我的灵感数据
+  async loadMyInspirations() {
+    try {
+      if (!this.myInspirationDAO) {
+        console.error('我的灵感DAO未初始化');
+        return;
+      }
+      
+      this.myInspirations = await this.myInspirationDAO.getAllMyInspirations();
+      this.filteredMyInspirations = this.myInspirations;
+    } catch (error) {
+      console.error('加载我的灵感数据失败:', error);
+      this.myInspirations = [];
+      this.filteredMyInspirations = [];
+    }
+  }
+
   // 应用筛选（新版本）
   applyFilters() {
+    // 分别过滤系统推荐和我的灵感
+    this.applyFiltersToInspirations();
+    this.applyFiltersToMyInspirations();
+  }
+
+  private applyFiltersToInspirations() {
     let result = this.inspirations;
     
     // 搜索关键词筛选
@@ -364,6 +412,72 @@ export struct BrowsePage {
     });
     
     this.filteredInspirations = result;
+  }
+
+  private applyFiltersToMyInspirations() {
+    let result = this.myInspirations;
+    
+    // 搜索关键词筛选
+    if (this.searchKeyword.trim()) {
+      const keyword = this.searchKeyword.toLowerCase();
+      result = result.filter(item => 
+        item.title.toLowerCase().includes(keyword) ||
+        item.description.toLowerCase().includes(keyword) ||
+        item.tags.some(tag => tag.toLowerCase().includes(keyword))
+      );
+    }
+    
+    // 多维度条件筛选
+    this.searchConditions.forEach(condition => {
+      if (condition.selectedValue && condition.selectedValue !== '') {
+        switch (condition.type) {
+          case 'audience':
+            // 直接用枚举值在tags字段中匹配
+            const recipientType = condition.selectedValue as RecipientType;
+            result = result.filter(item => item.tags.includes(recipientType));
+            break;
+          case 'occasion':
+            // 直接用枚举值在tags字段中匹配
+            const occasionType = condition.selectedValue as OccasionType;
+            result = result.filter(item => item.tags.includes(occasionType));
+            break;
+          case 'budget':
+            // 直接用枚举值在tags字段中匹配
+            const budgetRangeType = condition.selectedValue as BudgetRangeEnum;
+            result = result.filter(item => item.tags.includes(budgetRangeType));
+            break;
+          case 'type':
+            // 直接用枚举值在tags字段中匹配
+            const giftType = condition.selectedValue as GiftType;
+            result = result.filter(item => item.tags.includes(giftType));
+            break;
+        }
+      }
+    });
+    
+    // 兼容原有热门标签筛选
+    this.selectedFilters.forEach(filter => {
+      const filterConfig = this.hotTags.find(f => f.label === filter);
+      if (filterConfig) {
+        switch (filterConfig.category) {
+          case TagCategory.OCCASION:
+            result = result.filter(item => item.occasions.includes(filterConfig.value));
+            break;
+          case TagCategory.RECIPIENT:
+            result = result.filter(item => item.targetAudience.includes(filterConfig.value));
+            break;
+          case TagCategory.BUDGET:
+            const budget = parseInt(filterConfig.value);
+            result = result.filter(item => item.budgetRange.max <= budget);
+            break;
+          case TagCategory.GIFT_TYPE:
+            result = result.filter(item => item.giftType === filterConfig.value);
+            break;
+        }
+      }
+    });
+    
+    this.filteredMyInspirations = result;
   }
   
 
@@ -483,6 +597,35 @@ export struct BrowsePage {
     });
   }
 
+  // 导航到编辑灵感页面
+  navigateToEditInspiration(inspiration: Inspiration) {
+    router.pushUrl({
+      url: 'pages/AddInspirationPage',
+      params: {
+        inspirationId: inspiration.id
+      }
+    }).then(() => {
+      console.log('跳转到编辑灵感页面成功');
+    }).catch((error: Error) => {
+      console.error('跳转到编辑灵感页面失败:', error);
+    });
+  }
+
+  // 跳转到添加灵感页面
+  navigateToAddInspiration() {
+    router.pushUrl({
+      url: 'pages/AddInspirationPage'
+    }).then(() => {
+      console.log('跳转到添加灵感页面成功');
+    }).catch((error: Error) => {
+      console.error('跳转到添加灵感页面失败:', error);
+    });
+  }
+
+
+
+
+
   // 导航到筛选页面
   navigateToFilter(filterType: string, filterValue: string, title?: string) {
     router.pushUrl({
@@ -510,19 +653,6 @@ export struct BrowsePage {
               this.searchKeyword = value;
               this.applyFilters();
             })
-          
-          // // 重置按钮
-          // Button('重置')
-          //   .fontSize(14)
-          //   .height(40)
-          //   .padding({ left: 16, right: 16 })
-          //   .backgroundColor('#FF6B35')
-          //   .fontColor(Color.White)
-          //   .borderRadius(20)
-          //   .margin({ left: 12 })
-          //   .onClick(() => {
-          //     this.resetAllFilters();
-          //   })
         }
         .width('100%')
         .padding({ left: 16, right: 16, top: 12, bottom: 12 })
@@ -545,7 +675,7 @@ export struct BrowsePage {
                 .backgroundColor('#F8F8F8')
                 .borderRadius(16)
                 .padding({ left: 12, right: 12, top: 6, bottom: 6 })
-                .height(28)
+                .height(32)
                 .optionHeight(300)
                 .constraintSize({ minWidth: 60 })
                 .border({
@@ -562,7 +692,8 @@ export struct BrowsePage {
         .scrollable(ScrollDirection.Horizontal)
         .scrollBar(BarState.Off)
         .width('100%')
-        .padding({ top: 12, bottom: 12 })
+        .height(52)
+        .padding({ top: 10, bottom: 10 })
 
         if (this.isLoading) {
           // 加载状态
@@ -584,80 +715,210 @@ export struct BrowsePage {
         } else {
           Scroll() {
             Column() {
-              // 灵感推荐列表
-              Column() {
-                Row() {
-                  Text('灵感推荐')
-                    .fontSize(16)
-                    .fontWeight(FontWeight.Medium)
-                  
-                  Blank()
-                  
-                  Text(`共${this.filteredInspirations.length}个创意`)
-                    .fontSize(12)
-                    .fontColor('#666666')
-                }
-                .width('100%')
-                .margin({ bottom: 12 })
-                
-                if (this.filteredInspirations.length === 0) {
-                  Column() {
-                    Image($r('app.media.icon_empty'))
-                      .width(173)
-                      .height(128)
-                      .margin({ bottom: 16 })
+              // 我的灵感部分
+               Column() {
+                 // 分组标题
+                 Row() {
+                   Row() {
+                     Text('我的灵感')
+                       .fontSize(18)
+                       .fontWeight(FontWeight.Bold)
+                       .fontColor('#333333')
+                   }
+                   
+                   Blank()
+                   
+                   Text(`${this.filteredMyInspirations.length}个`)
+                     .fontSize(12)
+                     .fontColor('#666666')
+                     .backgroundColor('#F5F5F5')
+                     .padding({ left: 8, right: 8, top: 4, bottom: 4 })
+                     .borderRadius(10)
+                 }
+                 .width('100%')
+                 .padding({ left: 16, right: 16, top: 16, bottom: 12 })
+                 .backgroundColor('#FAFAFA')
+                 
+                 // 内容区域
+                 Column() {
+                   if (this.filteredMyInspirations.length === 0) {
+                     Column() {
+                       Image($r('app.media.icon_empty'))
+                         .width(120)
+                         .height(90)
+                         .margin({ bottom: 12 })
+                       
+                       Text('暂无我的灵感')
+                         .fontSize(14)
+                         .fontColor('#666666')
+                         .margin({ bottom: 8 })
+
+                       Button('添加我的灵感')
+                         .fontSize(14)
+                         .height(36)
+                         .padding({ left: 16, right: 16 })
+                         .backgroundColor('#FF6B35')
+                         .fontColor(Color.White)
+                         .borderRadius(18)
+                         .onClick(() => {
+                           this.navigateToAddInspiration();
+                         })
+                     }
+                     .width('100%')
+                     .padding({ top: 30, bottom: 30 })
+                     .justifyContent(FlexAlign.Center)
+                     .alignItems(HorizontalAlign.Center)
+                   } else {
+                     ForEach(this.filteredMyInspirations, 
+                       (inspiration: Inspiration) => {
+                         this.buildInspirationCard(inspiration, true)
+                       }, (inspiration: Inspiration) => 'my_' + (inspiration.id || 0).toString())
+                     
+                     // 在列表底部添加新增按钮
+                     Row() {
+                       Button('+ 添加新灵感')
+                         .fontSize(14)
+                         .height(40)
+                         .padding({ left: 20, right: 20 })
+                         .backgroundColor('#FF6B35')
+                         .fontColor(Color.White)
+                         .borderRadius(20)
+                         .onClick(() => {
+                           this.navigateToAddInspiration();
+                         })
+                     }
+                     .width('100%')
+                     .justifyContent(FlexAlign.Center)
+                     .margin({ top: 16, bottom: 8 })
+                   }
+                 }
+                 .padding({ left: 16, right: 16, bottom: 16 })
+               }
+               .width('100%')
+               .backgroundColor(Color.White)
+               .borderRadius(12)
+               .margin({ left: 16, right: 16, top: 8, bottom: 16 })
+               .shadow({
+                 radius: 8,
+                 color: '#1A000000',
+                 offsetX: 0,
+                 offsetY: 2
+               })
+              
+              // 系统推荐部分
+              if (this.filteredInspirations.length > 0) {
+                Column() {
+                  // 分组标题
+                  Row() {
+                    Text('推荐灵感')
+                      .fontSize(18)
+                      .fontWeight(FontWeight.Bold)
+                      .fontColor('#333333')
                     
-                    Text('暂无匹配的灵感')
-                      .fontSize(16)
+                    Blank()
+                    
+                    Text(`${this.filteredInspirations.length}个`)
+                      .fontSize(12)
                       .fontColor('#666666')
-                      .margin({ bottom: 12 })
-                    
-                    Text('试试调整筛选条件或搜索关键词')
-                      .fontSize(14)
-                      .fontColor('#999999')
+                      .backgroundColor('#F5F5F5')
+                      .padding({ left: 8, right: 8, top: 4, bottom: 4 })
+                      .borderRadius(10)
                   }
                   .width('100%')
-                  .layoutWeight(1)
-                  .justifyContent(FlexAlign.Center)
-                  .alignItems(HorizontalAlign.Center)
-                  .padding({ left: 24, right: 24 })
-                } else {
-                  ForEach(this.filteredInspirations, (inspiration: Inspiration) => {
-                    this.buildInspirationCard(inspiration)
-                  }, (inspiration: Inspiration) => (inspiration.id || 0).toString())
+                  .padding({ left: 16, right: 16, top: 16, bottom: 12 })
+                  .backgroundColor('#FAFAFA')
+                  
+                  // 内容区域
+                  Column() {
+                    ForEach(this.filteredInspirations, 
+                      (inspiration: Inspiration) => {
+                        this.buildInspirationCard(inspiration, false)
+                      }, (inspiration: Inspiration) => 'system_' + (inspiration.id || 0).toString())
+                  }
+                  .padding({ left: 16, right: 16, bottom: 16 })
                 }
+                .width('100%')
+                .backgroundColor(Color.White)
+                .borderRadius(12)
+                .margin({ left: 16, right: 16, bottom: 106 })
+                .shadow({
+                  radius: 8,
+                  color: '#1A000000',
+                  offsetX: 0,
+                  offsetY: 2
+                })
               }
-              .width('100%')
-              .padding({ left: 16, right: 16, top: 16, bottom: 106 })
-              .justifyContent(FlexAlign.Start)
-              .alignItems(HorizontalAlign.Start)
+              
+              // 如果两个部分都为空，显示整体空状态
+              if (this.filteredInspirations.length === 0 && this.filteredMyInspirations.length === 0) {
+                Column() {
+                  Image($r('app.media.icon_empty'))
+                    .width(173)
+                    .height(128)
+                    .margin({ bottom: 16 })
+                  
+                  Text('暂无匹配的灵感')
+                    .fontSize(16)
+                    .fontColor('#666666')
+                    .margin({ bottom: 12 })
+                  
+                  Text('试试调整筛选条件或搜索关键词')
+                    .fontSize(14)
+                    .fontColor('#999999')
+                }
+                .width('100%')
+                .height('60%')
+                .justifyContent(FlexAlign.Center)
+                .alignItems(HorizontalAlign.Center)
+                .padding({ left: 24, right: 24 })
+              }
             }
           }
           .scrollBar(BarState.Off)
-}
+        }
       }
       .width('100%')
       .height('100%')
       .backgroundColor('#F8F9FA')
-      
-
     }
-     .width('100%')
-     .height('100%')
-   }
+  }
    
    @Builder
-  buildInspirationCard(inspiration: Inspiration) {
+  buildInspirationCard(inspiration: Inspiration, isMyInspiration: boolean = false) {
     Column() {
       Row() {
         Column() {
-          Text(inspiration.title)
-            .fontSize(16)
-            .fontWeight(FontWeight.Medium)
-            .fontColor('#333333')
-            .maxLines(2)
-            .textOverflow({ overflow: TextOverflow.Ellipsis })
+          // 标题行 - 我的灵感显示编辑图标
+          if (isMyInspiration) {
+            Row() {
+              Text(inspiration.title)
+                .fontSize(16)
+                .fontWeight(FontWeight.Medium)
+                .fontColor('#333333')
+                .maxLines(2)
+                .textOverflow({ overflow: TextOverflow.Ellipsis })
+              Blank().width(10)
+              Image($r('app.media.icon_edit'))
+                .width(20)
+                .height(20).fillColor('#FF6B6B')
+                .margin({ left: 8 })
+                .onClick(() => {
+                  this.navigateToEditInspiration(inspiration);
+                })
+            }
+            .width('100%')
+            .alignItems(VerticalAlign.Top)
             .margin({ bottom: 8 })
+          } else {
+            // 系统灵感只显示标题
+            Text(inspiration.title)
+              .fontSize(16)
+              .fontWeight(FontWeight.Medium)
+              .fontColor('#333333')
+              .maxLines(2)
+              .textOverflow({ overflow: TextOverflow.Ellipsis })
+              .margin({ bottom: 8 })
+          }
           
           Text(inspiration.description)
             .fontSize(14)
@@ -725,6 +986,7 @@ export struct BrowsePage {
     .margin({ bottom: 16 }) // 增加底部间距
     .shadow({ radius: 4, color: '#1A000000', offsetX: 0, offsetY: 2 }) // 添加阴影效果
     .onClick(() => {
+      // 统一跳转到详情页面
       this.navigateToInspirationDetail(inspiration);
     })
   }

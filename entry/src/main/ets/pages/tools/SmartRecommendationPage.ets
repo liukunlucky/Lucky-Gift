@@ -1,33 +1,32 @@
 import router from '@ohos.router';
 
-interface RecommendationQuestion {
-  id: string;
-  question: string;
-  options: string[];
-  selectedOption: string;
-}
-
 interface GiftSuggestion {
   id: string;
   name: string;
   category: string;
   price: string;
   reason: string;
-  image: string;
+  image: Resource;
   rating: number;
 }
 
 @Entry
 @Component
 struct SmartRecommendationPage {
-  @State currentStep: number = 0;
-  @State questions: RecommendationQuestion[] = [];
   @State suggestions: GiftSuggestion[] = [];
-  @State isAnalyzing: boolean = false;
-  @State showResults: boolean = false;
+  @State isAnalyzing: boolean = true;
+  @State userAnswers: Record<string, string> = {};
 
   aboutToAppear() {
-    this.loadQuestions();
+    // 获取从问题页面传递的用户回答
+    const params = router.getParams() as Record<string, string | number | boolean>;
+    if (params && params.answers && typeof params.answers === 'object') {
+      this.userAnswers = params.answers as Record<string, string>;
+      this.generateRecommendations();
+    } else {
+      // 如果没有参数，直接显示默认推荐
+      this.generateRecommendations();
+    }
   }
 
   build() {
@@ -47,24 +46,12 @@ struct SmartRecommendationPage {
           router.back();
         })
 
-        Text('智能礼物推荐')
+        Text('推荐结果')
           .fontSize(18)
           .fontWeight(FontWeight.Medium)
           .fontColor('#333333')
           .textAlign(TextAlign.Center)
-
-        Button() {
-          Image($r('app.media.icon_reset'))
-            .width(24)
-            .height(24)
-            .fillColor('#333333')
-        }
-        .width(40)
-        .height(40)
-        .backgroundColor(Color.Transparent)
-        .onClick(() => {
-          this.resetRecommendation();
-        })
+        Blank().width(40)
       }
       .width('100%')
       .height(56)
@@ -94,12 +81,9 @@ struct SmartRecommendationPage {
         .layoutWeight(1)
         .justifyContent(FlexAlign.Center)
         .alignItems(HorizontalAlign.Center)
-      } else if (this.showResults) {
+      } else {
         // 推荐结果
         this.buildResultsView();
-      } else {
-        // 问答流程
-        this.buildQuestionView();
       }
     }
     .width('100%')
@@ -107,122 +91,7 @@ struct SmartRecommendationPage {
     .backgroundColor('#F8F9FA')
   }
 
-  @Builder
-  buildQuestionView() {
-    Column() {
-      // 进度指示器
-      Row() {
-        Text(`${this.currentStep + 1}/${this.questions.length}`)
-          .fontSize(14)
-          .fontColor('#666666')
 
-        Blank()
-
-        Progress({
-          value: this.currentStep + 1,
-          total: this.questions.length,
-          type: ProgressType.Linear
-        })
-          .width(200)
-          .height(4)
-          .color('#FF6B35')
-          .backgroundColor('#F0F0F0')
-      }
-      .width('100%')
-      .padding(20)
-      .backgroundColor(Color.White)
-
-      Column() {
-        if (this.currentStep < this.questions.length) {
-          Text(this.questions[this.currentStep].question)
-            .fontSize(18)
-            .fontWeight(FontWeight.Medium)
-            .fontColor('#333333')
-            .textAlign(TextAlign.Center)
-            .margin({ bottom: 30 })
-
-          // 选项列表
-          Column() {
-            ForEach(this.questions[this.currentStep].options, (option: string, index: number) => {
-              Row() {
-                Text(option)
-                  .fontSize(16)
-                  .fontColor(this.questions[this.currentStep].selectedOption === option ? '#FF6B35' : '#333333')
-                  .layoutWeight(1)
-
-                if (this.questions[this.currentStep].selectedOption === option) {
-                  Image($r('app.media.icon_check'))
-                    .width(20)
-                    .height(20)
-                    .fillColor('#FF6B35')
-                }
-              }
-              .width('100%')
-              .height(60)
-              .padding({ left: 20, right: 20 })
-              .backgroundColor(this.questions[this.currentStep].selectedOption === option ? '#FFF5F0' : Color.White)
-              .borderRadius(12)
-              .border({
-                width: 2,
-                color: this.questions[this.currentStep].selectedOption === option ? '#FF6B35' : '#F0F0F0'
-              })
-              .margin({ bottom: 12 })
-              .onClick(() => {
-                this.selectOption(this.questions[this.currentStep].id, option);
-              })
-            }, (option: string) => option)
-          }
-          .width('100%')
-        }
-      }
-      .width('100%')
-      .padding(20)
-      .constraintSize({ minHeight: '60%' })
-
-      // 底部按钮 - 固定在底部
-      Row() {
-        if (this.currentStep > 0) {
-          Button('上一步')
-            .fontSize(16)
-            .fontColor('#666666')
-            .backgroundColor('#F0F0F0')
-            .borderRadius(25)
-            .width(100)
-            .height(50)
-            .onClick(() => {
-              this.previousStep();
-            })
-        }
-
-        Blank()
-
-        Button(this.currentStep === this.questions.length - 1 ? '获取推荐' : '下一步')
-          .fontSize(16)
-          .fontColor(Color.White)
-          .backgroundColor(this.canProceed() ? '#FF6B35' : '#CCCCCC')
-          .borderRadius(25)
-          .width(120)
-          .height(50)
-          .enabled(this.canProceed())
-          .onClick(() => {
-            if (this.currentStep === this.questions.length - 1) {
-              this.generateRecommendations();
-            } else {
-              this.nextStep();
-            }
-          })
-      }
-      .width('100%')
-      .padding({ left: 20, right: 20, top: 16, bottom: 20 })
-      .backgroundColor(Color.White)
-      .shadow({
-        radius: 8,
-        color: '#1A000000',
-        offsetX: 0,
-        offsetY: -2
-      })
-    }
-  }
 
   @Builder
   buildResultsView() {
@@ -239,7 +108,7 @@ struct SmartRecommendationPage {
         ForEach(this.suggestions, (suggestion: GiftSuggestion) => {
           Column() {
             Row() {
-              Image($r('app.media.ic_gift_placeholder'))
+              Image(suggestion.image)
                 .width(80)
                 .height(80)
                 .borderRadius(8)
@@ -256,13 +125,6 @@ struct SmartRecommendationPage {
                   .fontSize(12)
                   .fontColor('#666666')
                   .margin({ top: 4 })
-                  .alignSelf(ItemAlign.Start)
-
-                Text(suggestion.price)
-                  .fontSize(14)
-                  .fontColor('#FF6B35')
-                  .fontWeight(FontWeight.Medium)
-                  .margin({ top: 8 })
                   .alignSelf(ItemAlign.Start)
 
                 // 评分
@@ -287,19 +149,6 @@ struct SmartRecommendationPage {
               .fontColor('#666666')
               .margin({ top: 12 })
               .alignSelf(ItemAlign.Start)
-
-            Button('查看详情')
-              .fontSize(14)
-              .fontColor('#FF6B35')
-              .backgroundColor('#FFF5F0')
-              .borderRadius(20)
-              .height(36)
-              .width(100)
-              .margin({ top: 12 })
-              .alignSelf(ItemAlign.End)
-              .onClick(() => {
-                console.info('查看礼物详情:', suggestion.id);
-              })
           }
           .width('100%')
           .padding(16)
@@ -307,147 +156,187 @@ struct SmartRecommendationPage {
           .borderRadius(12)
           .margin({ bottom: 12 })
         })
-
-        // 重新推荐按钮
-        Button('重新推荐')
-          .fontSize(16)
-          .fontColor(Color.White)
-          .backgroundColor('#FF6B35')
-          .borderRadius(25)
-          .visibility(Visibility.None)
-          .width(200)
-          .height(50)
-          .margin({ top: 20, bottom: 20 })
-          .onClick(() => {
-            this.resetRecommendation();
-          })
       }
       .width('100%')
       .padding(20)
     }
-    .layoutWeight(1)
   }
 
-  private loadQuestions(): void {
-    this.questions = [
-      {
-        id: '1',
-        question: '您要送礼给谁？',
-        options: ['恋人/配偶', '家人', '朋友', '同事', '长辈'],
-        selectedOption: ''
-      },
-      {
-        id: '2',
-        question: '什么场合送礼？',
-        options: ['生日', '节日庆祝', '纪念日', '感谢/道歉', '日常表达'],
-        selectedOption: ''
-      },
-      {
-        id: '3',
-        question: '您的预算范围？',
-        options: ['50元以下', '50-200元', '200-500元', '500-1000元', '1000元以上'],
-        selectedOption: ''
-      },
-      {
-        id: '4',
-        question: '收礼人的性别？',
-        options: ['男性', '女性', '不确定'],
-        selectedOption: ''
-      },
-      {
-        id: '5',
-        question: '收礼人的年龄段？',
-        options: ['儿童(0-12岁)', '青少年(13-18岁)', '青年(19-35岁)', '中年(36-55岁)', '老年(55岁以上)'],
-        selectedOption: ''
-      }
-    ];
-  }
 
-  private selectOption(questionId: string, option: string): void {
-    // 使用响应式更新方法 - 创建新数组触发UI更新
-    const updatedQuestions: RecommendationQuestion[] = [];
-    for (const question of this.questions) {
-      if (question.id === questionId) {
-        const updatedQuestion: RecommendationQuestion = {
-          id: question.id,
-          question: question.question,
-          options: question.options,
-          selectedOption: option
-        };
-        updatedQuestions.push(updatedQuestion);
-      } else {
-        updatedQuestions.push(question);
-      }
-    }
-    this.questions = updatedQuestions;
-  }
-
-  private canProceed(): boolean {
-    if (this.currentStep < this.questions.length) {
-      return this.questions[this.currentStep].selectedOption !== '';
-    }
-    return false;
-  }
-
-  private nextStep(): void {
-    if (this.currentStep < this.questions.length - 1) {
-      this.currentStep++;
-    }
-  }
-
-  private previousStep(): void {
-    if (this.currentStep > 0) {
-      this.currentStep--;
-    }
-  }
 
   private generateRecommendations(): void {
     this.isAnalyzing = true;
     
-    // 模拟AI分析过程
     setTimeout(() => {
-      this.suggestions = [
-        {
-          id: '1',
-          name: '定制照片相册',
-          category: '纪念品',
-          price: '￥128',
-          reason: '根据您的选择，这是一份充满回忆和个人意义的礼物',
-          image: '',
-          rating: 5
-        },
-        {
-          id: '2',
-          name: '香薰蜡烛套装',
-          category: '生活用品',
-          price: '￥89',
-          reason: '营造温馨氛围，适合表达关怀之意',
-          image: '',
-          rating: 4
-        },
-        {
-          id: '3',
-          name: '手工巧克力礼盒',
-          category: '美食',
-          price: '￥156',
-          reason: '甜蜜的味道传递甜蜜的心意',
-          image: '',
-          rating: 4
-        }
-      ];
-      
+      // 根据用户回答生成个性化推荐
+      this.suggestions = this.getPersonalizedRecommendations();
       this.isAnalyzing = false;
-      this.showResults = true;
     }, 2000);
   }
 
+  private getPersonalizedRecommendations(): GiftSuggestion[] {
+    // 根据用户回答生成个性化推荐
+    const recipient = this.userAnswers['recipient'] || '朋友';
+    const occasion = this.userAnswers['occasion'] || '生日';
+    
+    const allRecommendations: GiftSuggestion[] = [
+      {
+        id: '1',
+        name: '施华洛世奇水晶项链',
+        category: '首饰',
+        price: '￥299',
+        reason: `根据您选择的${recipient}和${occasion}，水晶象征纯洁与永恒，表达对爱情的美好祝愿`,
+        image: $r('app.media.shlsq'),
+        rating: 4.8
+      },
+      {
+        id: '2',
+        name: 'AirPods Pro 无线耳机',
+        category: '电子产品',
+        price: '￥1899',
+        reason: '科技产品代表对未来的期许和对品质生活的追求',
+        image: $r('app.media.airpod'),
+        rating: 4.7
+      },
+      {
+        id: '3',
+        name: '永生花玻璃罩礼盒',
+        category: '鲜花',
+        price: '￥168',
+        reason: '永生花象征永恒不变的爱情和美好回忆',
+        image: $r('app.media.ysh'),
+        rating: 4.6
+      },
+      {
+        id: '4',
+        name: '圣诞主题香薰蜡烛套装',
+        category: '家居用品',
+        price: '￥89',
+        reason: '香薰蜡烛代表温暖和光明，为节日增添温馨氛围',
+        image: $r('app.media.shengdan'),
+        rating: 4.5
+      },
+      {
+        id: '5',
+        name: '圣诞雪花球音乐盒',
+        category: '玩具',
+        price: '￥128',
+        reason: '雪花球象征着纯洁和美好愿望，音乐带来节日欢乐',
+        image: $r('app.media.sjt'),
+        rating: 4.7
+      },
+      {
+        id: '6',
+        name: '圣诞毛绒玩具礼盒',
+        category: '玩具',
+        price: '￥158',
+        reason: '毛绒玩具代表温暖的陪伴和童真的快乐',
+        image: $r('app.media.sdwj'),
+        rating: 4.8
+      },
+      {
+        id: '7',
+        name: '圣诞热红酒香料包',
+        category: '美食',
+        price: '￥68',
+        reason: '热红酒是圣诞节的传统饮品，象征温暖和团聚',
+        image: $r('app.media.rhj'),
+        rating: 4.4
+      },
+      {
+        id: '8',
+        name: '手写感谢卡片套装',
+        category: '文具',
+        price: '￥35',
+        reason: '手写卡片传达最真挚的感谢之情，心意比价值更重要',
+        image: $r('app.media.creative_fun_gift'),
+        rating: 4.6
+      },
+      {
+        id: '9',
+        name: '精品茶叶礼盒',
+        category: '美食',
+        price: '￥128',
+        reason: '茶叶代表清香淡雅，表达对对方的尊重和感谢',
+        image: $r('app.media.cylh'),
+        rating: 4.7
+      },
+      {
+        id: '10',
+        name: '多肉植物组合盆栽',
+        category: '鲜花',
+        price: '￥88',
+        reason: '植物象征生命力和成长，感谢对方给予的帮助和支持',
+        image: $r('app.media.drzw'),
+        rating: 4.5
+      },
+      {
+        id: '11',
+        name: '定制感谢巧克力礼盒',
+        category: '美食',
+        price: '￥98',
+        reason: '巧克力的甜蜜如同感谢的心情，定制文字更显用心',
+        image: $r('app.media.qkllh'),
+        rating: 4.6
+      },
+      {
+        id: '12',
+        name: '情侣对杯套装',
+        category: '家居用品',
+        price: '￥168',
+        reason: '对杯象征夫妻恩爱，共饮一杯茶，共度一生情',
+        image: $r('app.media.qldb'),
+        rating: 4.7
+      },
+      {
+        id: '13',
+        name: '新婚床品四件套',
+        category: '家居用品',
+        price: '￥299',
+        reason: '红色床品寓意新婚生活红红火火，幸福美满',
+        image: $r('app.media.wedding_blessing_gift'),
+        rating: 4.8
+      },
+      {
+        id: '14',
+        name: '水晶相框对装',
+        category: '家居用品',
+        price: '￥188',
+        reason: '相框保存美好回忆，水晶象征纯洁透明的爱情',
+        image: $r('app.media.sjxk'),
+        rating: 4.6
+      },
+      {
+        id: '15',
+        name: '高档餐具套装',
+        category: '家居用品',
+        price: '￥588',
+        reason: '餐具套装寓意新人共同用餐，分享生活的点点滴滴',
+        image: $r('app.media.gdcj'),
+        rating: 4.9
+      },
+      {
+        id: '16',
+        name: '情侣香薰机套装',
+        category: '电子产品',
+        price: '￥398',
+        reason: '香薰营造温馨氛围，智能科技提升生活品质',
+        image: $r('app.media.qlxxj'),
+        rating: 4.5
+      }
+    ];
+
+    // 从16个推荐中随机选择1个
+    const randomIndex = Math.floor(Math.random() * allRecommendations.length);
+    return [allRecommendations[randomIndex]];
+  }
+
   private resetRecommendation(): void {
-    this.currentStep = 0;
-    this.showResults = false;
-    this.isAnalyzing = false;
-    this.suggestions = [];
-    this.questions.forEach(question => {
-      question.selectedOption = '';
+    // 返回到问题页面重新开始
+    router.pushUrl({
+      url: 'pages/tools/SmartRecommendationQuestionPage'
+    }).catch((error: Error) => {
+      console.error('Failed to navigate to question page:', error);
     });
   }
 }

@@ -444,7 +444,7 @@ export struct ToolsPage {
     switch (actionType) {
       case 'recommendation':
         router.pushUrl({
-          url: 'pages/tools/SmartRecommendationPage'
+          url: 'pages/tools/SmartRecommendationQuestionPage'
         });
         break;
       case 'guide':
@@ -459,7 +459,7 @@ export struct ToolsPage {
         break;
       case 'customize':
         router.pushUrl({
-          url: 'pages/ScenarioPage'
+          url: 'pages/ScenarioListPage'
         });
         break;
       default:

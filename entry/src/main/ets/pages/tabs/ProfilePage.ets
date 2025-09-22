@@ -97,7 +97,7 @@ export struct ProfilePage {
       id: 'favorites',
       title: '我的收藏',
       description: '收藏的灵感和创意',
-      icon: $r('app.media.icon_ax'),
+      icon: $r('app.media.icon_like'),
       color: '#E91E63',
       count: 0
     },

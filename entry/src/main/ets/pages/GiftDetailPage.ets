@@ -200,7 +200,7 @@ struct GiftDetailPage {
       
       // 收藏按钮
       Row() {
-        Image(this.isFavorite ? $r('app.media.icon_ax_full') : $r('app.media.icon_ax'))
+        Image(this.isFavorite ? $r('app.media.icon_like_full') : $r('app.media.icon_like'))
            .width(24)
            .height(24)
            .fillColor(this.isFavorite ? '#FF6B35' : '#CCCCCC')

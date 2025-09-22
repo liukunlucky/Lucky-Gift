@@ -244,7 +244,7 @@ export class GiftRecommendationService {
         category: GiftCategory.JEWELRY,
         price: 299,
         priceRange: PriceRange.MODERATE,
-        imageUrl: 'jewelry_necklace_1.jpg',
+        imageUrl: $r('app.media.shlsq'),
         tags: ['水晶', '项链', '时尚', '经典'],
         scenarios: [Scenario.BIRTHDAY, Scenario.ANNIVERSARY, Scenario.VALENTINE],
         targetGroups: [{
@@ -271,7 +271,7 @@ export class GiftRecommendationService {
         category: GiftCategory.ELECTRONICS,
         price: 1899,
         priceRange: PriceRange.LUXURY,
-        imageUrl: 'electronics_airpods.jpg',
+        imageUrl: $r('app.media.airpod'),
         tags: ['苹果', '耳机', '无线', '降噪'],
         scenarios: [Scenario.BIRTHDAY, Scenario.GRADUATION, Scenario.PROMOTION],
         targetGroups: [{
@@ -297,7 +297,7 @@ export class GiftRecommendationService {
         category: GiftCategory.FLOWERS,
         price: 168,
         priceRange: PriceRange.BUDGET,
-        imageUrl: 'flowers_preserved.jpg',
+        imageUrl: $r('app.media.ysh'),
         tags: ['永生花', '浪漫', '装饰', '纪念'],
         scenarios: [Scenario.VALENTINE, Scenario.ANNIVERSARY, Scenario.APOLOGY],
         targetGroups: [{
@@ -314,8 +314,335 @@ export class GiftRecommendationService {
         purchaseLinks: [
           { platform: '淘宝', url: 'https://taobao.com', price: 168, inStock: true }
         ]
+      },
+      // 圣诞节礼物推荐
+      {
+        id: '4',
+        name: '圣诞主题香薰蜡烛套装',
+        description: '温馨的圣诞香氛，营造节日氛围，包含肉桂、松针等经典圣诞香味',
+        category: GiftCategory.HOME,
+        price: 89,
+        priceRange: PriceRange.BUDGET,
+        imageUrl: $r('app.media.shengdan'),
+        tags: ['香薰', '圣诞', '温馨', '氛围'],
+        scenarios: [Scenario.CHRISTMAS],
+        targetGroups: [{
+          gender: Gender.UNISEX,
+          ageRange: AgeRange.YOUNG_ADULT,
+          relationship: Relationship.FRIEND,
+          interests: [Interest.ART, Interest.TRAVEL]
+        }],
+        meaning: '香薰蜡烛代表温暖和光明，为节日增添温馨氛围',
+        culturalBackground: '蜡烛在圣诞节象征着希望之光和家庭温暖',
+        rating: 4.5,
+        reviewCount: 890,
+        availability: true,
+        purchaseLinks: [
+          { platform: '天猫', url: 'https://tmall.com', price: 89, inStock: true }
+        ]
+      },
+      {
+        id: '5',
+        name: '圣诞雪花球音乐盒',
+        description: '精美的圣诞主题雪花球，内置音乐盒，播放经典圣诞歌曲',
+        category: GiftCategory.TOYS,
+        price: 128,
+        priceRange: PriceRange.BUDGET,
+        imageUrl: $r('app.media.yyh'),
+        tags: ['雪花球', '音乐盒', '圣诞', '装饰'],
+        scenarios: [Scenario.CHRISTMAS],
+        targetGroups: [{
+          gender: Gender.UNISEX,
+          ageRange: AgeRange.CHILD,
+          relationship: Relationship.FAMILY,
+          interests: [Interest.MUSIC, Interest.ART]
+        }],
+        meaning: '雪花球象征着纯洁和美好愿望，音乐带来节日欢乐',
+        culturalBackground: '雪花球是西方圣诞节的经典装饰品',
+        rating: 4.7,
+        reviewCount: 1200,
+        availability: true,
+        purchaseLinks: [
+          { platform: '京东', url: 'https://jd.com', price: 128, inStock: true }
+        ]
+      },
+      {
+        id: '6',
+        name: '圣诞毛绒玩具礼盒',
+        description: '可爱的圣诞老人和驯鹿毛绒玩具套装，柔软舒适，适合各年龄段',
+        category: GiftCategory.TOYS,
+        price: 158,
+        priceRange: PriceRange.BUDGET,
+        imageUrl: $r('app.media.sdwj'),
+        tags: ['毛绒玩具', '圣诞老人', '驯鹿', '可爱'],
+        scenarios: [Scenario.CHRISTMAS],
+        targetGroups: [{
+          gender: Gender.UNISEX,
+          ageRange: AgeRange.CHILD,
+          relationship: Relationship.FAMILY,
+          interests: [Interest.ART, Interest.GAMING]
+        }],
+        meaning: '毛绒玩具代表温暖的陪伴和童真的快乐',
+        culturalBackground: '圣诞老人是西方圣诞节的象征人物',
+        rating: 4.8,
+        reviewCount: 2100,
+        availability: true,
+        purchaseLinks: [
+          { platform: '淘宝', url: 'https://taobao.com', price: 158, inStock: true }
+        ]
+      },
+      {
+        id: '7',
+        name: '圣诞热红酒香料包',
+        description: '正宗德式圣诞热红酒香料包，包含肉桂、丁香等香料，温暖过冬',
+        category: GiftCategory.FOOD,
+        price: 68,
+        priceRange: PriceRange.BUDGET,
+        imageUrl: $r('app.media.rhj'),
+        tags: ['热红酒', '香料', '温暖', '德式'],
+        scenarios: [Scenario.CHRISTMAS],
+        targetGroups: [{
+          gender: Gender.UNISEX,
+          ageRange: AgeRange.ADULT,
+          relationship: Relationship.FRIEND,
+          interests: [Interest.COOKING, Interest.TRAVEL]
+        }],
+        meaning: '热红酒是圣诞节的传统饮品，象征温暖和团聚',
+        culturalBackground: '热红酒起源于欧洲，是圣诞市集的经典饮品',
+        rating: 4.4,
+        reviewCount: 650,
+        availability: true,
+        purchaseLinks: [
+          { platform: '天猫', url: 'https://tmall.com', price: 68, inStock: true }
+        ]
+      },
+      // 感谢礼物推荐
+      {
+        id: '8',
+        name: '手写感谢卡片套装',
+        description: '精美的手工感谢卡片，配有信封和贴纸，表达真挚谢意',
+        category: GiftCategory.BOOKS,
+        price: 35,
+        priceRange: PriceRange.BUDGET,
+        imageUrl: $r('app.media.gxk'),
+        tags: ['感谢卡', '手写', '真挚', '贴心'],
+        scenarios: [Scenario.THANK_YOU],
+        targetGroups: [{
+          gender: Gender.UNISEX,
+          ageRange: AgeRange.ADULT,
+          relationship: Relationship.COLLEAGUE,
+          interests: [Interest.READING, Interest.ART]
+        }],
+        meaning: '手写卡片传达最真挚的感谢之情，心意比价值更重要',
+        culturalBackground: '手写信件在数字时代显得格外珍贵和用心',
+        rating: 4.6,
+        reviewCount: 890,
+        availability: true,
+        purchaseLinks: [
+          { platform: '淘宝', url: 'https://taobao.com', price: 35, inStock: true }
+        ]
+      },
+      {
+        id: '9',
+        name: '精品茶叶礼盒',
+        description: '优质乌龙茶礼盒装，包装精美，适合表达感谢之情',
+        category: GiftCategory.FOOD,
+        price: 128,
+        priceRange: PriceRange.BUDGET,
+        imageUrl: $r('app.media.cylh'),
+        tags: ['茶叶', '乌龙茶', '礼盒', '健康'],
+        scenarios: [Scenario.THANK_YOU],
+        targetGroups: [{
+          gender: Gender.UNISEX,
+          ageRange: AgeRange.ADULT,
+          relationship: Relationship.COLLEAGUE,
+          interests: [Interest.COOKING, Interest.TRAVEL]
+        }],
+        meaning: '茶叶代表清香淡雅，表达对对方的尊重和感谢',
+        culturalBackground: '茶文化在中华文化中象征着礼仪和尊重',
+        rating: 4.7,
+        reviewCount: 1500,
+        availability: true,
+        purchaseLinks: [
+          { platform: '京东', url: 'https://jd.com', price: 128, inStock: true }
+        ]
+      },
+      {
+        id: '10',
+        name: '多肉植物组合盆栽',
+        description: '精心搭配的多肉植物组合，易养护，寓意生机勃勃',
+        category: GiftCategory.FLOWERS,
+        price: 88,
+        priceRange: PriceRange.BUDGET,
+        imageUrl: $r('app.media.drzw'),
+        tags: ['多肉', '植物', '易养', '生机'],
+        scenarios: [Scenario.THANK_YOU],
+        targetGroups: [{
+          gender: Gender.UNISEX,
+          ageRange: AgeRange.YOUNG_ADULT,
+          relationship: Relationship.FRIEND,
+          interests: [Interest.ART, Interest.TRAVEL]
+        }],
+        meaning: '植物象征生命力和成长，感谢对方给予的帮助和支持',
+        culturalBackground: '绿植在现代生活中代表健康和自然',
+        rating: 4.5,
+        reviewCount: 1100,
+        availability: true,
+        purchaseLinks: [
+          { platform: '淘宝', url: 'https://taobao.com', price: 88, inStock: true }
+        ]
+      },
+      {
+        id: '11',
+        name: '定制感谢巧克力礼盒',
+        description: '可定制文字的精美巧克力礼盒，甜蜜表达感谢之情',
+        category: GiftCategory.FOOD,
+        price: 98,
+        priceRange: PriceRange.BUDGET,
+        imageUrl: $r('app.media.qkllh'),
+        tags: ['巧克力', '定制', '甜蜜', '感谢'],
+        scenarios: [Scenario.THANK_YOU],
+        targetGroups: [{
+          gender: Gender.UNISEX,
+          ageRange: AgeRange.YOUNG_ADULT,
+          relationship: Relationship.FRIEND,
+          interests: [Interest.COOKING, Interest.BEAUTY]
+        }],
+        meaning: '巧克力的甜蜜如同感谢的心情，定制文字更显用心',
+        culturalBackground: '巧克力在西方文化中是表达情感的经典礼品',
+        rating: 4.6,
+        reviewCount: 780,
+        availability: true,
+        purchaseLinks: [
+          { platform: '天猫', url: 'https://tmall.com', price: 98, inStock: true }
+        ]
+      },
+      // 婚礼礼物推荐
+      {
+        id: '12',
+        name: '情侣对杯套装',
+        description: '精美陶瓷情侣对杯，一对装，寓意成双成对，白头偕老',
+        category: GiftCategory.HOME,
+        price: 168,
+        priceRange: PriceRange.BUDGET,
+        imageUrl: $r('app.media.qldb'),
+        tags: ['对杯', '情侣', '陶瓷', '成双成对'],
+        scenarios: [Scenario.WEDDING],
+        targetGroups: [{
+          gender: Gender.UNISEX,
+          ageRange: AgeRange.YOUNG_ADULT,
+          relationship: Relationship.FRIEND,
+          interests: [Interest.COOKING, Interest.ART]
+        }],
+        meaning: '对杯象征夫妻恩爱，共饮一杯茶，共度一生情',
+        culturalBackground: '成双成对的物品在中华文化中寓意美满婚姻',
+        rating: 4.7,
+        reviewCount: 1800,
+        availability: true,
+        purchaseLinks: [
+          { platform: '京东', url: 'https://jd.com', price: 168, inStock: true }
+        ]
+      },
+      {
+        id: '13',
+        name: '新婚床品四件套',
+        description: '高品质纯棉婚庆床品四件套，大红色喜庆款式，寓意红红火火',
+        category: GiftCategory.HOME,
+        price: 299,
+        priceRange: PriceRange.MODERATE,
+        imageUrl: $r('app.media.sjt'),
+        tags: ['床品', '四件套', '婚庆', '红色'],
+        scenarios: [Scenario.WEDDING],
+        targetGroups: [{
+          gender: Gender.UNISEX,
+          ageRange: AgeRange.YOUNG_ADULT,
+          relationship: Relationship.FAMILY,
+          interests: [Interest.FASHION, Interest.ART]
+        }],
+        meaning: '红色床品寓意新婚生活红红火火，幸福美满',
+        culturalBackground: '红色在中华文化中是喜庆和吉祥的象征',
+        rating: 4.8,
+        reviewCount: 2200,
+        availability: true,
+        purchaseLinks: [
+          { platform: '天猫', url: 'https://tmall.com', price: 299, inStock: true }
+        ]
+      },
+      {
+        id: '14',
+        name: '水晶相框对装',
+        description: '精美水晶相框一对，可放置新人婚纱照，永久保存美好回忆',
+        category: GiftCategory.HOME,
+        price: 188,
+        priceRange: PriceRange.BUDGET,
+        imageUrl: $r('app.media.sjxk'),
+        tags: ['相框', '水晶', '对装', '回忆'],
+        scenarios: [Scenario.WEDDING],
+        targetGroups: [{
+          gender: Gender.UNISEX,
+          ageRange: AgeRange.YOUNG_ADULT,
+          relationship: Relationship.FRIEND,
+          interests: [Interest.PHOTOGRAPHY, Interest.ART]
+        }],
+        meaning: '相框保存美好回忆，水晶象征纯洁透明的爱情',
+        culturalBackground: '相框在现代家庭中是展示幸福时光的重要装饰',
+        rating: 4.6,
+        reviewCount: 1300,
+        availability: true,
+        purchaseLinks: [
+          { platform: '淘宝', url: 'https://taobao.com', price: 188, inStock: true }
+        ]
+      },
+      {
+        id: '15',
+        name: '高档餐具套装',
+        description: '精美骨瓷餐具套装，包含盘子、碗、杯子等，适合新婚夫妇使用',
+        category: GiftCategory.HOME,
+        price: 588,
+        priceRange: PriceRange.MODERATE,
+        imageUrl: $r('app.media.gdcj'),
+        tags: ['餐具', '骨瓷', '套装', '实用'],
+        scenarios: [Scenario.WEDDING],
+        targetGroups: [{
+          gender: Gender.UNISEX,
+          ageRange: AgeRange.YOUNG_ADULT,
+          relationship: Relationship.FAMILY,
+          interests: [Interest.COOKING, Interest.ART]
+        }],
+        meaning: '餐具套装寓意新人共同用餐，分享生活的点点滴滴',
+        culturalBackground: '精美餐具是建立温馨家庭的重要元素',
+        rating: 4.9,
+        reviewCount: 950,
+        availability: true,
+        purchaseLinks: [
+          { platform: '京东', url: 'https://jd.com', price: 588, inStock: true }
+        ]
+      },
+      {
+        id: '16',
+        name: '情侣香薰机套装',
+        description: '智能香薰机一对，可定时定量释放香氛，营造浪漫家居氛围',
+        category: GiftCategory.ELECTRONICS,
+        price: 398,
+        priceRange: PriceRange.MODERATE,
+        imageUrl: $r('app.media.qlxxj'),
+        tags: ['香薰机', '智能', '情侣', '浪漫'],
+        scenarios: [Scenario.WEDDING],
+        targetGroups: [{
+          gender: Gender.UNISEX,
+          ageRange: AgeRange.YOUNG_ADULT,
+          relationship: Relationship.FRIEND,
+          interests: [Interest.TECHNOLOGY, Interest.ART]
+        }],
+        meaning: '香薰营造温馨氛围，智能科技提升生活品质',
+        culturalBackground: '香薰在现代生活中代表品质生活和放松心情',
+        rating: 4.5,
+        reviewCount: 1600,
+        availability: true,
+        purchaseLinks: [
+          { platform: '天猫', url: 'https://tmall.com', price: 398, inStock: true }
+        ]
       }
-      // 可以继续添加更多礼物数据...
     ];
   }
 }

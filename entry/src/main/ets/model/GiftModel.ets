@@ -6,7 +6,7 @@ export interface Gift {
   category: GiftCategory;
   price: number;
   priceRange: PriceRange;
-  imageUrl: string;
+  imageUrl: Resource;
   tags: string[];
   scenarios: Scenario[];
   targetGroups: TargetGroup[];

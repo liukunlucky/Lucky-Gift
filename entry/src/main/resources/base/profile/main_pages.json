@@ -9,12 +9,14 @@
     "pages/tools/HolidayCountdownPage",
     "pages/tools/GiftChecklistPage",
     "pages/tools/SmartRecommendationPage",
+    "pages/tools/SmartRecommendationQuestionPage",
     "pages/tools/HolidayGuidePage",
     "pages/tools/QuickRecordPage",
     "pages/tools/GiftWrappingPage",
     "pages/profile/FavoritesPage",
     "pages/GiftRecommendationPage",
     "pages/ScenarioPage",
+    "pages/ScenarioListPage",
     "pages/UserCenterPage",
     "pages/SearchFilterPage",
     "pages/GiftDetailPage",
@@ -23,6 +25,7 @@
     "pages/profile/RelationshipNetworkPage",
     "pages/profile/GiftReminderPage",
     "pages/profile/GiftStatisticsPage",
-    "pages/profile/ContactFormPage"
+    "pages/profile/ContactFormPage",
+    "pages/AddInspirationPage"
   ]
 }

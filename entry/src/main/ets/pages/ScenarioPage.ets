@@ -16,6 +16,7 @@ interface ScenarioInfo {
 @Component
 struct ScenarioPage {
   @State private selectedScenario: Scenario | undefined = undefined;
+  @State private scenarioName: string = '';
   @State private scenarioGifts: Gift[] = [];
   @State private loading: boolean = false;
   
@@ -94,6 +95,7 @@ struct ScenarioPage {
     const params = router.getParams() as Record<string, Object>;
     if (params && params['scenario']) {
       this.selectedScenario = params['scenario'] as Scenario;
+      this.scenarioName = params['scenarioName'] as string || this.getScenarioName(this.selectedScenario);
       this.loadScenarioGifts();
     }
   }
@@ -103,13 +105,8 @@ struct ScenarioPage {
       // 标题栏
       this.buildHeader()
       
-      if (this.selectedScenario) {
-        // 选中场景的详情页
-        this.buildScenarioDetail()
-      } else {
-        // 场景选择页
-        this.buildScenarioGrid()
-      }
+      // 场景详情页（礼物列表）
+      this.buildScenarioDetail()
     }
     .width('100%')
     .height('100%')
@@ -136,7 +133,7 @@ struct ScenarioPage {
         this.goBack()
       })
       
-      Text(this.selectedScenario ? this.getScenarioName(this.selectedScenario) : '场景分类')
+      Text(this.scenarioName || '礼物推荐')
         .fontSize(18)
         .fontWeight(FontWeight.Medium)
         .fontColor('#333333')
@@ -150,68 +147,7 @@ struct ScenarioPage {
     .backgroundColor(Color.White)
   }
 
-  @Builder
-  buildScenarioGrid() {
-    Column() {
-      Text('选择送礼场景')
-        .fontSize(14)
-        .fontWeight(FontWeight.Medium)
-        .fontColor('#666666')
-        .margin({ top: 20, bottom: 20 })
-      
-      Grid() {
-        ForEach(this.scenarios, (scenario: ScenarioInfo) => {
-          GridItem() {
-            this.buildScenarioCard(scenario)
-          }
-        })
-      }
-      .columnsTemplate('1fr 1fr')
-      .rowsGap(16)
-      .columnsGap(16)
-      .width('90%')
-      .layoutWeight(1)
-    }
-    .width('100%')
-    .height('100%')
-    .justifyContent(FlexAlign.Start)
-    .alignItems(HorizontalAlign.Center)
-  }
 
-  @Builder
-  buildScenarioCard(scenario: ScenarioInfo) {
-    Column() {
-      Text(scenario.icon)
-        .fontSize(40)
-        .margin({ bottom: 12 })
-      
-      Text(scenario.name)
-        .fontSize(16)
-        .fontWeight(FontWeight.Bold)
-        .fontColor(Color.White)
-        .margin({ bottom: 8 })
-      
-      Text(scenario.description)
-        .fontSize(12)
-        .fontColor(Color.White)
-        .textAlign(TextAlign.Center)
-        .opacity(0.9)
-        .lineHeight(16)
-        .maxLines(2)
-        .textOverflow({ overflow: TextOverflow.Ellipsis })
-    }
-    .width('100%')
-    .height(140)
-    .backgroundColor(scenario.color)
-    .borderRadius(16)
-    .justifyContent(FlexAlign.Center)
-    .alignItems(HorizontalAlign.Center)
-    .padding(16)
-    .onClick(() => {
-      this.selectedScenario = scenario.key;
-      this.loadScenarioGifts();
-    })
-  }
 
   @Builder
   buildScenarioDetail() {
@@ -323,19 +259,6 @@ struct ScenarioPage {
         .width('100%')
         .height(200)
         .justifyContent(FlexAlign.Center)
-      } else if (this.scenarioGifts.length === 0) {
-        Column() {
-          Text('🎁')
-            .fontSize(48)
-          
-          Text('暂无推荐礼物')
-            .fontSize(16)
-            .fontColor('#666666')
-            .margin({ top: 16 })
-        }
-        .width('100%')
-        .height(200)
-        .justifyContent(FlexAlign.Center)
       } else {
         List() {
           ForEach(this.scenarioGifts, (gift: Gift) => {
@@ -359,12 +282,10 @@ struct ScenarioPage {
     Row() {
       // 礼物图片占位
       Column() {
-        Text('🎁')
-          .fontSize(32)
+        Image(gift.imageUrl)
       }
       .width(80)
       .height(80)
-      .backgroundColor('#F0F0F0')
       .borderRadius(8)
       .justifyContent(FlexAlign.Center)
       
@@ -385,13 +306,6 @@ struct ScenarioPage {
           .margin({ top: 4 })
         
         Row() {
-          Text(`¥${gift.price}`)
-            .fontSize(18)
-            .fontWeight(FontWeight.Bold)
-            .fontColor('#FF6B6B')
-          
-          Blank()
-          
           Row() {
             Text('⭐')
               .fontSize(12)
@@ -415,7 +329,6 @@ struct ScenarioPage {
             .padding({ left: 6, right: 6, top: 2, bottom: 2 })
             .borderRadius(8)
             .margin({ top: 4 })
-            .maxLines(1)
             .textOverflow({ overflow: TextOverflow.Ellipsis })
         }
       }
