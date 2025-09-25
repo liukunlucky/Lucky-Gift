@@ -622,20 +622,27 @@ struct UserCenterPage {
     })
   }
 
-  private loadUserData() {
+  private async loadUserData() {
     this.loading = true;
     
-    // 模拟加载用户数据
-    setTimeout(() => {
-      // 加载收藏的礼物
-      this.favoriteGifts = [];
-      
-      // 加载浏览历史
-      this.giftHistory = [];
-      
+    try {
+      // 模拟加载用户数据
+      setTimeout(() => {
+        // 加载收藏的礼物
+        this.favoriteGifts = [];
+        
+        // 加载浏览历史
+        this.giftHistory = [];
+        
+        this.loading = false;
+      }, 1000);
+    } catch (error) {
+      console.error('加载用户数据失败:', error);
       this.loading = false;
-    }, 1000);
+    }
   }
+
+
 
   private getCategoryText(category: GiftCategory): string {
     switch (category) {

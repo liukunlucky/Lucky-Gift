@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- 背景 -->
+  <rect width="200" height="200" fill="#FFF3E0"/>
+  
+  <!-- 房间背景 -->
+  <rect x="0" y="120" width="200" height="80" fill="#F5F5DC"/>
+  
+  <!-- 窗户 -->
+  <rect x="20" y="30" width="60" height="80" fill="#E3F2FD" stroke="#90A4AE" stroke-width="2"/>
+  <line x1="50" y1="30" x2="50" y2="110" stroke="#90A4AE" stroke-width="1"/>
+  <line x1="20" y1="70" x2="80" y2="70" stroke="#90A4AE" stroke-width="1"/>
+  
+  <!-- 阳光 -->
+  <g opacity="0.7">
+    <path d="M30,40 L170,120 L170,130 L30,50 Z" fill="#FFD54F" opacity="0.3"/>
+    <path d="M40,50 L160,110 L160,120 L40,60 Z" fill="#FFD54F" opacity="0.2"/>
+  </g>
+  
+  <!-- 妈妈人物 -->
+  <g transform="translate(120,80)">
+    <!-- 身体 -->
+    <ellipse cx="0" cy="30" rx="15" ry="25" fill="#E1BEE7"/>
+    
+    <!-- 头部 -->
+    <circle cx="0" cy="0" r="12" fill="#FFDBCB"/>
+    
+    <!-- 头发 -->
+    <path d="M-10,-8 Q0,-15 10,-8 Q12,-5 8,0 Q5,2 0,1 Q-5,2 -8,0 Q-12,-5 -10,-8 Z" fill="#8D6E63"/>
+    
+    <!-- 眼睛 -->
+    <circle cx="-3" cy="-2" r="1.5" fill="#4A4A4A"/>
+    <circle cx="3" cy="-2" r="1.5" fill="#4A4A4A"/>
+    
+    <!-- 嘴巴 -->
+    <path d="M-3,3 Q0,5 3,3" stroke="#FF6B6B" stroke-width="1" fill="none"/>
+    
+    <!-- 手臂 -->
+    <ellipse cx="-12" cy="20" rx="4" ry="12" fill="#FFDBCB" transform="rotate(-20)"/>
+    <ellipse cx="12" cy="20" rx="4" ry="12" fill="#FFDBCB" transform="rotate(20)"/>
+  </g>
+  
+  <!-- 孩子人物 -->
+  <g transform="translate(90,100)">
+    <!-- 身体 -->
+    <ellipse cx="0" cy="20" rx="10" ry="18" fill="#BBDEFB"/>
+    
+    <!-- 头部 -->
+    <circle cx="0" cy="0" r="8" fill="#FFDBCB"/>
+    
+    <!-- 头发 -->
+    <path d="M-6,-5 Q0,-10 6,-5 Q8,-3 5,0 Q3,1 0,0 Q-3,1 -5,0 Q-8,-3 -6,-5 Z" fill="#5D4037"/>
+    
+    <!-- 眼睛 -->
+    <circle cx="-2" cy="-1" r="1" fill="#4A4A4A"/>
+    <circle cx="2" cy="-1" r="1" fill="#4A4A4A"/>
+    
+    <!-- 嘴巴 -->
+    <path d="M-2,2 Q0,4 2,2" stroke="#FF6B6B" stroke-width="1" fill="none"/>
+    
+    <!-- 手臂 -->
+    <ellipse cx="-8" cy="15" rx="3" ry="8" fill="#FFDBCB" transform="rotate(-10)"/>
+    <ellipse cx="8" cy="15" rx="3" ry="8" fill="#FFDBCB" transform="rotate(10)"/>
+  </g>
+  
+  <!-- 康乃馨花束 -->
+  <g transform="translate(140,110)">
+    <!-- 花茎 -->
+    <rect x="-1" y="0" width="2" height="20" fill="#4CAF50"/>
+    
+    <!-- 花朵 -->
+    <circle cx="0" cy="-5" r="4" fill="#FF69B4"/>
+    <circle cx="-2" cy="-7" r="3" fill="#FFB6C1"/>
+    <circle cx="2" cy="-7" r="3" fill="#FFB6C1"/>
+    <circle cx="0" cy="-9" r="2" fill="#FF1493"/>
+  </g>
+  
+  <!-- 爱心装饰 -->
+  <g opacity="0.6">
+    <path d="M160,50 Q163,47 166,50 Q169,47 172,50 Q172,55 166,62 Q163,59 160,55 Q160,52 160,50 Z" fill="#FF69B4"/>
+    <path d="M70,160 Q73,157 76,160 Q79,157 82,160 Q82,165 76,172 Q73,169 70,165 Q70,162 70,160 Z" fill="#FF69B4"/>
+    <path d="M30,150 Q33,147 36,150 Q39,147 42,150 Q42,155 36,162 Q33,159 30,155 Q30,152 30,150 Z" fill="#FF69B4"/>
+  </g>
+  
+  <!-- 温暖氛围 -->
+  <circle cx="100" cy="100" r="90" fill="none" stroke="#FFD700" stroke-width="1" opacity="0.2"/>
+  <circle cx="100" cy="100" r="70" fill="none" stroke="#FFD700" stroke-width="1" opacity="0.3"/>
+  
+  <!-- 文字装饰 -->
+  <text x="100" y="190" text-anchor="middle" font-family="serif" font-size="12" fill="#8D6E63" opacity="0.7">❤ 温馨时刻 ❤</text>
+</svg>

@@ -2,6 +2,8 @@ import router from '@ohos.router';
 import { GiftStory, GiftEvent } from '../../model/NewDataModels';
 import { GiftStoryDAO } from '../../dao/GiftStoryDAO';
 import { NewDatabaseManager } from '../../database/NewDatabaseManager';
+import { MockStoryData } from '../../common/MockStoryData';
+import { PreferenceUtil, PreferenceKeys } from '../../utils/PreferenceUtil';
 
 @Component
 export struct GiftStoryPage {
@@ -13,19 +15,32 @@ export struct GiftStoryPage {
   @State showDetailDialog: boolean = false;
   @State refreshKey: number = 0;
   @StorageProp('refreshStoryPage') @Watch('onRefreshStory') refreshStory: number = -1;
+  @State showMockStory: boolean = true; // 控制是否显示mock故事
  
 
   private dbManager = new NewDatabaseManager();
   private giftStoryDAO: GiftStoryDAO | null = null;
 
   aboutToAppear() {
+    this.initPreferences();
     this.initDatabase();
+  }
+
+  private async initPreferences() {
+    try {
+      const preferenceUtil = PreferenceUtil.getInstance();
+      await preferenceUtil.init(getContext(this));
+      this.showMockStory = await preferenceUtil.getBool(PreferenceKeys.SHOW_MOCK_STORY, true);
+    } catch (error) {
+      console.error('初始化偏好设置失败:', error);
+    }
   }
 
   onRefreshStory() {
     if (this.refreshStory >= 0) {
       this.loadGiftStories();
-      AppStorage.setOrCreate('refreshStory', -1);
+      this.initPreferences();
+      AppStorage.setOrCreate('refreshStoryPage', -1);
     }
   }
 
@@ -201,24 +216,42 @@ export struct GiftStoryPage {
   @Builder
   buildEmptyState() {
     Column() {
-      Image($r('app.media.icon_empty'))
-        .width(173)
-        .height(128)
+      if (this.showMockStory && !this.searchKeyword.trim()) {
+        // 显示示例故事
+        Column() {
+          this.buildMockStoryCard(MockStoryData.getMockStory())
+          
+          Text('这是一个示例故事，帮助您了解功能')
+            .fontSize(14)
+            .fontColor('#999999')
+            .margin({ top: 16 })
+        }
+        .width('100%')
+        .padding({ left: 16, right: 16 })
+      } else {
+        // 显示空状态
+        Column() {
+          Image($r('app.media.icon_empty'))
+            .width(173)
+            .height(128)
 
-      Text('还没有礼物故事')
-        .fontSize(16)
-        .fontColor('#666666')
-        .margin({ top: 16 })
+          Text('还没有礼物故事')
+            .fontSize(16)
+            .fontColor('#666666')
+            .margin({ top: 16 })
 
-      Text('记录每一份礼物背后的温暖故事')
-        .fontSize(14)
-        .fontColor('#999999')
-        .margin({ top: 8 })
+          Text('记录每一份礼物背后的温暖故事')
+            .fontSize(14)
+            .fontColor('#999999')
+            .margin({ top: 8 })
+        }
+        .justifyContent(FlexAlign.Center)
+        .alignItems(HorizontalAlign.Center)
+        .layoutWeight(1)
+      }
     }
     .width('100%')
     .layoutWeight(1)
-    .justifyContent(FlexAlign.Center)
-    .alignItems(HorizontalAlign.Center)
   }
 
   @Builder
@@ -245,12 +278,26 @@ export struct GiftStoryPage {
       // 标题和操作按钮
       Row() {
         Column({ space: 4 }) {
-          Text(story.title)
-            .fontSize(16)
-            .fontWeight(FontWeight.Medium)
-            .fontColor('#333333')
-            .maxLines(1)
-            .textOverflow({ overflow: TextOverflow.Ellipsis })
+          Row({ space: 8 }) {
+            Text(story.title)
+              .fontSize(16)
+              .fontWeight(FontWeight.Medium)
+              .fontColor('#333333')
+              .maxLines(1)
+              .textOverflow({ overflow: TextOverflow.Ellipsis })
+              .layoutWeight(1)
+            
+            // 为mock故事添加示例标签
+            if (MockStoryData.isMockStory(story)) {
+              Text('示例')
+                .fontSize(10)
+                .fontColor('#FF6B35')
+                .backgroundColor('#FFF3E0')
+                .padding({ left: 6, right: 6, top: 2, bottom: 2 })
+                .borderRadius(8)
+            }
+          }
+          .width('100%')
 
           Text(`送给 ${story.contactName}`)
             .fontSize(12)
@@ -260,15 +307,18 @@ export struct GiftStoryPage {
         .alignItems(HorizontalAlign.Start)
 
         Row({ space: 8 }) {
-          Button('删除')
-            .fontSize(12)
-            .padding({ left: 12, right: 12, top: 6, bottom: 6 })
-            .backgroundColor('#FFE6E6')
-            .fontColor('#FF4444')
-            .borderRadius(12)
-            .onClick(() => {
-              this.onDeleteStory(story);
-            })
+          // 只有非mock故事才显示删除按钮
+          if (!MockStoryData.isMockStory(story)) {
+            Button('删除')
+              .fontSize(12)
+              .padding({ left: 12, right: 12, top: 6, bottom: 6 })
+              .backgroundColor('#FFE6E6')
+              .fontColor('#FF4444')
+              .borderRadius(12)
+              .onClick(() => {
+                this.onDeleteStory(story);
+              })
+          }
         }
       }
       .width('100%')
@@ -285,7 +335,7 @@ export struct GiftStoryPage {
       // 图片预览
       Row({ space: 8 }) {
         ForEach(story.images.slice(0, 3), (imagePath: string, index: number) => {
-          Image(imagePath)
+          Image(this.getImageResource(imagePath))
             .width(60)
             .height(60)
             .borderRadius(8)
@@ -332,11 +382,168 @@ export struct GiftStoryPage {
     .backgroundColor('#FFFFFF')
     .borderRadius(12)
     .onClick(() => {
-      this.onEditStory(story);
+      // mock故事不能进入编辑页面
+      if (MockStoryData.isMockStory(story)) {
+        // 显示提示信息
+        AlertDialog.show({
+          title: '示例故事',
+          message: MockStoryData.getMockStoryTip(),
+          primaryButton: {
+            value: '我知道了',
+            action: () => {
+              console.info('用户查看了mock故事提示');
+            }
+          }
+        });
+      } else {
+        this.onEditStory(story);
+      }
     })
   }
 
+  @Builder
+  buildMockStoryCard(story: GiftStory) {
+    Column(){
+      Column({ space: 12 }) {
+        // 标题和操作按钮
+        Row() {
+          Column({ space: 4 }) {
+            Row({ space: 8 }) {
+              Text(story.title)
+                .fontSize(16)
+                .fontWeight(FontWeight.Medium)
+                .fontColor('#333333')
+                .maxLines(1)
+                .textOverflow({ overflow: TextOverflow.Ellipsis })
+                .layoutWeight(1)
 
+              // 为mock故事添加示例标签
+              if (MockStoryData.isMockStory(story)) {
+                Text('示例')
+                  .fontSize(10)
+                  .fontColor('#FF6B35')
+                  .backgroundColor('#FFF3E0')
+                  .padding({ left: 6, right: 6, top: 2, bottom: 2 })
+                  .borderRadius(8)
+              }
+            }
+            .width('100%')
+
+            Text(`送给 ${story.contactName}`)
+              .fontSize(12)
+              .fontColor('#666666')
+          }
+          .layoutWeight(1)
+          .alignItems(HorizontalAlign.Start)
+
+          Row({ space: 8 }) {
+            // 只有非mock故事才显示删除按钮
+            if (!MockStoryData.isMockStory(story)) {
+              Button('删除')
+                .fontSize(12)
+                .padding({ left: 12, right: 12, top: 6, bottom: 6 })
+                .backgroundColor('#FFE6E6')
+                .fontColor('#FF4444')
+                .borderRadius(12)
+                .onClick(() => {
+                  this.onDeleteStory(story);
+                })
+            }
+          }
+        }
+        .width('100%')
+
+        Row(){
+          Text(story.content)
+            .fontSize(14)
+            .fontColor('#666666')
+            .maxLines(12)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
+            .lineHeight(20)
+        }.width('100%').justifyContent(FlexAlign.Start).visibility(story.content?Visibility.Visible:Visibility.None)
+
+        // 图片预览
+        Row({ space: 8 }) {
+          ForEach(story.images.slice(0, 3), (imagePath: string, index: number) => {
+            Image(this.getImageResource(imagePath))
+              .width(60)
+              .height(60)
+              .borderRadius(8)
+              .objectFit(ImageFit.Cover)
+              .backgroundColor('#F0F0F0')
+          }, (imagePath: string, index: number) => `${story.id}_${index}`)
+
+          if (story.images.length > 3) {
+            Column() {
+              Text(`+${story.images.length - 3}`)
+                .fontSize(12)
+                .fontColor('#666666')
+            }
+            .width(60)
+            .height(60)
+            .backgroundColor('#F0F0F0')
+            .borderRadius(8)
+            .justifyContent(FlexAlign.Center)
+          }
+        }
+        .width('100%').visibility(story.images && story.images.length > 0?Visibility.Visible:Visibility.None)
+
+        // 标签
+        Flex({ wrap: FlexWrap.Wrap }) {
+          ForEach(story.tags, (tag: string) => {
+            Text(tag)
+              .fontSize(12)
+              .fontColor('#007AFF')
+              .backgroundColor('#E6F3FF')
+              .padding({ left: '8vp', right: '8vp', top: '4vp', bottom: '4vp' })
+              .borderRadius(10)
+          }, (tag: string) => tag)
+        }
+        .width('100%').visibility(story.tags && story.tags.length > 0?Visibility.Visible:Visibility.None)
+        // 时间
+        Row() {
+          Text(this.formatDate(story?.createdAt??""))
+            .fontSize(12)
+            .fontColor('#999999')
+        }.width('100%').justifyContent(FlexAlign.Start).visibility(story.createdAt? Visibility.Visible:Visibility.None)
+      }
+      .width('100%')
+      .padding(16)
+      .backgroundColor('#FFFFFF')
+      .borderRadius(12)
+      .onClick(() => {
+        // mock故事不能进入编辑页面
+        if (MockStoryData.isMockStory(story)) {
+          // 显示提示信息
+          AlertDialog.show({
+            title: '示例故事',
+            message: MockStoryData.getMockStoryTip(),
+            primaryButton: {
+              value: '我知道了',
+              action: () => {
+                console.info('用户查看了mock故事提示');
+              }
+            }
+          });
+        } else {
+          this.onEditStory(story);
+        }
+      })
+    }.padding({top: 16})
+
+  }
+
+
+
+  private getImageResource(imagePath: string): Resource | string {
+    // 如果是mock图片，转换为资源引用
+    if (imagePath.startsWith('mock_')) {
+      const resourceName = imagePath.replace('.svg', '');
+      return $r(`app.media.${resourceName}`);
+    }
+    // 其他情况返回原路径
+    return imagePath;
+  }
 
   private formatDate(dateString: string): string {
     const date = new Date(dateString);

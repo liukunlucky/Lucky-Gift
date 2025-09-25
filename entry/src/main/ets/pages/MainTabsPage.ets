@@ -69,6 +69,9 @@ struct MainTabsPage {
       if (index === 2) {
         this.recordPageRefreshKey++;
       }
+      if (index == 3) {
+        AppStorage.setOrCreate('refreshStoryPage', Date.now());
+      }
       if (index == 4) {
         AppStorage.setOrCreate('refreshProfilePage', Date.now());
       }

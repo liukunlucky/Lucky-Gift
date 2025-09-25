@@ -284,12 +284,18 @@ struct CreateGiftStoryPage {
   @Builder
   buildNavigationBar() {
     Row() {
-      Button('取消')
-        .backgroundColor(Color.Transparent)
-        .fontColor('#007AFF')
-        .onClick(() => {
-          this.onBack();
-        })
+      Button() {
+        Image($r('app.media.icon_back'))
+          .width(24)
+          .height(24)
+          .fillColor('#333333')
+      }
+      .width(40)
+      .height(40)
+      .backgroundColor(Color.Transparent)
+      .onClick(() => {
+        this.onBack()
+      })
 
       Text(this.isEditMode ? '编辑故事' : '创建故事')
         .fontSize(18)
@@ -298,8 +304,8 @@ struct CreateGiftStoryPage {
         .textAlign(TextAlign.Center)
 
       Button('保存')
-        .backgroundColor(Color.Transparent)
-        .fontColor(this.validateForm() ? '#007AFF' : '#CCCCCC')
+        .backgroundColor(Color.Transparent).width(40)
+        .fontColor(this.validateForm() ? '#FF4444' : '#66000000')
         .enabled(this.validateForm())
         .onClick(() => {
           this.onSave();
@@ -568,7 +574,7 @@ struct CreateGiftStoryPage {
 
         Button('添加')
           .padding({ left: 16, right: 16 })
-          .backgroundColor('#007AFF')
+          .backgroundColor('#FF4444')
           .fontColor('#FFFFFF')
           .borderRadius(8)
           .onClick(() => {
@@ -582,7 +588,7 @@ struct CreateGiftStoryPage {
             Row({ space: 4 }) {
               Text(tag)
                 .fontSize(12)
-                .fontColor('#007AFF')
+                .fontColor('#FF4444')
 
               Button('×')
                 .width(16)
@@ -612,7 +618,7 @@ struct CreateGiftStoryPage {
       Button(this.isLoading ? '保存中...' : '保存故事')
         .width('100%')
         .height(48)
-        .backgroundColor(this.validateForm() ? '#007AFF' : '#CCCCCC')
+        .backgroundColor(this.validateForm() ? '#FF4444' : '#CCCCCC')
         .fontColor('#FFFFFF')
         .borderRadius(24)
         .enabled(!this.isLoading && this.validateForm())
@@ -642,7 +648,7 @@ struct CreateGiftStoryPage {
     Button(this.isLoading ? '保存中...' : '保存故事')
       .width('100%')
       .height(48)
-      .backgroundColor(this.validateForm() ? '#007AFF' : '#CCCCCC')
+      .backgroundColor(this.validateForm() ? '#FF4444' : '#CCCCCC')
       .fontColor('#FFFFFF')
       .borderRadius(24)
       .enabled(!this.isLoading && this.validateForm())
@@ -676,7 +682,7 @@ struct CreateGiftStoryPage {
 
           Button('取消')
             .backgroundColor(Color.Transparent)
-            .fontColor('#007AFF')
+            .fontColor('#FF4444')
             .onClick(() => {
               this.showGiftEventSelector = false;
             })
@@ -716,7 +722,7 @@ struct CreateGiftStoryPage {
                   if (this.selectedGiftEvent && this.selectedGiftEvent.id === giftEvent.id) {
                     Text('✓')
                       .fontSize(20)
-                      .fontColor('#007AFF')
+                      .fontColor('#FF4444')
                   }
                 }
                 .width('100%')

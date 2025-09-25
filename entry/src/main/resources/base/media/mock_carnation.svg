@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- 背景 -->
+  <rect width="200" height="200" fill="#FFF5F5"/>
+  
+  <!-- 花茎 -->
+  <rect x="95" y="120" width="10" height="60" fill="#4CAF50" rx="5"/>
+  
+  <!-- 叶子 -->
+  <ellipse cx="85" cy="140" rx="15" ry="8" fill="#66BB6A" transform="rotate(-30 85 140)"/>
+  <ellipse cx="115" cy="150" rx="12" ry="6" fill="#66BB6A" transform="rotate(25 115 150)"/>
+  
+  <!-- 康乃馨花朵 -->
+  <g transform="translate(100,100)">
+    <!-- 花瓣层1 -->
+    <path d="M-25,-15 Q-30,-25 -20,-30 Q-10,-35 0,-30 Q10,-35 20,-30 Q30,-25 25,-15 Q20,-5 10,-10 Q0,-5 -10,-10 Q-20,-5 -25,-15 Z" fill="#FFB6C1"/>
+    
+    <!-- 花瓣层2 -->
+    <path d="M-20,-10 Q-25,-20 -15,-25 Q-5,-30 5,-25 Q15,-30 25,-25 Q30,-20 20,-10 Q15,0 5,-5 Q0,0 -5,-5 Q-15,0 -20,-10 Z" fill="#FF69B4"/>
+    
+    <!-- 花瓣层3 -->
+    <path d="M-15,-5 Q-20,-15 -10,-20 Q0,-25 10,-20 Q20,-15 15,-5 Q10,5 0,0 Q-10,5 -15,-5 Z" fill="#FF1493"/>
+    
+    <!-- 花心 -->
+    <circle cx="0" cy="-5" r="3" fill="#FFD700"/>
+    
+    <!-- 花瓣纹理 -->
+    <path d="M-15,-10 Q-5,-15 5,-10" stroke="#FF1493" stroke-width="1" fill="none" opacity="0.6"/>
+    <path d="M-10,-5 Q0,-10 10,-5" stroke="#FF1493" stroke-width="1" fill="none" opacity="0.6"/>
+    <path d="M-5,0 Q5,-5 15,0" stroke="#FF1493" stroke-width="1" fill="none" opacity="0.6"/>
+  </g>
+  
+  <!-- 装饰性光晕 -->
+  <circle cx="100" cy="100" r="45" fill="none" stroke="#FFB6C1" stroke-width="2" opacity="0.3"/>
+  <circle cx="100" cy="100" r="55" fill="none" stroke="#FFB6C1" stroke-width="1" opacity="0.2"/>
+  
+  <!-- 爱心装饰 -->
+  <path d="M160,40 Q165,35 170,40 Q175,35 180,40 Q180,50 170,60 Q165,55 160,50 Q160,45 160,40 Z" fill="#FF69B4" opacity="0.7"/>
+  <path d="M30,160 Q35,155 40,160 Q45,155 50,160 Q50,170 40,180 Q35,175 30,170 Q30,165 30,160 Z" fill="#FF69B4" opacity="0.7"/>
+</svg>

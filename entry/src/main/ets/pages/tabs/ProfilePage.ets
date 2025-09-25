@@ -5,6 +5,7 @@ import { InspirationDAO } from '../../database/InspirationDAO';
 import { GiftEventDAO } from '../../database/GiftEventDAO';
 import { ReminderDAO } from '../../database/ReminderDAO';
 import { NewDatabaseManager } from '../../database/NewDatabaseManager';
+import { PreferenceUtil, PreferenceKeys } from '../../utils/PreferenceUtil';
 import fs from '@ohos.file.fs';
 import picker from '@ohos.file.picker';
 import { BusinessError } from '@ohos.base';
@@ -73,6 +74,7 @@ export struct ProfilePage {
   @State showFeedbackSheet: boolean = false;
   @State feedbackText: string = '';
   @State versionName: string = '';
+  @State showMockStory: boolean = false;
 
   private dbManager: NewDatabaseManager | null = null;
   private contactDAO: ContactDAO | null = null;
@@ -147,6 +149,13 @@ export struct ProfilePage {
   // 其他菜单
   private otherMenuItems: OtherMenuItem[] = [
     {
+      id: 'mock_story',
+      title: '显示示例故事',
+      description: '在故事列表中显示示例内容',
+      icon: $r('app.media.icon_story'),
+      color: '#9C27B0'
+    },
+    {
       id: 'check_update',
       title: '检查更新',
       description: '查看是否有新版本',
@@ -187,6 +196,11 @@ export struct ProfilePage {
     this.inspirationDAO = new InspirationDAO(this.dbManager);
     this.giftEventDAO = new GiftEventDAO(this.dbManager);
     this.reminderDAO = new ReminderDAO(this.dbManager);
+    
+    // 初始化偏好设置
+    const preferenceUtil = PreferenceUtil.getInstance();
+    await preferenceUtil.init(context);
+    this.showMockStory = await preferenceUtil.getBool(PreferenceKeys.SHOW_MOCK_STORY, false);
     
     this.loadData();
     bundleManager.getBundleInfoForSelf(bundleManager.BundleFlag.GET_BUNDLE_INFO_WITH_APPLICATION).then((bundleInfo) => {
@@ -340,6 +354,9 @@ export struct ProfilePage {
   // 处理其他菜单点击
   handleOtherMenuClick(itemId: string) {
     switch (itemId) {
+      case 'mock_story':
+        this.toggleMockStory();
+        break;
       case 'check_update':
         this.checkForUpdates();
         break;
@@ -391,6 +408,20 @@ export struct ProfilePage {
     // 这里可以实现关于应用的对话框
     this.showAboutSheet = true;
     console.info('关于应用功能');
+  }
+
+  // 切换显示示例故事
+  private toggleMockStory() {
+    this.showMockStory = !this.showMockStory;
+    const preferenceUtil = PreferenceUtil.getInstance();
+    preferenceUtil.setBool(PreferenceKeys.SHOW_MOCK_STORY, this.showMockStory);
+    
+    // 显示提示信息
+    const message = this.showMockStory ? '已开启示例故事显示' : '已关闭示例故事显示';
+    promptAction.showToast({
+      message: message,
+      duration: 2000
+    });
   }
 
   // 导出数据
@@ -848,10 +879,27 @@ export struct ProfilePage {
                       .layoutWeight(1)
 
                       Row() {
-                        Image($r('app.media.ic_arrow_right'))
-                          .width(20)
-                          .height(20)
-                          .fillColor($r('app.color.tertiary_text_color'))
+                        if (item.id === 'mock_story') {
+                          Toggle({ type: ToggleType.Switch, isOn: this.showMockStory })
+                            .selectedColor($r('app.color.brand_color'))
+                            .switchPointColor(Color.White)
+                            .onChange((isOn: boolean) => {
+                              this.showMockStory = isOn;
+                              const preferenceUtil = PreferenceUtil.getInstance();
+                              preferenceUtil.setBool(PreferenceKeys.SHOW_MOCK_STORY, isOn);
+                              
+                              const message = isOn ? '已开启示例故事显示' : '已关闭示例故事显示';
+                              promptAction.showToast({
+                                message: message,
+                                duration: 2000
+                              });
+                            })
+                        } else {
+                          Image($r('app.media.ic_arrow_right'))
+                            .width(20)
+                            .height(20)
+                            .fillColor($r('app.color.tertiary_text_color'))
+                        }
                       }
                     }
                     .width('100%')
@@ -930,10 +978,27 @@ export struct ProfilePage {
                       .layoutWeight(1)
 
                       Row() {
-                        Image($r('app.media.ic_arrow_right'))
-                          .width(20)
-                          .height(20)
-                          .fillColor($r('app.color.tertiary_text_color'))
+                        if (item.id === 'mock_story') {
+                          Toggle({ type: ToggleType.Switch, isOn: this.showMockStory })
+                            .onChange(async (isOn: boolean) => {
+                              this.showMockStory = isOn;
+                              try {
+                                const preferenceUtil = PreferenceUtil.getInstance();
+                                await preferenceUtil.setBool(PreferenceKeys.SHOW_MOCK_STORY, isOn);
+                                promptAction.showToast({
+                                  message: isOn ? '已开启示例故事显示' : '已关闭示例故事显示',
+                                  duration: 2000
+                                });
+                              } catch (error) {
+                                console.error('保存设置失败:', error);
+                              }
+                            })
+                        } else {
+                          Image($r('app.media.ic_arrow_right'))
+                            .width(20)
+                            .height(20)
+                            .fillColor($r('app.color.tertiary_text_color'))
+                        }
                       }
                     }
                     .width('100%')
@@ -944,7 +1009,9 @@ export struct ProfilePage {
                       bottom: 16
                     })
                     .onClick(() => {
-                      this.handleOtherMenuClick(item.id);
+                      if (item.id !== 'mock_story') {
+                        this.handleOtherMenuClick(item.id);
+                      }
                     })
 
                     // 分隔线（最后一项不显示）

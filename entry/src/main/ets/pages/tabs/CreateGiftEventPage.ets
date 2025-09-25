@@ -595,7 +595,7 @@ struct CreateGiftEventPage {
             .height(24)
             .fillColor('#333333')
         }
-        .width(40)
+        .width(60)
         .height(40)
         .backgroundColor(Color.Transparent)
         .onClick(() => {
