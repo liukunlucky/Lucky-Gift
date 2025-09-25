@@ -1,7 +1,7 @@
 import { HomePage } from './tabs/HomePage';
 import { BrowsePage } from './tabs/BrowsePage';
 import { RecordPage } from './tabs/RecordPage';
-import { ToolsPage } from './tabs/ToolsPage';
+import { GiftStoryPage } from './tabs/GiftStoryPage';
 import { ProfilePage } from './tabs/ProfilePage';
 import router from '@ohos.router';
 import app from '@system.app';
@@ -51,11 +51,11 @@ struct MainTabsPage {
       }
       .tabBar(this.buildTabBarItem(2, '记录', $r('app.media.icon_record')))
 
-      // 工具Tab
+      // 故事Tab
       TabContent() {
-        ToolsPage()
+        GiftStoryPage()
       }
-      .tabBar(this.buildTabBarItem(3, '工具', $r('app.media.icon_tools')))
+      .tabBar(this.buildTabBarItem(3, '故事', $r('app.media.icon_story')))
 
       // 我的Tab
       TabContent() {

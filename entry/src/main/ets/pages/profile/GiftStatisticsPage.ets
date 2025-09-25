@@ -75,6 +75,7 @@ struct GiftStatisticsPage {
   @State giveSpent: number = 0;
   @State receiveSpent: number = 0;
   @State availableYears: number[] = [];
+  @State isUsingDemoData: boolean = false; // 标识是否使用示例数据
   
   private dbManager = new NewDatabaseManager();
   private contactDAO = new ContactDAO(this.dbManager);
@@ -111,6 +112,12 @@ struct GiftStatisticsPage {
       
       // 初始化可用年份
       this.initAvailableYears();
+      
+      // 检查是否需要使用示例数据
+      if (this.giftEvents.length === 0) {
+        this.generateDemoData();
+        this.isUsingDemoData = true;
+      }
       
       // 计算统计数据
       this.calculateStatistics();
@@ -274,7 +281,7 @@ struct GiftStatisticsPage {
           this.goBack()
         })
         
-        Text('送礼统计')
+        Text('礼物统计')
           .fontSize(18)
           .fontWeight(FontWeight.Medium)
           .fontColor('#333333')
@@ -291,8 +298,40 @@ struct GiftStatisticsPage {
       .padding({ left: 16, right: 16 })
       .backgroundColor(Color.White)
       
-      if (this.isLoading) {
-        // 加载状态
+      // 示例数据提示条
+      if (this.isUsingDemoData) {
+        Row() {
+          Image($r('app.media.ic_info'))
+            .width(16)
+            .height(16)
+            .fillColor('#FF6B35')
+            .margin({ right: 8 })
+          
+          Text('当前显示的是演示数据，开始记录您的送礼故事吧！')
+            .fontSize(12)
+            .fontColor('#FF6B35')
+            .layoutWeight(1)
+          
+          Text('了解')
+            .fontSize(12)
+            .fontColor('#FF6B35')
+            .fontWeight(FontWeight.Medium)
+            .padding({ left: 8, right: 8, top: 4, bottom: 4 })
+            .backgroundColor('#FFF8F5')
+            .borderRadius(4)
+            .onClick(() => {
+              // 可以跳转到帮助页面或关闭提示
+              this.isUsingDemoData = false;
+            })
+        }
+        .width('100%')
+        .padding({ left: 16, right: 16, top: 8, bottom: 8 })
+        .backgroundColor('#FFF8F5')
+        .border({ width: { bottom: 1 }, color: '#FFE4D6' })
+      }
+       
+       // 加载状态
+       if (this.isLoading) {
         Column() {
           LoadingProgress()
             .width(50)
@@ -820,5 +859,82 @@ struct GiftStatisticsPage {
     this.availableYears = years;
   }
   
+  // 生成丰富的示例数据
+  generateDemoData() {
+    // 创建示例联系人
+    const demoContacts: Contact[] = [
+      { id: '1', name: '张小明', relationship: '朋友', avatar: '👨', birthday: '1990-05-15', importantDates: [], preferences: [], notes: '大学同学，喜欢运动', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: '2', name: '李美丽', relationship: '同事', avatar: '👩', birthday: '1988-08-20', importantDates: [], preferences: [], notes: '部门同事，爱好摄影', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: '3', name: '王大力', relationship: '家人', avatar: '👨‍💼', birthday: '1985-12-10', importantDates: [], preferences: [], notes: '表哥，在外地工作', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: '4', name: '陈小花', relationship: '朋友', avatar: '👧', birthday: '1992-03-25', importantDates: [], preferences: [], notes: '闺蜜，喜欢化妆品', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: '5', name: '刘老师', relationship: '老师', avatar: '👨‍🏫', birthday: '1975-07-08', importantDates: [], preferences: [], notes: '高中班主任', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: '6', name: '赵小雨', relationship: '家人', avatar: '👶', birthday: '2010-11-30', importantDates: [], preferences: [], notes: '小侄女，喜欢玩具', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
+    ];
+    
+    // 创建示例礼物事件
+    const currentYear = new Date().getFullYear();
+    const demoGiftEvents: GiftEvent[] = [
+      // 1月份
+      { id: '1', contactId: '1', contactName: '张小明', recordType: 'give', giftIdea: '运动手表', actualGift: '运动手表', occasion: '生日', date: `${currentYear}-01-15`, budget: 800, actualCost: 750, images: [], story: '生日礼物，很实用', tags: [], reminderSet: false },
+      { id: '2', contactId: '2', contactName: '李美丽', recordType: 'give', giftIdea: '相机镜头', actualGift: '相机镜头', occasion: '升职', date: `${currentYear}-01-28`, budget: 1200, actualCost: 1150, images: [], story: '升职庆祝', tags: [], reminderSet: false },
+      
+      // 2月份 - 春节
+      { id: '3', contactId: '3', contactName: '王大力', recordType: 'give', giftIdea: '茶叶礼盒', actualGift: '茶叶礼盒', occasion: '春节', date: `${currentYear}-02-10`, budget: 300, actualCost: 280, images: [], story: '春节拜年', tags: [], reminderSet: false },
+      { id: '4', contactId: '6', contactName: '赵小雨', recordType: 'give', giftIdea: '玩具机器人', actualGift: '玩具机器人', occasion: '春节', date: `${currentYear}-02-12`, budget: 200, actualCost: 180, images: [], story: '给小侄女的压岁钱', tags: [], reminderSet: false },
+      { id: '5', contactId: '5', contactName: '刘老师', recordType: 'give', giftIdea: '保健品', actualGift: '保健品', occasion: '春节', date: `${currentYear}-02-14`, budget: 500, actualCost: 480, images: [], story: '给老师拜年', tags: [], reminderSet: false },
+      
+      // 3月份
+      { id: '6', contactId: '4', contactName: '陈小花', recordType: 'give', giftIdea: '口红套装', actualGift: '口红套装', occasion: '妇女节', date: `${currentYear}-03-08`, budget: 400, actualCost: 380, images: [], story: '妇女节礼物', tags: [], reminderSet: false },
+      { id: '7', contactId: '2', contactName: '李美丽', recordType: 'give', giftIdea: '鲜花', actualGift: '鲜花', occasion: '妇女节', date: `${currentYear}-03-08`, budget: 100, actualCost: 88, images: [], story: '同事间的小心意', tags: [], reminderSet: false },
+      
+      // 4月份
+      { id: '8', contactId: '1', contactName: '张小明', recordType: 'give', giftIdea: '篮球鞋', actualGift: '篮球鞋', occasion: '友谊', date: `${currentYear}-04-20`, budget: 600, actualCost: 550, images: [], story: '一起打球用', tags: [], reminderSet: false },
+      
+      // 5月份
+      { id: '9', contactId: '3', contactName: '王大力', recordType: 'give', giftIdea: '按摩椅垫', actualGift: '按摩椅垫', occasion: '母亲节', date: `${currentYear}-05-12`, budget: 800, actualCost: 750, images: [], story: '母亲节给婶婶', tags: [], reminderSet: false },
+      { id: '10', contactId: '5', contactName: '刘老师', recordType: 'give', giftIdea: '书籍', actualGift: '书籍', occasion: '感谢', date: `${currentYear}-05-20`, budget: 150, actualCost: 120, images: [], story: '感谢老师的帮助', tags: [], reminderSet: false },
+      
+      // 6月份
+      { id: '11', contactId: '6', contactName: '赵小雨', recordType: 'give', giftIdea: '儿童手表', actualGift: '儿童手表', occasion: '儿童节', date: `${currentYear}-06-01`, budget: 300, actualCost: 280, images: [], story: '儿童节礼物', tags: [], reminderSet: false },
+      { id: '12', contactId: '4', contactName: '陈小花', recordType: 'give', giftIdea: '包包', actualGift: '包包', occasion: '友谊', date: `${currentYear}-06-15`, budget: 800, actualCost: 720, images: [], story: '闺蜜生日', tags: [], reminderSet: false },
+      
+      // 7月份
+      { id: '13', contactId: '2', contactName: '李美丽', recordType: 'give', giftIdea: '旅行箱', actualGift: '旅行箱', occasion: '出差', date: `${currentYear}-07-10`, budget: 500, actualCost: 450, images: [], story: '出差用品', tags: [], reminderSet: false },
+      
+      // 8月份
+      { id: '14', contactId: '1', contactName: '张小明', recordType: 'give', giftIdea: '健身器材', actualGift: '健身器材', occasion: '生日', date: `${currentYear}-08-05`, budget: 1000, actualCost: 950, images: [], story: '健身爱好者', tags: [], reminderSet: false },
+      
+      // 9月份
+      { id: '15', contactId: '5', contactName: '刘老师', recordType: 'give', giftIdea: '钢笔', actualGift: '钢笔', occasion: '教师节', date: `${currentYear}-09-10`, budget: 200, actualCost: 180, images: [], story: '教师节感谢', tags: [], reminderSet: false },
+      
+      // 10月份
+      { id: '16', contactId: '3', contactName: '王大力', recordType: 'give', giftIdea: '保温杯', actualGift: '保温杯', occasion: '关怀', date: `${currentYear}-10-15`, budget: 150, actualCost: 130, images: [], story: '天气转凉的关怀', tags: [], reminderSet: false },
+      
+      // 11月份
+      { id: '17', contactId: '4', contactName: '陈小花', recordType: 'give', giftIdea: '护肤品套装', actualGift: '护肤品套装', occasion: '双十一', date: `${currentYear}-11-11`, budget: 600, actualCost: 480, images: [], story: '双十一优惠', tags: [], reminderSet: false },
+      
+      // 12月份
+      { id: '18', contactId: '2', contactName: '李美丽', recordType: 'give', giftIdea: '围巾', actualGift: '围巾', occasion: '圣诞节', date: `${currentYear}-12-25`, budget: 200, actualCost: 180, images: [], story: '圣诞节礼物', tags: [], reminderSet: false },
+      { id: '19', contactId: '6', contactName: '赵小雨', recordType: 'give', giftIdea: '故事书', actualGift: '故事书', occasion: '圣诞节', date: `${currentYear}-12-25`, budget: 80, actualCost: 70, images: [], story: '圣诞节给小朋友', tags: [], reminderSet: false },
+      
+      // 收到的礼物
+      { id: '20', contactId: '1', contactName: '张小明', recordType: 'receive', giftIdea: '咖啡豆', actualGift: '咖啡豆', occasion: '感谢', date: `${currentYear}-03-15`, budget: 0, actualCost: 0, images: [], story: '朋友送的咖啡豆', tags: [], reminderSet: false },
+      { id: '21', contactId: '4', contactName: '陈小花', recordType: 'receive', giftIdea: '手工饼干', actualGift: '手工饼干', occasion: '友谊', date: `${currentYear}-06-20`, budget: 0, actualCost: 0, images: [], story: '闺蜜亲手做的', tags: [], reminderSet: false },
+      { id: '22', contactId: '3', contactName: '王大力', recordType: 'receive', giftIdea: '特产', actualGift: '特产', occasion: '出差', date: `${currentYear}-09-05`, budget: 0, actualCost: 0, images: [], story: '表哥出差带回来的', tags: [], reminderSet: false }
+    ];
+    
+    // 设置示例数据
+    this.contacts = demoContacts;
+    this.giftEvents = demoGiftEvents;
+    
+    // 更新统计数据
+    const giveEvents = demoGiftEvents.filter(event => event.recordType === 'give');
+    const receiveEvents = demoGiftEvents.filter(event => event.recordType === 'receive');
+    
+    this.giveEvents = giveEvents.length;
+    this.receiveEvents = receiveEvents.length;
+    this.giveSpent = giveEvents.reduce((sum, event) => sum + (event.actualCost || 0), 0);
+    this.receiveSpent = 0; // 收到的礼物不计算花费
+  }
 
 }

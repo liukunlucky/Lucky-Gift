@@ -26,6 +26,8 @@
     "pages/profile/GiftReminderPage",
     "pages/profile/GiftStatisticsPage",
     "pages/profile/ContactFormPage",
-    "pages/AddInspirationPage"
+    "pages/AddInspirationPage",
+    "pages/AchievementPage",
+    "pages/CreateGiftStoryPage"
   ]
 }

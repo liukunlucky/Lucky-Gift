@@ -3,6 +3,7 @@ import { GiftEventDAO } from '../../database/GiftEventDAO';
 import { ContactDAO } from '../../database/ContactDAO';
 import { InspirationDAO } from '../../database/InspirationDAO';
 import { ReminderDAO } from '../../database/ReminderDAO';
+import { AchievementDAO } from '../../dao/AchievementDAO';
 import { NewDatabaseManager } from '../../database/NewDatabaseManager';
 import router from '@ohos.router';
 import picker from '@ohos.file.picker';
@@ -67,6 +68,7 @@ struct CreateGiftEventPage {
   private contactDAO: ContactDAO = new ContactDAO(this.dbManager);
   private inspirationDAO: InspirationDAO = new InspirationDAO(this.dbManager);
   private reminderDAO: ReminderDAO = new ReminderDAO(this.dbManager);
+  private achievementDAO: AchievementDAO | null = null;
 
   private getIconByMood(mood: string): Resource {
     if (mood==='开心') {
@@ -108,6 +110,13 @@ struct CreateGiftEventPage {
     try {
       await this.dbManager.initDatabase(getContext(this));
       console.log('数据库初始化成功');
+      
+      // 初始化AchievementDAO
+      const rdbStore = this.dbManager.getRdbStore();
+      if (rdbStore) {
+        this.achievementDAO = new AchievementDAO('default_user'); // 使用默认用户ID
+        await this.achievementDAO.initDatabase(getContext(this));
+      }
     } catch (error) {
       console.error('数据库初始化失败:', error);
     }
@@ -337,6 +346,16 @@ struct CreateGiftEventPage {
         }
       }
       
+      // 检查并更新用户成就
+      if (this.achievementDAO) {
+        try {
+          await this.achievementDAO.checkAndUpdateUserAchievements('default_user');
+          console.log('用户成就检查完成');
+        } catch (error) {
+          console.error('用户成就检查失败:', error);
+        }
+      }
+      
       console.log('保存成功，返回记录页面');
       // 返回主页面并切换到记录tab，触发数据刷新
       router.replaceUrl({
@@ -549,12 +568,7 @@ struct CreateGiftEventPage {
       
       console.log('删除成功，返回记录页面');
       // 返回主页面并切换到记录tab，触发数据刷新
-      router.replaceUrl({
-        url: 'pages/MainTabsPage',
-        params: {
-          targetTab: 1 // 切换到记录tab
-        }
-      });
+      router.back()
     } catch (error) {
       console.error('删除事件失败:', error);
       AlertDialog.show({

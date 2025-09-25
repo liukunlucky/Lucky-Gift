@@ -1,5 +1,7 @@
 import relationalStore from '@ohos.data.relationalStore';
-import { Contact, GiftEvent, Inspiration, FavoriteInspiration, ImportantDate, ContactPreference, UserGiftCard, Reminder, AppSettings } from '../model/NewDataModels';
+import { Contact, GiftEvent, Inspiration, FavoriteInspiration, ImportantDate, ContactPreference, UserGiftCard, Reminder, AppSettings,
+  Achievement,
+  AchievementType} from '../model/NewDataModels';
 
 // 节日数据接口
 interface HolidayData {
@@ -196,6 +198,59 @@ export class NewDatabaseManager {
         created_at TEXT NOT NULL
       )`,
 
+      // 礼物故事表
+      `CREATE TABLE IF NOT EXISTS gift_stories (
+        id TEXT PRIMARY KEY,
+        gift_event_id TEXT NOT NULL,
+        gift_event_title TEXT NOT NULL,
+        contact_name TEXT NOT NULL,
+        title TEXT NOT NULL,
+        content TEXT NOT NULL,
+        images TEXT, -- JSON数组，最多3张照片路径
+        emotion TEXT,
+        reason TEXT,
+        scene TEXT,
+        tags TEXT, -- JSON数组
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY (gift_event_id) REFERENCES gift_events (id) ON DELETE CASCADE
+      )`,
+
+      // 成就模板表（固定的成就定义）
+      `CREATE TABLE IF NOT EXISTS achievements (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        description TEXT NOT NULL,
+        icon TEXT NOT NULL,
+        type TEXT NOT NULL,
+        condition_type TEXT NOT NULL,
+        target_value INTEGER NOT NULL,
+        time_window INTEGER,
+        specific_value TEXT
+      )`,
+
+      // 用户成就进度表（每个用户的个人成就进度）
+      `CREATE TABLE IF NOT EXISTS user_achievement_progress (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL DEFAULT 'default',
+        achievement_id TEXT NOT NULL,
+        current_progress INTEGER NOT NULL DEFAULT 0,
+        is_unlocked INTEGER NOT NULL DEFAULT 0,
+        unlocked_at TEXT,
+        last_updated TEXT NOT NULL,
+        FOREIGN KEY (achievement_id) REFERENCES achievements (id) ON DELETE CASCADE
+      )`,
+
+      // 成就里程碑表
+      `CREATE TABLE IF NOT EXISTS achievement_milestones (
+        id TEXT PRIMARY KEY,
+        achievement_id TEXT NOT NULL,
+        date TEXT NOT NULL,
+        description TEXT NOT NULL,
+        related_event_id TEXT,
+        FOREIGN KEY (achievement_id) REFERENCES achievements (id) ON DELETE CASCADE
+      )`,
+
       // 应用设置表
       `CREATE TABLE IF NOT EXISTS app_settings (
         id TEXT PRIMARY KEY DEFAULT 'default',
@@ -266,6 +321,13 @@ export class NewDatabaseManager {
         await this.initDefaultGiftCardTemplates();
       }
       templatesCount.close();
+
+      // 初始化成就系统
+      const achievementsCount = await this.rdbStore.querySql('SELECT COUNT(*) as count FROM achievements');
+      if (achievementsCount.goToFirstRow() && achievementsCount.getLong(0) === 0) {
+        await this.initDefaultAchievements();
+      }
+      achievementsCount.close();
     } catch (error) {
       console.error('初始化默认数据失败:', error);
       throw new Error(`初始化默认数据失败: ${error}`);
@@ -368,7 +430,135 @@ export class NewDatabaseManager {
     }
   }
 
-  // 获取数据库实例
+  private async initDefaultAchievements(): Promise<void> {
+    if (!this.rdbStore) return;
+
+    // 成就模板数据（固定的7个成就定义）
+    interface AchievementTemplateData {
+      id: string;
+      name: string;
+      description: string;
+      icon: string;
+      type: AchievementType;
+      conditionType: AchievementType;
+      targetValue: number;
+      timeWindow: number | null;
+      specificValue: string | null;
+    }
+    
+    const achievementTemplates: AchievementTemplateData[] = [];
+    
+    // 创建成就模板对象
+    const firstGift: AchievementTemplateData = {
+      id: 'first_gift',
+      name: '初次尝试',
+      description: '创建第一个礼物记录',
+      icon: '🌟',
+      type: AchievementType.GIFT_COUNT,
+      conditionType: AchievementType.GIFT_COUNT,
+      targetValue: 1,
+      timeWindow: null,
+      specificValue: null
+    };
+    achievementTemplates.push(firstGift);
+
+    const heartFull: AchievementTemplateData = {
+      id: 'heart_full',
+      name: '心意满满',
+      description: '累计记录10次送礼',
+      icon: '💝',
+      type: AchievementType.GIFT_COUNT,
+      conditionType: AchievementType.GIFT_COUNT,
+      targetValue: 10,
+      timeWindow: null,
+      specificValue: null
+    };
+    achievementTemplates.push(heartFull);
+
+    const mindReader: AchievementTemplateData = {
+      id: 'mind_reader',
+      name: '读心大师',
+      description: '收到5次"非常开心"的评价',
+      icon: '🎯',
+      type: AchievementType.FEEDBACK_QUALITY,
+      conditionType: AchievementType.FEEDBACK_QUALITY,
+      targetValue: 5,
+      timeWindow: null,
+      specificValue: '非常开心'
+    };
+    achievementTemplates.push(mindReader);
+
+    const budgetMaster: AchievementTemplateData = {
+      id: 'budget_master',
+      name: '预算达人',
+      description: '连续3次送礼都在预算内',
+      icon: '💰',
+      type: AchievementType.BUDGET_CONTROL,
+      conditionType: AchievementType.BUDGET_CONTROL,
+      targetValue: 3,
+      timeWindow: null,
+      specificValue: null
+    };
+    achievementTemplates.push(budgetMaster);
+
+    const holidayPioneer: AchievementTemplateData = {
+      id: 'holiday_pioneer',
+      name: '节日先锋',
+      description: '提前一周设置好重要节日提醒',
+      icon: '🎉',
+      type: AchievementType.PLANNING_AHEAD,
+      conditionType: AchievementType.PLANNING_AHEAD,
+      targetValue: 1,
+      timeWindow: 7,
+      specificValue: null
+    };
+    achievementTemplates.push(holidayPioneer);
+
+    const giftMaster: AchievementTemplateData = {
+      id: 'gift_master',
+      name: '送礼达人',
+      description: '累计记录25次送礼',
+      icon: '🏆',
+      type: AchievementType.GIFT_COUNT,
+      conditionType: AchievementType.GIFT_COUNT,
+      targetValue: 25,
+      timeWindow: null,
+      specificValue: null
+    };
+    achievementTemplates.push(giftMaster);
+
+    const emotionExpert: AchievementTemplateData = {
+      id: 'emotion_expert',
+      name: '情感专家',
+      description: '收到10次积极评价',
+      icon: '😊',
+      type: AchievementType.FEEDBACK_QUALITY,
+      conditionType: AchievementType.FEEDBACK_QUALITY,
+      targetValue: 10,
+      timeWindow: null,
+      specificValue: '开心'
+    };
+    achievementTemplates.push(emotionExpert);
+
+    for (const template of achievementTemplates) {
+      await this.rdbStore.executeSql(
+        `INSERT INTO achievements (id, name, description, icon, type, condition_type, target_value, time_window, specific_value) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          template.id,
+          template.name,
+          template.description,
+          template.icon,
+          template.type,
+          template.conditionType,
+          template.targetValue,
+          template.timeWindow,
+          template.specificValue
+        ]
+      );
+    }
+  }
+
   getRdbStore(): relationalStore.RdbStore | null {
     return this.rdbStore;
   }

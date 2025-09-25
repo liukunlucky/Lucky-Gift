@@ -308,3 +308,74 @@ export interface QuickFilter {
   tags: string[];
   color: string;
 }
+
+// 礼物故事模型
+export interface GiftStory {
+  id?: string;
+  giftEventId: string; // 关联的礼物记录ID
+  giftEventTitle: string; // 礼物记录标题（冗余字段，便于显示）
+  contactName: string; // 收礼人姓名（冗余字段）
+  title: string; // 故事标题
+  content: string; // 故事内容
+  images: string[]; // 最多3张照片的本地路径
+  emotion: string; // 当时的心情/感受
+  reason: string; // 选择这个礼物的原因
+  scene: string; // 当时的情景描述
+  tags: string[]; // 标签
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+// 成就系统模型
+// 成就模板（固定的成就定义）
+export interface Achievement {
+  id: string;
+  name: string; // 成就名称
+  description: string; // 成就描述
+  icon: string; // 成就图标
+  type: AchievementType; // 成就类型
+  conditionType: AchievementType; // 条件类型
+  targetValue: number; // 目标值
+  timeWindow?: number; // 时间窗口（天数），用于连续性成就
+  specificValue?: string; // 特定值，如"非常开心"
+}
+
+// 成就类型枚举
+export enum AchievementType {
+  GIFT_COUNT = 'gift_count', // 送礼次数
+  FEEDBACK_QUALITY = 'feedback_quality', // 反馈质量
+  BUDGET_CONTROL = 'budget_control', // 预算控制
+  PLANNING_AHEAD = 'planning_ahead' // 提前规划
+}
+
+// 用户成就进度（每个用户的个人成就状态）
+export interface UserAchievementProgress {
+  id: string;
+  userId: string;
+  achievementId: string;
+  currentProgress: number;
+  isUnlocked: boolean;
+  unlockedAt?: string;
+  lastUpdated: string;
+}
+
+// 用户成就详情（包含模板信息和个人进度）
+export interface UserAchievementDetail {
+  template: Achievement; // 成就模板
+  progress: UserAchievementProgress; // 个人进度
+  progressPercentage: number; // 进度百分比
+}
+
+// 成就里程碑
+export interface AchievementMilestone {
+  date: string;
+  description: string;
+  relatedEventId?: string; // 相关事件ID
+}
+
+// 成就统计
+export interface AchievementStats {
+  total: number;
+  unlocked: number;
+  progress: number;
+}

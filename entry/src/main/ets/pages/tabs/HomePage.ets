@@ -4,6 +4,10 @@ import { Inspiration } from '../../model/NewDataModels';
 import { TagInfo, TagCategory, getTagInfo } from '../../model/GiftEnums';
 import { RecipientType, OccasionType, GiftType, BudgetRange } from '../../model/GiftEnums';
 import { TagComponent } from '../../components/TagComponent';
+import { NewDatabaseManager } from '../../database/NewDatabaseManager';
+import { ContactDAO } from '../../database/ContactDAO';
+import { InspirationDAO } from '../../database/InspirationDAO';
+import { common } from '@kit.AbilityKit';
 
 // 轮播图内容接口
 interface BannerItem {
@@ -31,10 +35,19 @@ export struct HomePage {
   @State private recommendedInspirations: Inspiration[] = [];
   @State bannerItems: BannerItem[] = [];
   @State currentBannerIndex: number = 0;
+  @State relationshipCount: number = 0;
+  @State favoriteCount: number = 0;
+  @State isLoadingStats: boolean = true;
 
-  aboutToAppear() {
+  private dbManager = new NewDatabaseManager();
+  private contactDAO: ContactDAO | null = null;
+  private inspirationDAO: InspirationDAO | null = null;
+
+  async aboutToAppear() {
     this.loadRecommendedInspirations();
     this.bannerItems = this.getBannerItems();
+    await this.initDatabase();
+    await this.loadStatsData();
   }
 
   // 随机获取8条灵感数据
@@ -42,6 +55,41 @@ export struct HomePage {
     const allInspirations = MockData.getAllInspirations();
     const shuffled = allInspirations.sort(() => 0.5 - Math.random());
     this.recommendedInspirations = shuffled.slice(0, 8);
+  }
+
+  // 初始化数据库
+  private async initDatabase() {
+    try {
+      const context = getContext(this) as common.UIAbilityContext;
+      await this.dbManager.initDatabase(context);
+      this.contactDAO = new ContactDAO(this.dbManager);
+      this.inspirationDAO = new InspirationDAO(this.dbManager);
+    } catch (error) {
+      console.error('数据库初始化失败:', error);
+    }
+  }
+
+  // 加载统计数据
+  private async loadStatsData() {
+    try {
+      this.isLoadingStats = true;
+      
+      // 获取关系数量
+      if (this.contactDAO) {
+        const contacts = await this.contactDAO.getAllContacts();
+        this.relationshipCount = contacts.length;
+      }
+      
+      // 获取收藏数量
+      if (this.inspirationDAO) {
+        const favorites = await this.inspirationDAO.getFavoriteInspirations();
+        this.favoriteCount = favorites.length;
+      }
+    } catch (error) {
+      console.error('加载统计数据失败:', error);
+    } finally {
+      this.isLoadingStats = false;
+    }
   }
 
   // 获取功能图标配置
@@ -212,6 +260,21 @@ export struct HomePage {
     };
     icons.push(checklist);
 
+    // 成就系统
+    const achievement: FunctionIcon = {
+      id: 'achievement',
+      title: '成就系统',
+      icon: $r('app.media.icon_cj'),
+      action: () => {
+        router.pushUrl({
+          url: 'pages/AchievementPage'
+        }).catch((error: Error) => {
+          console.error('Failed to navigate to AchievementPage:', error);
+        });
+      }
+    };
+    icons.push(achievement);
+
     return icons;
   }
 
@@ -253,6 +316,9 @@ export struct HomePage {
         }
         .width('100%')
         .padding({ left: 16, right: 16, top: 16 })
+
+        // 卡片区域
+        this.buildCardsSection()
 
         // 推荐灵感区域
         this.buildRecommendedSection()
@@ -311,13 +377,9 @@ export struct HomePage {
 
       // 第三行3个图标
       Row({ space: 20 }) {
-        ForEach(this.getFunctionIcons().slice(8, 11), (icon: FunctionIcon) => {
+        ForEach(this.getFunctionIcons().slice(8, 12), (icon: FunctionIcon) => {
           this.buildFunctionIcon(icon);
         }, (icon: FunctionIcon) => icon.id)
-        
-        // 添加占位空间，保持与上一行对齐
-        Blank()
-          .width(70) // 与图标宽度相同
       }
       .width('100%')
       .justifyContent(FlexAlign.SpaceAround)
@@ -364,6 +426,117 @@ export struct HomePage {
   }
 
   @Builder
+  buildCardsSection() {
+    Column({ space: 12 }) {
+      Row({ space: 12 }) {
+        // 关系网络卡片
+        this.buildRelationshipCard()
+        
+        // 收藏卡片
+        this.buildFavoritesCard()
+      }
+      .width('100%')
+      .padding({ left: 16, right: 16 })
+    }
+    .width('100%')
+    .padding({ top: 16 })
+  }
+
+  @Builder
+  buildRelationshipCard() {
+    Column({ space: 8 }) {
+      Row({ space: 8 }) {
+        Image($r('app.media.icon_rq'))
+          .width(20)
+          .height(20)
+          .fillColor('#FF6B35')
+        
+        Text('我的关系')
+          .fontSize(14)
+          .fontWeight(FontWeight.Medium)
+          .fontColor('#2C3E50')
+      }
+      .alignItems(VerticalAlign.Center)
+      
+      if (this.isLoadingStats) {
+        Text('加载中...')
+          .fontSize(24)
+          .fontWeight(FontWeight.Bold)
+          .fontColor('#FF6B35')
+      } else {
+        Text(this.relationshipCount.toString())
+          .fontSize(24)
+          .fontWeight(FontWeight.Bold)
+          .fontColor('#FF6B35')
+      }
+      
+      Text('个联系人')
+        .fontSize(12)
+        .fontColor('#7F8C8D')
+    }
+    .layoutWeight(1)
+    .padding(16)
+    .backgroundColor(Color.White)
+    .borderRadius(12)
+    .alignItems(HorizontalAlign.Start)
+    .shadow({ radius: 4, color: '#1A000000', offsetX: 0, offsetY: 2 })
+    .onClick(() => {
+      router.pushUrl({
+        url: 'pages/profile/RelationshipNetworkPage'
+      }).catch((error: Error) => {
+        console.error('Failed to navigate to RelationshipNetworkPage:', error);
+      });
+    })
+  }
+
+  @Builder
+  buildFavoritesCard() {
+    Column({ space: 8 }) {
+      Row({ space: 8 }) {
+        Image($r('app.media.icon_shoucang'))
+          .width(20)
+          .height(20)
+          .fillColor('#FF6B35')
+        
+        Text('我的收藏')
+          .fontSize(14)
+          .fontWeight(FontWeight.Medium)
+          .fontColor('#2C3E50')
+      }
+      .alignItems(VerticalAlign.Center)
+      
+      if (this.isLoadingStats) {
+        Text('加载中...')
+          .fontSize(24)
+          .fontWeight(FontWeight.Bold)
+          .fontColor('#FF6B35')
+      } else {
+        Text(this.favoriteCount.toString())
+          .fontSize(24)
+          .fontWeight(FontWeight.Bold)
+          .fontColor('#FF6B35')
+      }
+      
+      Text('个灵感')
+        .fontSize(12)
+        .fontColor('#7F8C8D')
+    }
+    .layoutWeight(1)
+    .padding(16)
+    .backgroundColor(Color.White)
+    .borderRadius(12)
+    .alignItems(HorizontalAlign.Start)
+    .shadow({ radius: 4, color: '#1A000000', offsetX: 0, offsetY: 2 })
+    .onClick(() => {
+      router.pushUrl({
+        url: 'pages/profile/FavoritesPage'
+      }).catch((error: Error) => {
+        console.error('Failed to navigate to FavoritesPage:', error);
+      });
+    })
+  }
+
+  @Builder
   buildRecommendedSection() {
     Column({ space: 16 }) {
       // 标题行
@@ -386,12 +559,10 @@ export struct HomePage {
             .fillColor('#F34F40')
         }
         .onClick(() => {
-          // 跳转到灵感浏览页面
-          router.pushUrl({
-            url: 'pages/tabs/BrowsePage'
-          }).catch((error: Error) => {
-            console.error('Failed to navigate to BrowsePage:', error);
-          });
+          // 切换到灵感Tab
+          if (this.tabsController) {
+            this.tabsController.changeIndex(1);
+          }
         })
       }
       .width('100%')
