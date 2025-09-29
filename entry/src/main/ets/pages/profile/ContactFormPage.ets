@@ -26,6 +26,7 @@ struct ContactFormPage {
   @State isLoading: boolean = false;
   @State showDeleteDialog: boolean = false;
   @State showRelationshipDropdown: boolean = false;
+  @State returnToTimeline: boolean = false;
 
   private dbManager: NewDatabaseManager = new NewDatabaseManager();
   private contactDAO: ContactDAO = new ContactDAO(this.dbManager);
@@ -48,6 +49,10 @@ struct ContactFormPage {
       this.isEdit = params.isEdit as boolean;
     } else {
       this.isEdit = false;
+    }
+
+    if (params?.returnToTimeline) {
+      this.returnToTimeline = params.returnToTimeline as boolean;
     }
   }
 
@@ -82,17 +87,28 @@ struct ContactFormPage {
     try {
       if (this.isEdit) {
         await this.contactDAO.updateContact(this.contact);
+        router.back();
       } else {
         await this.contactDAO.createContact(this.contact);
+        
+        // 如果是从时间轴创建联系人，直接跳转到该联系人的时间轴
+        if (this.returnToTimeline) {
+          router.replaceUrl({
+            url: 'pages/EmotionalTimelinePage',
+            params: {
+              selectedContact: this.contact
+            }
+          });
+        } else {
+          router.back();
+        }
       }
-      
-      // 返回上一页
-      router.back();
     } catch (error) {
       console.error('保存联系人失败:', error);
       // 这里可以添加错误提示
     } finally {
       this.isLoading = false;
+      AppStorage.setOrCreate('refreshHomePage', Date.now());
     }
   }
 

@@ -14,6 +14,7 @@ export struct RecordPage {
   @State selectedContact: string = '';
   @State isLoading: boolean = true;
   @State showFilterDialog: boolean = false;
+  @State isShowingMockData: boolean = false;
   
   private dbManager = new NewDatabaseManager();
   private giftEventDAO: GiftEventDAO = new GiftEventDAO(this.dbManager);
@@ -50,6 +51,10 @@ export struct RecordPage {
       // 如果没有数据，显示示例数据
       if (this.giftEvents.length === 0) {
         this.giftEvents = this.getMockGiftEvents();
+        this.isShowingMockData = true;
+        console.log('记录页面：显示示例数据');
+      } else {
+        this.isShowingMockData = false;
       }
       
       // 加载联系人
@@ -63,6 +68,7 @@ export struct RecordPage {
     } catch (error) {
       console.error('加载数据失败:', error);
       this.giftEvents = this.getMockGiftEvents();
+      this.isShowingMockData = true;
       this.generateAvailableYears();
       this.applyFilters();
     } finally {
@@ -371,6 +377,31 @@ export struct RecordPage {
           // 时间轴列表
           Scroll() {
             Column() {
+              // 示例数据提醒
+              if (this.isShowingMockData) {
+                Row() {
+                  Image($r('app.media.icon_gift'))
+                    .width(16)
+                    .height(16)
+                    .fillColor('#FF6B35')
+                    .margin({ right: 8 })
+
+                  Text('当前显示的是示例数据，开始记录你的真实送礼故事吧！')
+                    .fontSize(11)
+                    .fontColor('#FF6B35')
+                    .layoutWeight(1)
+                    .maxLines(2)
+                    .textOverflow({ overflow: TextOverflow.Ellipsis })
+
+                }
+                .width('100%')
+                .padding(12)
+                .backgroundColor('#FFF5F3')
+                .borderRadius(8)
+                .border({ width: 1, color: '#FFE0D6' })
+                .margin({ bottom: 12 })
+              }
+              
               ForEach(this.filteredEvents, (event: GiftEvent, index: number) => {
                 this.buildTimelineItem(event, index)
               })

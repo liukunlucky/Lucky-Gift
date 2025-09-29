@@ -7,6 +7,7 @@ import { TagComponent } from '../../components/TagComponent';
 import { NewDatabaseManager } from '../../database/NewDatabaseManager';
 import { ContactDAO } from '../../database/ContactDAO';
 import { InspirationDAO } from '../../database/InspirationDAO';
+import { GiftEventDAO } from '../../database/GiftEventDAO';
 import { common } from '@kit.AbilityKit';
 
 // 轮播图内容接口
@@ -38,16 +39,29 @@ export struct HomePage {
   @State relationshipCount: number = 0;
   @State favoriteCount: number = 0;
   @State isLoadingStats: boolean = true;
+  @State giftGivenCount: number = 0;
+  @State giftReceivedCount: number = 0;
+  @State totalSpent: number = 0;
+  @StorageProp('refreshHomePage') @Watch('onRefreshHomePage') refreshHomePage: number = 0;
+
 
   private dbManager = new NewDatabaseManager();
   private contactDAO: ContactDAO | null = null;
   private inspirationDAO: InspirationDAO | null = null;
+  private giftEventDAO: GiftEventDAO | null = null;
 
   async aboutToAppear() {
     this.loadRecommendedInspirations();
     this.bannerItems = this.getBannerItems();
     await this.initDatabase();
     await this.loadStatsData();
+  }
+
+  async onRefreshHomePage() {
+    if (this.refreshHomePage > 0) {
+      await this.loadStatsData();
+      AppStorage.setOrCreate('refreshHomePage', 0);
+    }
   }
 
   // 随机获取8条灵感数据
@@ -64,6 +78,7 @@ export struct HomePage {
       await this.dbManager.initDatabase(context);
       this.contactDAO = new ContactDAO(this.dbManager);
       this.inspirationDAO = new InspirationDAO(this.dbManager);
+      this.giftEventDAO = new GiftEventDAO(this.dbManager);
     } catch (error) {
       console.error('数据库初始化失败:', error);
     }
@@ -85,8 +100,25 @@ export struct HomePage {
         const favorites = await this.inspirationDAO.getFavoriteInspirations();
         this.favoriteCount = favorites.length;
       }
+
+      // 获取真实的礼物统计数据
+      if (this.giftEventDAO) {
+        const typeStats = await this.giftEventDAO.getGiftEventTypeStats();
+        this.giftGivenCount = typeStats.giveEvents; // 送出礼物次数
+        this.giftReceivedCount = typeStats.receiveEvents; // 收到礼物次数
+        this.totalSpent = typeStats.giveSpent; // 总花费金额（只计算送出的礼物）
+      } else {
+        // 如果数据库未初始化，使用默认值
+        this.giftGivenCount = 0;
+        this.giftReceivedCount = 0;
+        this.totalSpent = 0;
+      }
     } catch (error) {
       console.error('加载统计数据失败:', error);
+      // 发生错误时使用默认值
+      this.giftGivenCount = 0;
+      this.giftReceivedCount = 0;
+      this.totalSpent = 0;
     } finally {
       this.isLoadingStats = false;
     }
@@ -102,28 +134,14 @@ export struct HomePage {
       title: '礼物灵感',
       icon: $r('app.media.icon_insp'),
       action: () => {
-        // 切换到灵感Tab
-        if (this.tabsController) {
-          this.tabsController.changeIndex(1);
-        }
-      }
-    };
-    icons.push(inspiration);
-
-    // 礼物记录
-    const record: FunctionIcon = {
-      id: 'record',
-      title: '礼物记录',
-      icon: $r('app.media.icon_record'),
-      action: () => {
         router.pushUrl({
-          url: 'pages/tabs/CreateGiftEventPage'
+          url: 'pages/tabs/BrowsePage'
         }).catch((error: Error) => {
-          console.error('Failed to navigate to CreateGiftEventPage:', error);
+          console.error('Failed to navigate to BrowsePage:', error);
         });
       }
     };
-    icons.push(record);
+    icons.push(inspiration);
 
     // 我的收藏
     const favorites: FunctionIcon = {
@@ -170,36 +188,6 @@ export struct HomePage {
     };
     icons.push(reminder);
 
-    // 智能推荐
-    const smartRecommend: FunctionIcon = {
-      id: 'smart_recommend',
-      title: '智能推荐',
-      icon: $r('app.media.icon_tuijian'),
-      action: () => {
-        router.pushUrl({
-          url: 'pages/tools/SmartRecommendationQuestionPage'
-        }).catch((error: Error) => {
-          console.error('Failed to navigate to SmartRecommendationPage:', error);
-        });
-      }
-    };
-    icons.push(smartRecommend);
-
-    // 礼卡制作
-    const giftCard: FunctionIcon = {
-      id: 'gift_card',
-      title: '礼卡制作',
-      icon: $r('app.media.icon_heka'),
-      action: () => {
-        router.pushUrl({
-          url: 'pages/tools/GiftCardMakerPage'
-        }).catch((error: Error) => {
-          console.error('Failed to navigate to GiftCardMakerPage:', error);
-        });
-      }
-    };
-    icons.push(giftCard);
-
     // 场景分类
     const scenario: FunctionIcon = {
       id: 'scenario',
@@ -214,6 +202,83 @@ export struct HomePage {
       }
     };
     icons.push(scenario);
+
+    // 情感时间轴
+    const emotionalTimeline: FunctionIcon = {
+      id: 'emotional_timeline',
+      title: '情感时间轴',
+      icon: $r('app.media.icon_shijianzhou'),
+      action: () => {
+        router.pushUrl({
+          url: 'pages/ContactSelectionPage'
+        }).catch((error: Error) => {
+          console.error('Failed to navigate to ContactSelectionPage:', error);
+        });
+      }
+    };
+    icons.push(emotionalTimeline);
+
+    // 成就系统
+    const achievement: FunctionIcon = {
+      id: 'achievement',
+      title: '成就系统',
+      icon: $r('app.media.icon_cj'),
+      action: () => {
+        router.pushUrl({
+          url: 'pages/AchievementPage'
+        }).catch((error: Error) => {
+          console.error('Failed to navigate to AchievementPage:', error);
+        });
+      }
+    };
+    icons.push(achievement);
+
+
+    // 送礼学问
+    const giftEtiquette: FunctionIcon = {
+      id: 'gift_etiquette',
+      title: '送礼学问',
+      icon: $r('app.media.icon_xuewen'),
+      action: () => {
+        router.pushUrl({
+          url: 'pages/GiftEtiquettePage'
+        }).catch((error: Error) => {
+          console.error('Failed to navigate to GiftEtiquettePage:', error);
+        });
+      }
+    };
+    icons.push(giftEtiquette);
+
+
+    // 礼物包装
+    const giftWrapping: FunctionIcon = {
+      id: 'gift_wrapping',
+      title: '礼物包装',
+      icon: $r('app.media.icon_bz'),
+      action: () => {
+        router.pushUrl({
+          url: 'pages/GiftWrappingGuidePage'
+        }).catch((error: Error) => {
+          console.error('Failed to navigate to GiftWrappingGuidePage:', error);
+        });
+      }
+    };
+    icons.push(giftWrapping);
+
+    // 智能推荐
+    const smartRecommend: FunctionIcon = {
+      id: 'smart_recommend',
+      title: '智能推荐',
+      icon: $r('app.media.icon_tuijian'),
+      action: () => {
+        router.pushUrl({
+          url: 'pages/tools/SmartRecommendationQuestionPage'
+        }).catch((error: Error) => {
+          console.error('Failed to navigate to SmartRecommendationPage:', error);
+        });
+      }
+    };
+    icons.push(smartRecommend);
 
     // 预算计算器
     const budget: FunctionIcon = {
@@ -260,20 +325,20 @@ export struct HomePage {
     };
     icons.push(checklist);
 
-    // 成就系统
-    const achievement: FunctionIcon = {
-      id: 'achievement',
-      title: '成就系统',
-      icon: $r('app.media.icon_cj'),
+    // 礼卡制作
+    const giftCard: FunctionIcon = {
+      id: 'gift_card',
+      title: '礼卡制作',
+      icon: $r('app.media.icon_heka'),
       action: () => {
         router.pushUrl({
-          url: 'pages/AchievementPage'
+          url: 'pages/tools/GiftCardMakerPage'
         }).catch((error: Error) => {
-          console.error('Failed to navigate to AchievementPage:', error);
+          console.error('Failed to navigate to GiftCardMakerPage:', error);
         });
       }
     };
-    icons.push(achievement);
+    icons.push(giftCard);
 
     return icons;
   }
@@ -315,7 +380,7 @@ export struct HomePage {
           })
         }
         .width('100%')
-        .padding({ left: 16, right: 16, top: 16 })
+        .padding({ left: 16, right: 16})
 
         // 卡片区域
         this.buildCardsSection()
@@ -356,36 +421,79 @@ export struct HomePage {
 
   @Builder
   buildFunctionIconsSection() {
-    Column({ space: 20 }) {
-      // 第一行4个图标
-      Row({ space: 20 }) {
-        ForEach(this.getFunctionIcons().slice(0, 4), (icon: FunctionIcon) => {
-          this.buildFunctionIcon(icon);
-        }, (icon: FunctionIcon) => icon.id)
-      }
-      .width('100%')
-      .justifyContent(FlexAlign.SpaceAround)
+    Column() {
+      Column({ space: 20 }) {
+        // 笔试专区标题
+        Row() {
+          Text('功能专区')
+            .fontSize(18)
+            .fontWeight(FontWeight.Bold)
+            .fontColor('#333333')
+        }
+        .width('100%')
+        .justifyContent(FlexAlign.Start)
+        .padding(4)
 
-      // 第二行4个图标
-      Row({ space: 20 }) {
-        ForEach(this.getFunctionIcons().slice(4, 8), (icon: FunctionIcon) => {
-          this.buildFunctionIcon(icon);
-        }, (icon: FunctionIcon) => icon.id)
-      }
-      .width('100%')
-      .justifyContent(FlexAlign.SpaceAround)
+        // 第一行4个图标
+        Row({ space: 20 }) {
+          ForEach(this.getFunctionIcons().slice(0, 4), (icon: FunctionIcon) => {
+            this.buildFunctionIcon(icon);
+          }, (icon: FunctionIcon) => icon.id)
+        }
+        .width('100%')
+        .justifyContent(FlexAlign.SpaceAround)
 
-      // 第三行3个图标
-      Row({ space: 20 }) {
-        ForEach(this.getFunctionIcons().slice(8, 12), (icon: FunctionIcon) => {
-          this.buildFunctionIcon(icon);
-        }, (icon: FunctionIcon) => icon.id)
+        // 第二行4个图标
+        Row({ space: 20 }) {
+          ForEach(this.getFunctionIcons().slice(4, 8), (icon: FunctionIcon) => {
+            this.buildFunctionIcon(icon);
+          }, (icon: FunctionIcon) => icon.id)
+        }
+        .width('100%')
+        .justifyContent(FlexAlign.SpaceAround)
+
+
       }
-      .width('100%')
-      .justifyContent(FlexAlign.SpaceAround)
+      .margin({left: 16, right: 16})
+      .padding(16)
+      .backgroundColor(Color.White)
+      .borderRadius(12)
+
+      Column({ space: 20 }) {
+        // 工具专区标题
+        Row() {
+          Text('常用工具')
+            .fontSize(18)
+            .fontWeight(FontWeight.Bold)
+            .fontColor('#333333')
+        }
+        .width('100%')
+        .justifyContent(FlexAlign.Start)
+        .padding(4)
+        // 第三行3个图标
+        Row({ space: 20 }) {
+          ForEach(this.getFunctionIcons().slice(8, 12), (icon: FunctionIcon) => {
+            this.buildFunctionIcon(icon);
+          }, (icon: FunctionIcon) => icon.id)
+        }
+        .width('100%')
+        .justifyContent(FlexAlign.SpaceAround)
+        Row({ space: 20 }) {
+          ForEach(this.getFunctionIcons().slice(12, 14), (icon: FunctionIcon) => {
+            this.buildFunctionIcon(icon);
+          }, (icon: FunctionIcon) => icon.id)
+          Blank().width(70)
+          Blank().width(70)
+        }
+        .width('100%')
+        .justifyContent(FlexAlign.SpaceAround)
+      }
+      .padding(16)
+      .margin({left: 16, right: 16, top: 16})
+      .backgroundColor(Color.White)
+      .borderRadius(12)
     }
-    .padding({left: 16, right: 16})
-    .width('100%')
+
   }
 
   @Builder
@@ -437,6 +545,9 @@ export struct HomePage {
       }
       .width('100%')
       .padding({ left: 16, right: 16 })
+
+      // 送礼统计模块
+      this.buildGiftStatsSection()
     }
     .width('100%')
     .padding({ top: 16 })
@@ -537,6 +648,144 @@ export struct HomePage {
   }
 
   @Builder
+  buildGiftStatsSection() {
+    Column({ space: 12 }) {
+      // 统计卡片
+      Row({ space: 12 }) {
+        // 送礼次数
+        this.buildStatCardSong('送礼次数', '#4CAF50', $r('app.media.icon_gift'))
+        
+        // 收礼次数
+        this.buildStatCardShou('收礼次数', '#2196F3', $r('app.media.icon_gift'))
+        
+        // 总花费
+        this.buildStatCardMoney('总花费', '#FF9800', $r('app.media.icon_money'))
+      }
+      .width('100%')
+    }
+    .padding(16)
+    .margin({left: 16, right: 16})
+    .backgroundColor(Color.White)
+    .borderRadius(12)
+    .margin({ left: 16, right: 16 })
+    .onClick(() => {
+      router.pushUrl({
+        url: 'pages/profile/GiftStatisticsPage'
+      }).catch((error: Error) => {
+        console.error('导航到送礼统计页面失败:', error);
+      });
+    })
+    .shadow({ radius: 4, color: '#1A000000', offsetX: 0, offsetY: 2 })
+  }
+
+  @Builder
+  buildStatCardSong(title: string, color: string, icon: Resource) {
+    Column({ space: 8 }) {
+      // 图标
+      Image(icon)
+        .width(20)
+        .height(20)
+        .fillColor(color)
+
+      // 标题和单位
+      Text(title)
+        .fontSize(12)
+        .fontColor('#7F8C8D')
+        .textAlign(TextAlign.Center)
+
+      // 数值
+      if (this.isLoadingStats) {
+        Text('--')
+          .fontSize(18)
+          .fontWeight(FontWeight.Bold)
+          .fontColor(color)
+      } else {
+        Text(`${this.giftGivenCount}`)
+          .fontSize(18)
+          .fontWeight(FontWeight.Bold)
+          .fontColor(color)
+      }
+
+
+      Text('次')
+        .fontSize(10)
+        .fontColor('#95A5A6')
+    }
+    .layoutWeight(1)
+    .alignItems(HorizontalAlign.Center)
+  }
+  @Builder
+  buildStatCardShou(title: string, color: string, icon: Resource) {
+    Column({ space: 8 }) {
+      Image(icon)
+        .width(20)
+        .height(20)
+        .fillColor(color)
+
+      // 标题和单位
+      Text(title)
+        .fontSize(12)
+        .fontColor('#7F8C8D')
+        .textAlign(TextAlign.Center)
+
+      // 数值
+      if (this.isLoadingStats) {
+        Text('--')
+          .fontSize(18)
+          .fontWeight(FontWeight.Bold)
+          .fontColor(color)
+      } else {
+        Text(`${this.giftReceivedCount}`)
+          .fontSize(18)
+          .fontWeight(FontWeight.Bold)
+          .fontColor(color)
+      }
+
+      Text('次')
+        .fontSize(10)
+        .fontColor('#95A5A6')
+    }
+    .layoutWeight(1)
+    .alignItems(HorizontalAlign.Center)
+  }
+  @Builder
+  buildStatCardMoney(title: string, color: string, icon: Resource) {
+    Column({ space: 8 }) {
+
+      Image(icon)
+        .width(20)
+        .height(20)
+        .fillColor(color)
+
+      // 标题和单位
+      Text(title)
+        .fontSize(12)
+        .fontColor('#7F8C8D')
+        .textAlign(TextAlign.Center)
+
+      // 数值
+      if (this.isLoadingStats) {
+        Text('--')
+          .fontSize(18)
+          .fontWeight(FontWeight.Bold)
+          .fontColor(color)
+      } else {
+        Text(`${this.totalSpent}`)
+          .fontSize(18)
+          .fontWeight(FontWeight.Bold)
+          .fontColor(color)
+      }
+
+      Text('元')
+        .fontSize(10)
+        .fontColor('#95A5A6')
+    }
+    .layoutWeight(1)
+    .alignItems(HorizontalAlign.Center)
+  }
+
+
+  @Builder
   buildRecommendedSection() {
     Column({ space: 16 }) {
       // 标题行
@@ -559,10 +808,11 @@ export struct HomePage {
             .fillColor('#F34F40')
         }
         .onClick(() => {
-          // 切换到灵感Tab
-          if (this.tabsController) {
-            this.tabsController.changeIndex(1);
-          }
+          router.pushUrl({
+            url: 'pages/tabs/BrowsePage'
+          }).catch((error: Error) => {
+            console.error('Failed to navigate to BrowsePage:', error);
+          });
         })
       }
       .width('100%')

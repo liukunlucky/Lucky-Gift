@@ -2442,18 +2442,20 @@ export class MockData {
   }
   
   /**
-   * 获取Mock礼物事件数据
+   * 获取Mock礼物事件数据（示例数据）
    * @returns GiftEvent[] 礼物事件数据数组
    */
   static getMockGiftEvents(): GiftEvent[] {
+    const currentYear = new Date().getFullYear();
     return [
+      // 送礼记录示例
       {
         id: '1',
         contactId: '1',
         contactName: '小美',
         recordType: 'give',
         occasion: '生日',
-        date: '2024-01-15T00:00:00.000Z',
+        date: `${currentYear}-01-15T00:00:00.000Z`,
         giftIdea: '手工制作的相册',
         actualGift: '定制相册',
         budget: 200,
@@ -2464,9 +2466,9 @@ export class MockData {
         mood: '开心',
         tags: ['手工', '纪念', '友谊'],
         reminderSet: true,
-        reminderDate: '2024-01-10T00:00:00.000Z',
-        createdAt: '2024-01-01T00:00:00.000Z',
-        updatedAt: '2024-01-16T00:00:00.000Z'
+        reminderDate: `${currentYear}-01-10T00:00:00.000Z`,
+        createdAt: `${currentYear}-01-01T00:00:00.000Z`,
+        updatedAt: `${currentYear}-01-16T00:00:00.000Z`
       },
       {
         id: '2',
@@ -2474,7 +2476,7 @@ export class MockData {
         contactName: '妈妈',
         recordType: 'give',
         occasion: '母亲节',
-        date: '2024-05-12T00:00:00.000Z',
+        date: `${currentYear}-05-12T00:00:00.000Z`,
         giftIdea: '按摩椅垫',
         actualGift: '按摩椅垫',
         budget: 500,
@@ -2485,9 +2487,9 @@ export class MockData {
         mood: '满足',
         tags: ['实用', '健康', '孝心'],
         reminderSet: true,
-        reminderDate: '2024-05-05T00:00:00.000Z',
-        createdAt: '2024-04-20T00:00:00.000Z',
-        updatedAt: '2024-05-13T00:00:00.000Z'
+        reminderDate: `${currentYear}-05-05T00:00:00.000Z`,
+        createdAt: `${currentYear}-04-20T00:00:00.000Z`,
+        updatedAt: `${currentYear}-05-13T00:00:00.000Z`
       },
       {
         id: '3',
@@ -2495,7 +2497,7 @@ export class MockData {
         contactName: '李明',
         recordType: 'give',
         occasion: '纪念日',
-        date: '2024-03-20T00:00:00.000Z',
+        date: `${currentYear}-03-20T00:00:00.000Z`,
         giftIdea: '情侣手表',
         actualGift: '情侣手表',
         budget: 800,
@@ -2506,9 +2508,51 @@ export class MockData {
         mood: '浪漫',
         tags: ['纪念', '情侣', '时尚'],
         reminderSet: true,
-        reminderDate: '2024-03-15T00:00:00.000Z',
-        createdAt: '2024-03-01T00:00:00.000Z',
-        updatedAt: '2024-03-21T00:00:00.000Z'
+        reminderDate: `${currentYear}-03-15T00:00:00.000Z`,
+        createdAt: `${currentYear}-03-01T00:00:00.000Z`,
+        updatedAt: `${currentYear}-03-21T00:00:00.000Z`
+      },
+      
+      // 收礼记录示例
+      {
+        id: '4',
+        contactId: '1',
+        contactName: '小美',
+        recordType: 'receive',
+        occasion: '生日',
+        date: `${currentYear}-03-15T00:00:00.000Z`,
+        giftIdea: '咖啡豆',
+        actualGift: '蓝山咖啡豆',
+        budget: 0,
+        actualCost: 0,
+        images: [],
+        story: '我生日时小美送的咖啡豆，知道我喜欢喝咖啡。',
+        reaction: '很香，每天早上都会冲一杯',
+        mood: '温暖',
+        tags: ['生日', '咖啡', '贴心'],
+        reminderSet: false,
+        createdAt: `${currentYear}-03-15T00:00:00.000Z`,
+        updatedAt: `${currentYear}-03-15T00:00:00.000Z`
+      },
+      {
+        id: '5',
+        contactId: '3',
+        contactName: '李明',
+        recordType: 'receive',
+        occasion: '纪念日',
+        date: `${currentYear}-03-20T00:00:00.000Z`,
+        giftIdea: '项链',
+        actualGift: '施华洛世奇项链',
+        budget: 0,
+        actualCost: 0,
+        images: [],
+        story: '恋爱纪念日他送的项链，很精致。',
+        reaction: '太美了，每天都想戴着',
+        mood: '浪漫',
+        tags: ['纪念日', '项链', '浪漫'],
+        reminderSet: false,
+        createdAt: `${currentYear}-03-20T00:00:00.000Z`,
+        updatedAt: `${currentYear}-03-20T00:00:00.000Z`
       }
     ];
   }
@@ -2638,6 +2682,246 @@ export class MockData {
           }
         ],
         notes: '喜欢科技感的礼物，对品质要求较高',
+        createdAt: '2024-01-01T00:00:00.000Z',
+        updatedAt: '2024-01-01T00:00:00.000Z'
+      },
+      {
+        id: '4',
+        name: '张小明',
+        relationship: '朋友',
+        avatar: '',
+        birthday: '1992-08-15',
+        importantDates: [
+          {
+            id: '6',
+            contactId: '4',
+            name: '生日',
+            date: '1992-08-15',
+            isRecurring: true,
+            reminderEnabled: true,
+            reminderDays: 7
+          }
+        ],
+        preferences: [
+          {
+            id: '6',
+            contactId: '4',
+            category: '兴趣',
+            content: '茶文化、阅读',
+            priority: 'high'
+          }
+        ],
+        notes: '喜欢传统文化，对茶叶有研究',
+        createdAt: '2024-01-01T00:00:00.000Z',
+        updatedAt: '2024-01-01T00:00:00.000Z'
+      },
+      {
+        id: '5',
+        name: '陈小花',
+        relationship: '闺蜜',
+        avatar: '',
+        birthday: '1994-06-20',
+        importantDates: [
+          {
+            id: '7',
+            contactId: '5',
+            name: '生日',
+            date: '1994-06-20',
+            isRecurring: true,
+            reminderEnabled: true,
+            reminderDays: 7
+          }
+        ],
+        preferences: [
+          {
+            id: '7',
+            contactId: '5',
+            category: '兴趣',
+            content: '美妆、时尚',
+            priority: 'high'
+          }
+        ],
+        notes: '爱美，喜欢化妆品和时尚单品',
+        createdAt: '2024-01-01T00:00:00.000Z',
+        updatedAt: '2024-01-01T00:00:00.000Z'
+      },
+      {
+        id: '6',
+        name: '王大力',
+        relationship: '表哥',
+        avatar: '',
+        birthday: '1988-04-15',
+        importantDates: [
+          {
+            id: '8',
+            contactId: '6',
+            name: '生日',
+            date: '1988-04-15',
+            isRecurring: true,
+            reminderEnabled: true,
+            reminderDays: 7
+          }
+        ],
+        preferences: [
+          {
+            id: '8',
+            contactId: '6',
+            category: '兴趣',
+            content: '商务、旅行',
+            priority: 'high'
+          }
+        ],
+        notes: '工作繁忙，喜欢实用的商务用品',
+        createdAt: '2024-01-01T00:00:00.000Z',
+        updatedAt: '2024-01-01T00:00:00.000Z'
+      },
+      {
+        id: '7',
+        name: '赵小雨',
+        relationship: '侄女',
+        avatar: '',
+        birthday: '2010-11-30',
+        importantDates: [
+          {
+            id: '9',
+            contactId: '7',
+            name: '生日',
+            date: '2010-11-30',
+            isRecurring: true,
+            reminderEnabled: true,
+            reminderDays: 7
+          }
+        ],
+        preferences: [
+          {
+            id: '9',
+            contactId: '7',
+            category: '兴趣',
+            content: '玩具、学习用品',
+            priority: 'high'
+          }
+        ],
+        notes: '小朋友，喜欢玩具和有趣的学习用品',
+        createdAt: '2024-01-01T00:00:00.000Z',
+        updatedAt: '2024-01-01T00:00:00.000Z'
+      },
+      {
+        id: '8',
+        name: '刘老师',
+        relationship: '老师',
+        avatar: '',
+        birthday: '1975-09-10',
+        importantDates: [
+          {
+            id: '10',
+            contactId: '8',
+            name: '生日',
+            date: '1975-09-10',
+            isRecurring: true,
+            reminderEnabled: true,
+            reminderDays: 7
+          }
+        ],
+        preferences: [
+          {
+            id: '10',
+            contactId: '8',
+            category: '兴趣',
+            content: '教育、文具',
+            priority: 'high'
+          }
+        ],
+        notes: '教师，喜欢实用的教学用品和文具',
+        createdAt: '2024-01-01T00:00:00.000Z',
+        updatedAt: '2024-01-01T00:00:00.000Z'
+      },
+      {
+        id: '9',
+        name: '李小华',
+        relationship: '同学',
+        avatar: '',
+        birthday: '1993-10-01',
+        importantDates: [
+          {
+            id: '11',
+            contactId: '9',
+            name: '生日',
+            date: '1993-10-01',
+            isRecurring: true,
+            reminderEnabled: true,
+            reminderDays: 7
+          }
+        ],
+        preferences: [
+          {
+            id: '11',
+            contactId: '9',
+            category: '兴趣',
+            content: '家居、生活',
+            priority: 'high'
+          }
+        ],
+        notes: '新婚，需要家居用品',
+        createdAt: '2024-01-01T00:00:00.000Z',
+        updatedAt: '2024-01-01T00:00:00.000Z'
+      },
+      {
+        id: '10',
+        name: '周小强',
+        relationship: '朋友',
+        avatar: '',
+        birthday: '1991-11-15',
+        importantDates: [
+          {
+            id: '12',
+            contactId: '10',
+            name: '生日',
+            date: '1991-11-15',
+            isRecurring: true,
+            reminderEnabled: true,
+            reminderDays: 7
+          }
+        ],
+        preferences: [
+          {
+            id: '12',
+            contactId: '10',
+            category: '兴趣',
+            content: '运动、篮球',
+            priority: 'high'
+          }
+        ],
+        notes: '运动爱好者，特别喜欢篮球',
+        createdAt: '2024-01-01T00:00:00.000Z',
+        updatedAt: '2024-01-01T00:00:00.000Z'
+      },
+      {
+        id: '11',
+        name: '孙小美',
+        relationship: '女朋友',
+        avatar: '',
+        birthday: '1995-12-25',
+        importantDates: [
+          {
+            id: '13',
+            contactId: '11',
+            name: '生日',
+            date: '1995-12-25',
+            isRecurring: true,
+            reminderEnabled: true,
+            reminderDays: 7
+          }
+        ],
+        preferences: [
+          {
+            id: '13',
+            contactId: '11',
+            category: '兴趣',
+            content: '护肤、美容',
+            priority: 'high'
+          }
+        ],
+        notes: '注重护肤，喜欢高品质的护肤品',
         createdAt: '2024-01-01T00:00:00.000Z',
         updatedAt: '2024-01-01T00:00:00.000Z'
       }

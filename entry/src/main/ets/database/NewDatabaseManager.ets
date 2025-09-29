@@ -26,7 +26,7 @@ interface GiftCardTemplateData {
 export class NewDatabaseManager {
   private rdbStore: relationalStore.RdbStore | null = null;
   private readonly DATABASE_NAME = 'LuckyGiftV2.db';
-  private readonly DATABASE_VERSION = 2;
+  private readonly DATABASE_VERSION = 3;
 
   async initDatabase(context: Context): Promise<void> {
     const config: relationalStore.StoreConfig = {
@@ -47,6 +47,8 @@ export class NewDatabaseManager {
   isInitialized(): boolean {
     return this.rdbStore !== null;
   }
+
+
 
   private async createTables(): Promise<void> {
     if (!this.rdbStore) return;
@@ -251,6 +253,47 @@ export class NewDatabaseManager {
         FOREIGN KEY (achievement_id) REFERENCES achievements (id) ON DELETE CASCADE
       )`,
 
+      // 时间轴事件表
+      `CREATE TABLE IF NOT EXISTS timeline_events (
+        id TEXT PRIMARY KEY,
+        contact_id TEXT NOT NULL,
+        contact_name TEXT NOT NULL,
+        contact_avatar TEXT,
+        type TEXT NOT NULL, -- 'meet', 'friend', 'close', 'conflict', 'reconcile', 'gift', 'milestone', 'memory'
+        title TEXT NOT NULL,
+        description TEXT,
+        date TEXT NOT NULL,
+        emotion_level INTEGER NOT NULL DEFAULT 3, -- 1-5
+        tags TEXT, -- JSON数组
+        photos TEXT, -- JSON数组
+        location TEXT,
+        weather TEXT,
+        mood TEXT NOT NULL,
+        is_important INTEGER NOT NULL DEFAULT 0,
+        related_gift_id TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY (contact_id) REFERENCES contacts (id) ON DELETE CASCADE
+      )`,
+
+      // 份子礼记录表
+      `CREATE TABLE IF NOT EXISTS fenzi_gift_records (
+        id TEXT PRIMARY KEY,
+        contact_id TEXT NOT NULL,
+        contact_name TEXT NOT NULL,
+        type TEXT NOT NULL, -- wedding, birthday, housewarming, baby_shower, graduation, promotion, other
+        occasion TEXT NOT NULL,
+        amount REAL NOT NULL,
+        direction TEXT NOT NULL, -- sent, received
+        date TEXT NOT NULL,
+        location TEXT,
+        note TEXT,
+        photos TEXT, -- JSON数组
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY (contact_id) REFERENCES contacts (id) ON DELETE CASCADE
+      )`,
+
       // 应用设置表
       `CREATE TABLE IF NOT EXISTS app_settings (
         id TEXT PRIMARY KEY DEFAULT 'default',
@@ -285,7 +328,14 @@ export class NewDatabaseManager {
       'CREATE INDEX IF NOT EXISTS idx_gift_events_date ON gift_events (date)',
       'CREATE INDEX IF NOT EXISTS idx_gift_events_contact ON gift_events (contact_id)',
       'CREATE INDEX IF NOT EXISTS idx_important_dates_contact ON important_dates (contact_id)',
-      'CREATE INDEX IF NOT EXISTS idx_reminders_date ON reminders (reminder_date)'
+      'CREATE INDEX IF NOT EXISTS idx_reminders_date ON reminders (reminder_date)',
+      'CREATE INDEX IF NOT EXISTS idx_timeline_events_date ON timeline_events (date)',
+      'CREATE INDEX IF NOT EXISTS idx_timeline_events_contact ON timeline_events (contact_id)',
+      'CREATE INDEX IF NOT EXISTS idx_timeline_events_type ON timeline_events (type)',
+      'CREATE INDEX IF NOT EXISTS idx_fenzi_gift_records_date ON fenzi_gift_records (date)',
+      'CREATE INDEX IF NOT EXISTS idx_fenzi_gift_records_contact ON fenzi_gift_records (contact_id)',
+      'CREATE INDEX IF NOT EXISTS idx_fenzi_gift_records_direction ON fenzi_gift_records (direction)',
+      'CREATE INDEX IF NOT EXISTS idx_fenzi_gift_records_type ON fenzi_gift_records (type)'
     ];
 
     for (const sql of indexes) {

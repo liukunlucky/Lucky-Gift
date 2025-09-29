@@ -76,8 +76,9 @@ interface Category {
   items: string[];
 }
 
+@Entry
 @Component
-export struct BrowsePage {
+struct BrowsePage {
   @State inspirations: Inspiration[] = [];
   @State filteredInspirations: Inspiration[] = [];
   @State selectedFilters: string[] = [];
@@ -639,251 +640,287 @@ export struct BrowsePage {
   }
 
   build() {
-    Stack() {
-      Column() {
-        // 顶部搜索栏
-        Row() {
-          TextInput({ placeholder: '搜索灵感创意...' })
-            .layoutWeight(1)
-            .height(40)
-            .borderRadius(20)
-            .backgroundColor('#F0F0F0')
-            .padding({ left: 16, right: 16 })
-            .onChange((value: string) => {
-              this.searchKeyword = value;
-              this.applyFilters();
-            })
-        }
-        .width('100%')
-        .padding({ left: 16, right: 16, top: 12, bottom: 12 })
-        .backgroundColor(Color.White)
-        
-        // 多维度搜索条件栏 - 使用Select组件
-        Scroll() {
-          Row({ space: 8 }) {
-            ForEach(this.searchConditions, (condition: SearchCondition) => {
-              Select(condition.options.map((option: SearchOption) => {
-                const selectOption: SelectOption = { value: option.label };
-                return selectOption;
-              }))
-                .selected(condition.options.findIndex(option => option.value === condition.selectedValue))
-                .value(condition.selectedLabel || condition.label)
-                .font({ size: 12 })
-                .fontColor('#333333')
-                .selectedOptionFont({ size: 12 })
-                .optionFont({ size: 12 })
-                .backgroundColor('#F8F8F8')
-                .borderRadius(16)
-                .padding({ left: 12, right: 12, top: 6, bottom: 6 })
-                .height(32)
-                .optionHeight(300)
-                .constraintSize({ minWidth: 60 })
-                .border({
-                  width: 1,
-                  color: condition.selectedValue ? '#4CAF50' : '#E0E0E0'
-                })
-                .onSelect((index: number) => {
-                  this.selectSearchOption(condition.id, condition.options[index]);
-                })
-            }, (condition: SearchCondition) => condition.id)
-          }
+    Column() {
+      this.buildHeader()
+      // 顶部搜索栏
+      Row() {
+        TextInput({ placeholder: '搜索灵感创意...' })
+          .layoutWeight(1)
+          .height(40)
+          .borderRadius(20)
+          .backgroundColor('#F0F0F0')
           .padding({ left: 16, right: 16 })
-        }
-        .scrollable(ScrollDirection.Horizontal)
-        .scrollBar(BarState.Off)
-        .width('100%')
-        .height(52)
-        .padding({ top: 10, bottom: 10 })
-
-        if (this.isLoading) {
-          // 加载状态
-          Column() {
-            LoadingProgress()
-              .width(50)
-              .height(50)
-              .color('#FF6B35')
-            
-            Text('加载中...')
-              .fontSize(14)
-              .fontColor('#666666')
-              .margin({ top: 12 })
-          }
-          .width('100%')
-          .height('60%')
-          .justifyContent(FlexAlign.Center)
-          .alignItems(HorizontalAlign.Center)
-        } else {
-          Scroll() {
-            Column() {
-              // 我的灵感部分
-               Column() {
-                 // 分组标题
-                 Row() {
-                   Row() {
-                     Text('我的灵感')
-                       .fontSize(18)
-                       .fontWeight(FontWeight.Bold)
-                       .fontColor('#333333')
-                   }
-                   
-                   Blank()
-                   
-                   Text(`${this.filteredMyInspirations.length}个`)
-                     .fontSize(12)
-                     .fontColor('#666666')
-                     .backgroundColor('#F5F5F5')
-                     .padding({ left: 8, right: 8, top: 4, bottom: 4 })
-                     .borderRadius(10)
-                 }
-                 .width('100%')
-                 .padding({ left: 16, right: 16, top: 16, bottom: 12 })
-                 .backgroundColor('#FAFAFA')
-                 
-                 // 内容区域
-                 Column() {
-                   if (this.filteredMyInspirations.length === 0) {
-                     Column() {
-                       Image($r('app.media.icon_empty'))
-                         .width(120)
-                         .height(90)
-                         .margin({ bottom: 12 })
-                       
-                       Text('暂无我的灵感')
-                         .fontSize(14)
-                         .fontColor('#666666')
-                         .margin({ bottom: 8 })
-
-                       Button('添加我的灵感')
-                         .fontSize(14)
-                         .height(36)
-                         .padding({ left: 16, right: 16 })
-                         .backgroundColor('#FF6B35')
-                         .fontColor(Color.White)
-                         .borderRadius(18)
-                         .onClick(() => {
-                           this.navigateToAddInspiration();
-                         })
-                     }
-                     .width('100%')
-                     .padding({ top: 30, bottom: 30 })
-                     .justifyContent(FlexAlign.Center)
-                     .alignItems(HorizontalAlign.Center)
-                   } else {
-                     ForEach(this.filteredMyInspirations, 
-                       (inspiration: Inspiration) => {
-                         this.buildInspirationCard(inspiration, true)
-                       }, (inspiration: Inspiration) => 'my_' + (inspiration.id || 0).toString())
-                     
-                     // 在列表底部添加新增按钮
-                     Row() {
-                       Button('+ 添加新灵感')
-                         .fontSize(14)
-                         .height(40)
-                         .padding({ left: 20, right: 20 })
-                         .backgroundColor('#FF6B35')
-                         .fontColor(Color.White)
-                         .borderRadius(20)
-                         .onClick(() => {
-                           this.navigateToAddInspiration();
-                         })
-                     }
-                     .width('100%')
-                     .justifyContent(FlexAlign.Center)
-                     .margin({ top: 16, bottom: 8 })
-                   }
-                 }
-                 .padding({ left: 16, right: 16, bottom: 16 })
-               }
-               .width('100%')
-               .backgroundColor(Color.White)
-               .borderRadius(12)
-               .margin({ left: 16, right: 16, top: 8, bottom: 16 })
-               .shadow({
-                 radius: 8,
-                 color: '#1A000000',
-                 offsetX: 0,
-                 offsetY: 2
-               })
-              
-              // 系统推荐部分
-              if (this.filteredInspirations.length > 0) {
-                Column() {
-                  // 分组标题
-                  Row() {
-                    Text('推荐灵感')
-                      .fontSize(18)
-                      .fontWeight(FontWeight.Bold)
-                      .fontColor('#333333')
-                    
-                    Blank()
-                    
-                    Text(`${this.filteredInspirations.length}个`)
-                      .fontSize(12)
-                      .fontColor('#666666')
-                      .backgroundColor('#F5F5F5')
-                      .padding({ left: 8, right: 8, top: 4, bottom: 4 })
-                      .borderRadius(10)
-                  }
-                  .width('100%')
-                  .padding({ left: 16, right: 16, top: 16, bottom: 12 })
-                  .backgroundColor('#FAFAFA')
-                  
-                  // 内容区域
-                  Column() {
-                    ForEach(this.filteredInspirations, 
-                      (inspiration: Inspiration) => {
-                        this.buildInspirationCard(inspiration, false)
-                      }, (inspiration: Inspiration) => 'system_' + (inspiration.id || 0).toString())
-                  }
-                  .padding({ left: 16, right: 16, bottom: 16 })
-                }
-                .width('100%')
-                .backgroundColor(Color.White)
-                .borderRadius(12)
-                .margin({ left: 16, right: 16, bottom: 106 })
-                .shadow({
-                  radius: 8,
-                  color: '#1A000000',
-                  offsetX: 0,
-                  offsetY: 2
-                })
-              }
-              
-              // 如果两个部分都为空，显示整体空状态
-              if (this.filteredInspirations.length === 0 && this.filteredMyInspirations.length === 0) {
-                Column() {
-                  Image($r('app.media.icon_empty'))
-                    .width(173)
-                    .height(128)
-                    .margin({ bottom: 16 })
-                  
-                  Text('暂无匹配的灵感')
-                    .fontSize(16)
-                    .fontColor('#666666')
-                    .margin({ bottom: 12 })
-                  
-                  Text('试试调整筛选条件或搜索关键词')
-                    .fontSize(14)
-                    .fontColor('#999999')
-                }
-                .width('100%')
-                .height('60%')
-                .justifyContent(FlexAlign.Center)
-                .alignItems(HorizontalAlign.Center)
-                .padding({ left: 24, right: 24 })
-              }
-            }
-          }
-          .scrollBar(BarState.Off)
-        }
+          .onChange((value: string) => {
+            this.searchKeyword = value;
+            this.applyFilters();
+          })
       }
       .width('100%')
-      .height('100%')
-      .backgroundColor('#F8F9FA')
+      .padding({ left: 16, right: 16, top: 12, bottom: 12 })
+      .backgroundColor(Color.White)
+
+      // 多维度搜索条件栏 - 使用Select组件
+      Scroll() {
+        Row({ space: 8 }) {
+          ForEach(this.searchConditions, (condition: SearchCondition) => {
+            Select(condition.options.map((option: SearchOption) => {
+              const selectOption: SelectOption = { value: option.label };
+              return selectOption;
+            }))
+              .selected(condition.options.findIndex(option => option.value === condition.selectedValue))
+              .value(condition.selectedLabel || condition.label)
+              .font({ size: 12 })
+              .fontColor('#333333')
+              .selectedOptionFont({ size: 12 })
+              .optionFont({ size: 12 })
+              .backgroundColor('#F8F8F8')
+              .borderRadius(16)
+              .padding({ left: 12, right: 12, top: 6, bottom: 6 })
+              .height(32)
+              .optionHeight(300)
+              .constraintSize({ minWidth: 60 })
+              .border({
+                width: 1,
+                color: condition.selectedValue ? '#4CAF50' : '#E0E0E0'
+              })
+              .onSelect((index: number) => {
+                this.selectSearchOption(condition.id, condition.options[index]);
+              })
+          }, (condition: SearchCondition) => condition.id)
+        }
+        .padding({ left: 16, right: 16 })
+      }
+      .scrollable(ScrollDirection.Horizontal)
+      .scrollBar(BarState.Off)
+      .width('100%')
+      .height(52)
+      .padding({ top: 10, bottom: 10 })
+
+      if (this.isLoading) {
+        // 加载状态
+        Column() {
+          LoadingProgress()
+            .width(50)
+            .height(50)
+            .color('#FF6B35')
+
+          Text('加载中...')
+            .fontSize(14)
+            .fontColor('#666666')
+            .margin({ top: 12 })
+        }
+        .width('100%')
+        .height('60%')
+        .justifyContent(FlexAlign.Center)
+        .alignItems(HorizontalAlign.Center)
+      } else {
+        Scroll() {
+          Column() {
+            // 我的灵感部分
+            Column() {
+              // 分组标题
+              Row() {
+                Row() {
+                  Text('我的灵感')
+                    .fontSize(18)
+                    .fontWeight(FontWeight.Bold)
+                    .fontColor('#333333')
+                }
+
+                Blank()
+
+                Text(`${this.filteredMyInspirations.length}个`)
+                  .fontSize(12)
+                  .fontColor('#666666')
+                  .backgroundColor('#F5F5F5')
+                  .padding({ left: 8, right: 8, top: 4, bottom: 4 })
+                  .borderRadius(10)
+              }
+              .width('100%')
+              .padding({ left: 16, right: 16, top: 16, bottom: 12 })
+              .backgroundColor('#FAFAFA')
+
+              // 内容区域
+              Column() {
+                if (this.filteredMyInspirations.length === 0) {
+                  Column() {
+                    Image($r('app.media.icon_empty'))
+                      .width(120)
+                      .height(90)
+                      .margin({ bottom: 12 })
+
+                    Text('暂无我的灵感')
+                      .fontSize(14)
+                      .fontColor('#666666')
+                      .margin({ bottom: 8 })
+
+                    Button('添加我的灵感')
+                      .fontSize(14)
+                      .height(36)
+                      .padding({ left: 16, right: 16 })
+                      .backgroundColor('#FF6B35')
+                      .fontColor(Color.White)
+                      .borderRadius(18)
+                      .onClick(() => {
+                        this.navigateToAddInspiration();
+                      })
+                  }
+                  .width('100%')
+                  .padding({ top: 30, bottom: 30 })
+                  .justifyContent(FlexAlign.Center)
+                  .alignItems(HorizontalAlign.Center)
+                } else {
+                  ForEach(this.filteredMyInspirations,
+                    (inspiration: Inspiration) => {
+                      this.buildInspirationCard(inspiration, true)
+                    }, (inspiration: Inspiration) => 'my_' + (inspiration.id || 0).toString())
+
+                  // 在列表底部添加新增按钮
+                  Row() {
+                    Button('+ 添加新灵感')
+                      .fontSize(14)
+                      .height(40)
+                      .padding({ left: 20, right: 20 })
+                      .backgroundColor('#FF6B35')
+                      .fontColor(Color.White)
+                      .borderRadius(20)
+                      .onClick(() => {
+                        this.navigateToAddInspiration();
+                      })
+                  }
+                  .width('100%')
+                  .justifyContent(FlexAlign.Center)
+                  .margin({ top: 16, bottom: 8 })
+                }
+              }
+              .padding({ left: 16, right: 16, bottom: 16 })
+            }
+            .width('100%')
+            .backgroundColor(Color.White)
+            .borderRadius(12)
+            .margin({ left: 16, right: 16, top: 8, bottom: 16 })
+            .shadow({
+              radius: 8,
+              color: '#1A000000',
+              offsetX: 0,
+              offsetY: 2
+            })
+
+            // 系统推荐部分
+            if (this.filteredInspirations.length > 0) {
+              Column() {
+                // 分组标题
+                Row() {
+                  Text('推荐灵感')
+                    .fontSize(18)
+                    .fontWeight(FontWeight.Bold)
+                    .fontColor('#333333')
+
+                  Blank()
+
+                  Text(`${this.filteredInspirations.length}个`)
+                    .fontSize(12)
+                    .fontColor('#666666')
+                    .backgroundColor('#F5F5F5')
+                    .padding({ left: 8, right: 8, top: 4, bottom: 4 })
+                    .borderRadius(10)
+                }
+                .width('100%')
+                .padding({ left: 16, right: 16, top: 16, bottom: 12 })
+                .backgroundColor('#FAFAFA')
+
+                // 内容区域
+                Column() {
+                  ForEach(this.filteredInspirations,
+                    (inspiration: Inspiration) => {
+                      this.buildInspirationCard(inspiration, false)
+                    }, (inspiration: Inspiration) => 'system_' + (inspiration.id || 0).toString())
+                }
+                .padding({ left: 16, right: 16, bottom: 16 })
+              }
+              .width('100%')
+              .backgroundColor(Color.White)
+              .borderRadius(12)
+              .margin({ left: 16, right: 16, bottom: 106 })
+              .shadow({
+                radius: 8,
+                color: '#1A000000',
+                offsetX: 0,
+                offsetY: 2
+              })
+            }
+
+            // 如果两个部分都为空，显示整体空状态
+            if (this.filteredInspirations.length === 0 && this.filteredMyInspirations.length === 0) {
+              Column() {
+                Image($r('app.media.icon_empty'))
+                  .width(173)
+                  .height(128)
+                  .margin({ bottom: 16 })
+
+                Text('暂无匹配的灵感')
+                  .fontSize(16)
+                  .fontColor('#666666')
+                  .margin({ bottom: 12 })
+
+                Text('试试调整筛选条件或搜索关键词')
+                  .fontSize(14)
+                  .fontColor('#999999')
+              }
+              .width('100%')
+              .height('60%')
+              .justifyContent(FlexAlign.Center)
+              .alignItems(HorizontalAlign.Center)
+              .padding({ left: 24, right: 24 })
+            }
+          }
+        }
+        .scrollBar(BarState.Off)
+      }
     }
+    .width('100%')
+    .height('100%')
+    .backgroundColor('#F8F9FA')
   }
-   
-   @Builder
+
+  goBack() {
+    router.back();
+  }
+
+  @Builder
+  buildHeader() {
+    Row() {
+      Button() {
+        Image($r('app.media.icon_back'))
+          .width(24)
+          .height(24)
+          .fillColor('#333333')
+      }
+      .width(40)
+      .height(40)
+      .backgroundColor(Color.Transparent)
+      .onClick(() => {
+        this.goBack()
+      })
+
+      Text('礼物灵感')
+        .fontSize(18)
+        .fontWeight(FontWeight.Medium)
+        .fontColor('#333333')
+        .layoutWeight(1)
+        .textAlign(TextAlign.Center)
+
+      Row()
+        .width(40)
+        .height(40)
+    }
+    .width('100%')
+    .height(56)
+    .padding({ left: 16, right: 16 })
+    .backgroundColor('#FFFFFF')
+  }
+
+  @Builder
   buildInspirationCard(inspiration: Inspiration, isMyInspiration: boolean = false) {
     Column() {
       Row() {

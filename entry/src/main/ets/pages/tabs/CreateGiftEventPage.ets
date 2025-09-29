@@ -361,7 +361,7 @@ struct CreateGiftEventPage {
       router.replaceUrl({
         url: 'pages/MainTabsPage',
         params: {
-          targetTab: 2 // 切换到记录tab
+          targetTab: 1 // 切换到记录tab
         }
       });
     } catch (error) {
@@ -568,7 +568,12 @@ struct CreateGiftEventPage {
       
       console.log('删除成功，返回记录页面');
       // 返回主页面并切换到记录tab，触发数据刷新
-      router.back()
+      router.replaceUrl({
+        url: 'pages/MainTabsPage',
+        params: {
+          targetTab: 1 // 切换到记录tab
+        }
+      });
     } catch (error) {
       console.error('删除事件失败:', error);
       AlertDialog.show({

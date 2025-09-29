@@ -28,6 +28,12 @@
     "pages/profile/ContactFormPage",
     "pages/AddInspirationPage",
     "pages/AchievementPage",
-    "pages/CreateGiftStoryPage"
+    "pages/CreateGiftStoryPage",
+    "pages/ContactSelectionPage",
+    "pages/EmotionalTimelinePage",
+    "pages/GiftEtiquettePage",
+    "pages/GiftWrappingGuidePage",
+    "pages/SettingPage",
+    "pages/tabs/BrowsePage"
   ]
 }
