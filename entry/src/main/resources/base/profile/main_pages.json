@@ -34,6 +34,11 @@
     "pages/GiftEtiquettePage",
     "pages/GiftWrappingGuidePage",
     "pages/SettingPage",
-    "pages/tabs/BrowsePage"
+    "pages/tabs/BrowsePage",
+    "pages/MyWishPage",
+    "pages/WishEditPage",
+    "pages/WishDetailPage",
+    "pages/BarcodeProductPage",
+    "pages/ResultPage"
   ]
 }

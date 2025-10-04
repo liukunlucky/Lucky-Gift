@@ -316,6 +316,32 @@ export class NewDatabaseManager {
         tags TEXT NOT NULL DEFAULT '[]',
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
+      )`,
+
+      // 我的心愿表
+      `CREATE TABLE IF NOT EXISTS my_wishes (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        description TEXT NOT NULL,
+        category TEXT NOT NULL, -- gift, experience, travel, learning, health, career, relationship, hobby, other
+        priority TEXT NOT NULL, -- low, medium, high, urgent
+        status TEXT NOT NULL, -- active, achieved, cancelled, postponed
+        target_date TEXT,
+        estimated_cost REAL DEFAULT 0,
+        actual_cost REAL DEFAULT 0,
+        tags TEXT NOT NULL DEFAULT '[]', -- JSON数组
+        images TEXT NOT NULL DEFAULT '[]', -- JSON数组
+        notes TEXT,
+        progress INTEGER NOT NULL DEFAULT 0, -- 0-100
+        related_contacts TEXT NOT NULL DEFAULT '[]', -- JSON数组
+        inspiration_source TEXT,
+        achieved_date TEXT,
+        achievement_notes TEXT,
+        reminder_enabled INTEGER NOT NULL DEFAULT 0,
+        reminder_date TEXT,
+        is_public INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
       )`
     ];
 
@@ -335,7 +361,12 @@ export class NewDatabaseManager {
       'CREATE INDEX IF NOT EXISTS idx_fenzi_gift_records_date ON fenzi_gift_records (date)',
       'CREATE INDEX IF NOT EXISTS idx_fenzi_gift_records_contact ON fenzi_gift_records (contact_id)',
       'CREATE INDEX IF NOT EXISTS idx_fenzi_gift_records_direction ON fenzi_gift_records (direction)',
-      'CREATE INDEX IF NOT EXISTS idx_fenzi_gift_records_type ON fenzi_gift_records (type)'
+      'CREATE INDEX IF NOT EXISTS idx_fenzi_gift_records_type ON fenzi_gift_records (type)',
+      'CREATE INDEX IF NOT EXISTS idx_my_wishes_status ON my_wishes (status)',
+      'CREATE INDEX IF NOT EXISTS idx_my_wishes_category ON my_wishes (category)',
+      'CREATE INDEX IF NOT EXISTS idx_my_wishes_priority ON my_wishes (priority)',
+      'CREATE INDEX IF NOT EXISTS idx_my_wishes_target_date ON my_wishes (target_date)',
+      'CREATE INDEX IF NOT EXISTS idx_my_wishes_created_at ON my_wishes (created_at)'
     ];
 
     for (const sql of indexes) {

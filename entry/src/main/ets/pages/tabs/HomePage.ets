@@ -9,6 +9,9 @@ import { ContactDAO } from '../../database/ContactDAO';
 import { InspirationDAO } from '../../database/InspirationDAO';
 import { GiftEventDAO } from '../../database/GiftEventDAO';
 import { common } from '@kit.AbilityKit';
+import { scanBarcode, scanCore } from '@kit.ScanKit';
+import { BusinessError } from '@kit.BasicServicesKit';
+import { promptAction } from '@kit.ArkUI';
 
 // 轮播图内容接口
 interface BannerItem {
@@ -249,6 +252,60 @@ export struct HomePage {
     };
     icons.push(giftEtiquette);
 
+    // 送礼学问
+    const giftWish: FunctionIcon = {
+      id: 'gift_wish',
+      title: '我的心愿',
+      icon: $r('app.media.icon_wish'),
+      action: () => {
+        router.pushUrl({
+          url: 'pages/MyWishPage'
+        }).catch((error: Error) => {
+          console.error('Failed to navigate to GiftEtiquettePage:', error);
+        });
+      }
+    };
+    icons.push(giftWish);
+
+    const giftScan: FunctionIcon = {
+      id: 'gift_scan',
+      title: '扫码识礼',
+      icon: $r('app.media.icon_scan'),
+      action: () => {
+        try {
+          scanBarcode.startScanForResult(getContext(), {
+            scanTypes: [scanCore.ScanType.ALL],
+            enableMultiMode: true,
+            enableAlbum: true
+          }).then((result: scanBarcode.ScanResult) => {
+            router.pushUrl({
+              url: 'pages/ResultPage',
+              params: {
+                originalValue: result.originalValue,
+                scanType: result.scanType
+              }
+            })
+          }).catch((error: BusinessError) => {
+            if (error.code === scanCore.ScanErrorCode.SCAN_SERVICE_CANCELED) {
+              console.info('scan', 'Disabling the Scanning Service.');
+            } else {
+              console.error('lucky scan', `Failed to start the scanning service. Code: ${error.code}, message: ${error.message}.`);
+              promptAction.showToast({
+                message: `Error Code: ${error.code} ${error.message}`,
+                duration: 2000
+              });
+            }
+          });
+        } catch (error) {
+          promptAction.showToast({
+            message: `Error Code: ${error.code} ${error.message}`,
+            duration: 2000
+          });
+        }
+      }
+    };
+    icons.push(giftScan);
+
 
     // 礼物包装
     const giftWrapping: FunctionIcon = {
@@ -401,11 +458,56 @@ export struct HomePage {
   buildHeaderSection() {
     Column({ space: 8 }) {
       // App名称
-      Text('送什么礼')
-        .fontSize(28)
-        .fontWeight(FontWeight.Bold)
-        .fontFamily('cjzj')
-        .fontColor('#2C3E50')
+      Row() {
+        Text('送什么礼')
+          .fontSize(28)
+          .fontWeight(FontWeight.Bold)
+          .fontFamily('cjzj')
+          .fontColor('#2C3E50')
+          .layoutWeight(1)
+        Button() {
+          Image($r('app.media.icon_scan'))
+            .width(24)
+            .height(24)
+            .fillColor('#333333')
+        }
+        .width(40)
+        .height(40)
+        .backgroundColor('#f5f5f5')
+        .onClick(() => {
+          try {
+            scanBarcode.startScanForResult(getContext(), {
+              scanTypes: [scanCore.ScanType.ALL],
+              enableMultiMode: true,
+              enableAlbum: true
+            }).then((result: scanBarcode.ScanResult) => {
+              router.pushUrl({
+                url: 'pages/ResultPage',
+                params: {
+                  originalValue: result.originalValue,
+                  scanType: result.scanType
+                }
+              })
+            }).catch((error: BusinessError) => {
+              if (error.code === scanCore.ScanErrorCode.SCAN_SERVICE_CANCELED) {
+                console.info('scan', 'Disabling the Scanning Service.');
+              } else {
+                console.error('lucky scan', `Failed to start the scanning service. Code: ${error.code}, message: ${error.message}.`);
+                promptAction.showToast({
+                  message: `Error Code: ${error.code} ${error.message}`,
+                  duration: 2000
+                });
+              }
+            });
+          } catch (error) {
+            promptAction.showToast({
+              message: `Error Code: ${error.code} ${error.message}`,
+              duration: 2000
+            });
+          }
+        })
+      }
+
 
       // 描述文字
       Text('找礼、记礼、送礼超简单')
@@ -452,6 +554,17 @@ export struct HomePage {
         .width('100%')
         .justifyContent(FlexAlign.SpaceAround)
 
+        // 第二行4个图标
+        Row({ space: 20 }) {
+          ForEach(this.getFunctionIcons().slice(8, 10), (icon: FunctionIcon) => {
+            this.buildFunctionIcon(icon);
+          }, (icon: FunctionIcon) => icon.id)
+          Blank().width(70)
+          Blank().width(70)
+        }
+        .width('100%')
+        .justifyContent(FlexAlign.SpaceAround)
+
 
       }
       .margin({left: 16, right: 16})
@@ -472,14 +585,14 @@ export struct HomePage {
         .padding(4)
         // 第三行3个图标
         Row({ space: 20 }) {
-          ForEach(this.getFunctionIcons().slice(8, 12), (icon: FunctionIcon) => {
+          ForEach(this.getFunctionIcons().slice(10, 14), (icon: FunctionIcon) => {
             this.buildFunctionIcon(icon);
           }, (icon: FunctionIcon) => icon.id)
         }
         .width('100%')
         .justifyContent(FlexAlign.SpaceAround)
         Row({ space: 20 }) {
-          ForEach(this.getFunctionIcons().slice(12, 14), (icon: FunctionIcon) => {
+          ForEach(this.getFunctionIcons().slice(14, 16), (icon: FunctionIcon) => {
             this.buildFunctionIcon(icon);
           }, (icon: FunctionIcon) => icon.id)
           Blank().width(70)

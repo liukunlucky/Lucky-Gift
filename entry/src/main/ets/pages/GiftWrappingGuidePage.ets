@@ -41,7 +41,7 @@ struct GiftWrappingGuidePage {
         id: '1',
         name: '经典蝴蝶结',
         description: '优雅经典的蝴蝶结包装，适合各种场合',
-        image: $r('app.media.background'),
+        image: $r('app.media.hudiejie'),
         difficulty: '简单',
         materials: ['包装纸', '丝带', '剪刀', '双面胶'],
         steps: [
@@ -61,7 +61,7 @@ struct GiftWrappingGuidePage {
         id: '2',
         name: '日式风吕敷',
         description: '简约环保的日式包装方法',
-        image: $r('app.media.background'),
+        image: $r('app.media.rishi'),
         difficulty: '中等',
         materials: ['方形布料', '装饰绳'],
         steps: [
@@ -81,7 +81,7 @@ struct GiftWrappingGuidePage {
         id: '3',
         name: '花束式包装',
         description: '像花束一样的浪漫包装方式',
-        image: $r('app.media.background'),
+        image: $r('app.media.huashu'),
         difficulty: '困难',
         materials: ['透明包装纸', '彩带', '装饰花', '胶带'],
         steps: [
@@ -101,7 +101,7 @@ struct GiftWrappingGuidePage {
         id: '4',
         name: '复古牛皮纸',
         description: '简约复古的牛皮纸包装',
-        image: $r('app.media.background'),
+        image: $r('app.media.niupizhi'),
         difficulty: '简单',
         materials: ['牛皮纸', '麻绳', '标签', '印章'],
         steps: [
@@ -121,7 +121,7 @@ struct GiftWrappingGuidePage {
         id: '5',
         name: '欧式宫廷风',
         description: '华丽优雅的欧式宫廷包装风格',
-        image: $r('app.media.background'),
+        image: $r('app.media.oushi'),
         difficulty: '困难',
         materials: ['金色包装纸', '蕾丝丝带', '珍珠装饰', '封蜡印章'],
         steps: [
@@ -141,7 +141,7 @@ struct GiftWrappingGuidePage {
         id: '6',
         name: '现代简约风',
         description: '简洁现代的包装设计',
-        image: $r('app.media.background'),
+        image: $r('app.media.xiandai'),
         difficulty: '简单',
         materials: ['纯色包装纸', '细丝带', '几何标签'],
         steps: [
@@ -161,7 +161,7 @@ struct GiftWrappingGuidePage {
         id: '7',
         name: '田园乡村风',
         description: '温馨自然的田园风格包装',
-        image: $r('app.media.background'),
+        image: $r('app.media.tianyuan'),
         difficulty: '中等',
         materials: ['格子布料', '麻绳', '干花', '木质标签'],
         steps: [
@@ -181,7 +181,7 @@ struct GiftWrappingGuidePage {
         id: '8',
         name: '中式传统风',
         description: '典雅的中式传统包装',
-        image: $r('app.media.background'),
+        image: $r('app.media.zhongshi'),
         difficulty: '中等',
         materials: ['红色丝绸', '金色绳结', '中国结', '书法标签'],
         steps: [
@@ -201,7 +201,7 @@ struct GiftWrappingGuidePage {
         id: '9',
         name: '儿童卡通风',
         description: '活泼可爱的儿童包装风格',
-        image: $r('app.media.background'),
+        image: $r('app.media.ertong'),
         difficulty: '简单',
         materials: ['卡通包装纸', '彩色丝带', '贴纸', '小玩具'],
         steps: [
@@ -221,7 +221,7 @@ struct GiftWrappingGuidePage {
         id: '10',
         name: '环保创意风',
         description: '环保材料的创意包装',
-        image: $r('app.media.background'),
+        image: $r('app.media.huanbao'),
         difficulty: '中等',
         materials: ['报纸', '旧地图', '天然麻绳', '植物装饰'],
         steps: [
@@ -373,10 +373,7 @@ struct GiftWrappingGuidePage {
         .layoutWeight(1)
         .textAlign(TextAlign.Center)
 
-      Image($r('app.media.icon_search'))
-        .width(24)
-        .height(24)
-        .fillColor('#7F8C8D')
+      Blank().width(24)
     }
     .width('100%')
     .height(56)
@@ -720,7 +717,7 @@ struct GiftWrappingGuidePage {
                 .fontColor('#2C3E50')
                 .layoutWeight(1)
 
-              Image($r('app.media.icon_delete'))
+              Image($r('app.media.icon_close'))
                 .width(24)
                 .height(24)
                 .fillColor('#7F8C8D')

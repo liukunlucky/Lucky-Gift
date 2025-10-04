@@ -195,6 +195,84 @@ export interface AppSettings {
   privacyMode: boolean;
 }
 
+// 心愿优先级
+export enum WishPriority {
+  LOW = 'low',
+  MEDIUM = 'medium',
+  HIGH = 'high',
+  URGENT = 'urgent'
+}
+
+// 心愿状态
+export enum WishStatus {
+  ACTIVE = 'active',        // 活跃的心愿
+  ACHIEVED = 'achieved',    // 已实现
+  CANCELLED = 'cancelled',  // 已取消
+  POSTPONED = 'postponed'   // 已推迟
+}
+
+// 心愿分类
+export enum WishCategory {
+  GIFT = 'gift',           // 礼物心愿
+  EXPERIENCE = 'experience', // 体验心愿
+  TRAVEL = 'travel',       // 旅行心愿
+  LEARNING = 'learning',   // 学习心愿
+  HEALTH = 'health',       // 健康心愿
+  CAREER = 'career',       // 事业心愿
+  RELATIONSHIP = 'relationship', // 关系心愿
+  HOBBY = 'hobby',         // 爱好心愿
+  OTHER = 'other'          // 其他
+}
+
+// 我的心愿数据模型
+export interface MyWish {
+  id?: string;
+  title: string;                    // 心愿标题
+  description: string;              // 详细描述
+  category: WishCategory;           // 心愿分类
+  priority: WishPriority;           // 优先级
+  status: WishStatus;               // 状态
+  targetDate?: string;              // 期望实现日期
+  estimatedCost?: number;           // 预估费用
+  actualCost?: number;              // 实际费用
+  tags: string[];                   // 标签
+  images: string[];                 // 相关图片
+  notes?: string;                   // 备注
+  progress: number;                 // 进度百分比 (0-100)
+  relatedContacts?: string[];       // 相关联系人ID
+  inspirationSource?: string;       // 灵感来源
+  achievedDate?: string;            // 实现日期
+  achievementNotes?: string;        // 实现心得
+  reminderEnabled: boolean;         // 是否启用提醒
+  reminderDate?: string;            // 提醒日期
+  isPublic: boolean;                // 是否公开（预留功能）
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+// 心愿进度记录
+export interface WishProgress {
+  id?: string;
+  wishId: string;                   // 心愿ID
+  progressValue: number;            // 进度值 (0-100)
+  description: string;              // 进度描述
+  images?: string[];                // 进度图片
+  notes?: string;                   // 进度备注
+  createdAt?: string;
+}
+
+// 心愿统计
+export interface WishStats {
+  totalWishes: number;              // 总心愿数
+  activeWishes: number;             // 活跃心愿数
+  achievedWishes: number;           // 已实现心愿数
+  totalEstimatedCost: number;       // 总预估费用
+  totalActualCost: number;          // 总实际费用
+  averageAchievementTime: number;   // 平均实现时间（天）
+  categoryStats: Map<string, number>; // 分类统计
+  priorityStats: Map<string, number>; // 优先级统计
+}
+
 // 数据统计
 export interface DataStats {
   totalContacts: number;
