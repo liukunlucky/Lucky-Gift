@@ -39,6 +39,7 @@
     "pages/WishEditPage",
     "pages/WishDetailPage",
     "pages/BarcodeProductPage",
+    "pages/BarcodeScanIntroPage",
     "pages/ResultPage"
   ]
 }

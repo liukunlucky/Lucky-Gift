@@ -342,6 +342,29 @@ export class NewDatabaseManager {
         is_public INTEGER NOT NULL DEFAULT 0,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
+      )`,
+
+      // 扫描历史表
+      `
+      CREATE TABLE IF NOT EXISTS scan_history (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        barcode TEXT NOT NULL,
+        goodsName TEXT,
+        brand TEXT,
+        price TEXT,
+        image TEXT,
+        scanTime TEXT NOT NULL,
+        flag TEXT,
+        remark TEXT,
+        manuName TEXT,
+        spec TEXT,
+        goodsType TEXT,
+        sptmImg TEXT,
+        ycg TEXT,
+        engName TEXT,
+        note TEXT,
+        ret_code TEXT,
+        UNIQUE(barcode)
       )`
     ];
 

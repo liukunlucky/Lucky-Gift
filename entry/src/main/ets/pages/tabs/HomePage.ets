@@ -272,36 +272,11 @@ export struct HomePage {
       title: '扫码识礼',
       icon: $r('app.media.icon_scan'),
       action: () => {
-        try {
-          scanBarcode.startScanForResult(getContext(), {
-            scanTypes: [scanCore.ScanType.ALL],
-            enableMultiMode: true,
-            enableAlbum: true
-          }).then((result: scanBarcode.ScanResult) => {
-            router.pushUrl({
-              url: 'pages/ResultPage',
-              params: {
-                originalValue: result.originalValue,
-                scanType: result.scanType
-              }
-            })
-          }).catch((error: BusinessError) => {
-            if (error.code === scanCore.ScanErrorCode.SCAN_SERVICE_CANCELED) {
-              console.info('scan', 'Disabling the Scanning Service.');
-            } else {
-              console.error('lucky scan', `Failed to start the scanning service. Code: ${error.code}, message: ${error.message}.`);
-              promptAction.showToast({
-                message: `Error Code: ${error.code} ${error.message}`,
-                duration: 2000
-              });
-            }
-          });
-        } catch (error) {
-          promptAction.showToast({
-            message: `Error Code: ${error.code} ${error.message}`,
-            duration: 2000
-          });
-        }
+        router.pushUrl({
+          url: 'pages/BarcodeScanIntroPage'
+        }).catch((error: Error) => {
+          console.error('Failed to navigate to BarcodeScanIntroPage:', error);
+        });
       }
     };
     icons.push(giftScan);
